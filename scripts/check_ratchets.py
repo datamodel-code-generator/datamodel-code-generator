@@ -55,9 +55,11 @@ the area is ``src``, ``tests``, ``scripts`` or ``other``; keys of configuration 
   (``@...``) and those marked conditional (``?``), per sidecar. They are reported in the table and never fail.
 - Entries: ty rules below error, coverage ``omit`` and ``exclude`` lists (by text), pytest ``ignore`` warning filters
   and the direct-assert exemption list, heki's baseline (the sum of the site counts of its entries:
-  ``allowlist:heki-baseline:EFF201`` for the effect boundaries, the reads of the environment the package runs in and
-  the fact writes of the passes, which no other key budgets, counted per kind of boundary so that a rise prints the
-  help of the boundaries it comes from; ``allowlist:heki-baseline`` for the rest), and the allowlists of the test
+  ``allowlist:heki-baseline:EFF201:<kind>`` for the effect boundaries, the reads of the environment the package runs
+  in, the fact writes of the passes and the facts a decision reads, one key per kind of boundary (`BOUNDARY_ADVICE`),
+  so that no other key and no other kind budgets a site and a rise prints the help of its kind;
+  ``allowlist:heki-baseline`` for the rest; an entry of no known kind counts under
+  ``allowlist:heki-baseline:EFF201:unreadable``, which always fails), and the allowlists of the test
   style and architecture checks (``allowlist:<NAME>:unreadable`` when one is written in a form this script cannot
   read).
 - ``stored-list:<test>:items``, ``stored-list:<test>:lines`` and ``stored-list:<test>:blind``: the lists that a test
@@ -145,8 +147,8 @@ if TYPE_CHECKING:
 SCRIPT = "scripts/check_ratchets.py"
 HEKI_BASELINE = "scripts/heki_baseline.toml"
 HEKI_OWN_KEY_RULES = frozenset({"EFF201"})
-"""The heki rules whose baseline sites count under a key of their own: no other key budgets them, so a new site cannot
-be paid for by a site of another rule."""
+"""The heki rules whose baseline sites count under a key per kind of boundary (`heki_boundary_key`): no other key
+budgets them, so a new site cannot be paid for by a site of another rule or of another kind."""
 ENVIRONMENT_ADVICE = (
     "Output must not depend on the environment the generator runs in: key the decision on an option or a static rule, "
     "not on the interpreter, the platform, a variable or an installed package. A read that belongs to the runtime "
@@ -171,8 +173,15 @@ BOUNDARY_ADVICE = {
     "pass-glue": GLUE_ADVICE,
     "decisions-read-final-facts": DECISION_READ_ADVICE,
 }
-"""The help of each kind of heki effect boundary (its name up to the first ``:``), which the rise of a baseline entry of
-that kind prints too."""
+"""The help of each kind of heki effect boundary (its name up to the first ``:``): the kinds the baseline tally knows,
+each with the help its key prints on a rise."""
+
+
+def heki_boundary_key(rule: str, kind: str) -> str:
+    """Return the key of the baseline sites of one rule of `HEKI_OWN_KEY_RULES` and one kind of its boundary."""
+    return f"allowlist:heki-baseline:{rule}:{kind}"
+
+
 EXPECTED_ROOT = "tests/data/expected"
 TESTS_ROOT = "tests"
 STORED_LIST = "stored-list"
@@ -355,6 +364,7 @@ Comments the source model reports as suppressions (``noqa``, ``pragma``, ``ruff:
 REPORT_ONLY = frozenset({"expected"})
 """The kinds of keys that are reported in the table and never fail."""
 ADVICE = {
+    **{heki_boundary_key("EFF201", kind): help_text for kind, help_text in BOUNDARY_ADVICE.items()},
     "ruff": (
         "Fix the finding instead of suppressing it. A noqa comment, a `ruff: ignore` comment and a per-file ignore "
         "count the same, so moving one changes nothing; if one must stay, remove another suppression of this rule in "
@@ -1001,10 +1011,11 @@ def _method_owner(statement: ast.stmt, names: frozenset[str]) -> str:
 
 
 def _heki_baseline_tally(tally: Tally, root: Path) -> None:
-    """Count the sites of heki's baseline, those of `HEKI_OWN_KEY_RULES` under a key per rule.
+    """Count the sites of heki's baseline, those of `HEKI_OWN_KEY_RULES` under a key per rule and kind of boundary.
 
-    The sites of those rules count per kind of the boundary their entry names (`boundary_site`), so a rise names the
-    boundaries it comes from and prints their help. A file that is not entries with integer counts is unreadable.
+    The kind is the one the entry's target names (`boundary_kind`), so each kind is budgeted on its own
+    (`heki_boundary_key`). A file that is not entries with integer counts is unreadable, and so is an entry of those
+    rules whose kind `BOUNDARY_ADVICE` does not know: no help could say how to fix it.
     """
     file = root / HEKI_BASELINE
     try:
@@ -1013,11 +1024,17 @@ def _heki_baseline_tally(tally: Tally, root: Path) -> None:
     except (tomllib.TOMLDecodeError, AttributeError, TypeError):
         counted = [(None, None, "")]
     for count, rule, target in counted:
-        own = f":{rule}" if rule in HEKI_OWN_KEY_RULES else ""
-        readable = type(count) is int
-        key = "allowlist:heki-baseline" + (own if readable else ":unreadable")
-        site = boundary_site(boundary_kind(str(target))) if own and readable else HEKI_BASELINE
-        for _ in range(count if readable else 1):
+        kind = boundary_kind(str(target))
+        key, site = "allowlist:heki-baseline", HEKI_BASELINE
+        if type(count) is not int:
+            key += ":unreadable"
+        elif rule not in HEKI_OWN_KEY_RULES:
+            pass
+        elif kind in BOUNDARY_ADVICE:
+            key = heki_boundary_key(rule, kind)
+        else:
+            key, site = heki_boundary_key(rule, "unreadable"), f"{HEKI_BASELINE} (no boundary kind {kind!r})"
+        for _ in range(count if type(count) is int else 1):
             tally.add(key, site)
 
 
@@ -1028,11 +1045,6 @@ def boundary_kind(name: str) -> str:
     ``no-environment-reads``.
     """
     return name.partition(":")[0]
-
-
-def boundary_site(kind: str) -> str:
-    """Return where the rise of a key counts the baseline sites of one kind of boundary: the baseline, with the kind."""
-    return f"{HEKI_BASELINE} ({kind})" if kind else HEKI_BASELINE
 
 
 def _config_tally(tally: Tally, root: Path, pyproject: dict) -> None:
@@ -1378,9 +1390,7 @@ def _rise_lines(
         changes = [(path, base.get(key, {}).get(path, 0), count) for path, count in sorted(head[key].items())]
     else:
         changes = _risen(key, base, head, judging.lanes)
-    by_site = {boundary_site(kind): help_text for kind, help_text in BOUNDARY_ADVICE.items()}
-    boundaries = dict.fromkeys(by_site[path] for path, _, _ in changes if path in by_site)
-    advice = " ".join(boundaries) or ADVICE.get(key, ADVICE.get(_kind(key), ""))
+    advice = ADVICE.get(key, ADVICE.get(_kind(key), ""))
     if absolute:
         lines = ["", f"{key} is absolute and holds {after} sites (the base {before}): it must be 0. {advice}"]
     else:

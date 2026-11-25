@@ -643,11 +643,13 @@ removes findings run the same command with `--update-baseline`. If the findings
 only moved (a function was renamed or moved), `--update-baseline` refuses the
 new ones: delete `scripts/heki_baseline.toml` and run the command with
 `--update-baseline` again; the keys must not rise. The sites of the effect
-boundaries (the environment boundary and the boundaries of the passes) count
-under a key of their own, `allowlist:heki-baseline:EFF201`, so a new read of
-the environment or an undeclared write of a pass is never paid for by another
-finding; a rise of that key names the kind of boundary it comes from and prints
-that boundary's help. Every other site counts under `allowlist:heki-baseline`.
+boundaries (the environment boundary, the boundaries of the passes and the
+facts a decision reads) count under one key per kind of boundary,
+`allowlist:heki-baseline:EFF201:<kind>`, so a new read of the environment or an
+undeclared write of a pass is never paid for by another finding, nor by a site
+of another kind; a rise of such a key prints that kind's help. An entry of no
+known kind counts under `allowlist:heki-baseline:EFF201:unreadable`, which
+always fails. Every other site counts under `allowlist:heki-baseline`.
 `# heki: ignore[...]` comments and `# noqa` comments that name a heki rule
 count as `heki-ignore:<rule>` keys.
 

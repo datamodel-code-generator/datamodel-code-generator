@@ -87,8 +87,8 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
 
 Each effect boundary's report carries the help of its kind, ``BOUNDARY_ADVICE`` of ``scripts/check_ratchets.py``
 (``ENVIRONMENT_ADVICE``, ``PASS_ADVICE``, ``GLUE_ADVICE``, ``DECISION_READ_ADVICE``): the ratchet key that counts
-the baseline sites of these boundaries, ``allowlist:heki-baseline:EFF201``, prints the same help for the kinds whose
-sites rose.
+the baseline sites of these boundaries, one key per kind (``allowlist:heki-baseline:EFF201:<kind>``), prints the same
+help for the kind whose sites rose.
 
 The file also sets ``required-version`` to at least the heki that the ``heki`` dependency group of pyproject.toml pins,
 so an older heki stops with a clear error instead of failing on a key it does not know.
