@@ -2343,11 +2343,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --client-signature-style {explicit,unpack}
                         Declare operation arguments as keywords (default) or
                         as one Unpack[TypedDict] (experimental).
-  --client-tools {functions}
+  --client-tools {functions,mcp}
                         Add a tool table over the client's operations for
                         agents: tools.py, whose Toolset and AsyncToolset
                         search the tools, give their JSON schemas from the
-                        models, and call them with JSON arguments
+                        models, and call them with JSON arguments; mcp also
+                        adds mcp_server.py, which serves them over MCP
                         (experimental).
   --generate-client {httpx2}
                         Generate an HTTPX2 client package for the models; the

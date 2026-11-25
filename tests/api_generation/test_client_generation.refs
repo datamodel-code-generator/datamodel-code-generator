@@ -612,6 +612,8 @@ tools-extras	api_generation/client_generation/client_render[tools-extras].pydant
 tools-extras	api_generation/client_generation/client_render[tools-extras].txt
 tools-left-out	api_generation/client_generation/client_render[tools-left-out].pydantic_v2_BaseModel/
 tools-left-out	api_generation/client_generation/client_render[tools-left-out].txt
+tools-mcp	api_generation/client_generation/client_render[tools-mcp].pydantic_v2_BaseModel/
+tools-mcp	api_generation/client_generation/client_render[tools-mcp].txt
 tools-untrusted	api_generation/client_generation/client_render[tools-untrusted].pydantic_v2_BaseModel/
 tools-untrusted	api_generation/client_generation/client_render[tools-untrusted].txt
 type-checking-imports	api_generation/client_generation/client_render[type-checking-imports].msgspec_Struct/

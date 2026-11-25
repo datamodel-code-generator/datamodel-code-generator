@@ -3009,7 +3009,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "bytes, which is ASCII, and the keys that compare values only "
             "(`parser/_all_of_values.py:schema_signature`, `parser/avro.py`, `_recommend/_signals.py`); the tool table "
             "of a client package and the warnings of the operations it leaves out (`_client/render.py:_Tools`, "
-            "`_client/tools.py`)"
+            "`_client/tools.py`), and its MCP server module (`_client/render.py:_Facades.mcp_server`)"
         ),
         sites=(
             Home("python_literal.py", "represent_python_value"),
@@ -3028,6 +3028,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_recommend/_signals.py"),
             Home("_client/render.py", "_Tools"),
             Home("_client/tools.py"),
+            Home("_client/render.py", "_Facades.mcp_server"),
         ),
     ),
     DecisionHome(
@@ -4019,12 +4020,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         adapters=(
             "the docstring of a client codec (`_client/codec_render.py:_description`), the tool table of a client "
-            "package (`_client/render.py`: `_Tools`, `_Facades.tools`)"
+            "package (`_client/render.py`: `_Tools`, `_Facades.tools`), and its MCP server module "
+            "(`_client/render.py:_Facades.mcp_server`)"
         ),
         sites=(
             Home("_client/codec_render.py", "_description"),
             Home("_client/render.py", "_Tools"),
             Home("_client/render.py", "_Facades.tools"),
+            Home("_client/render.py", "_Facades.mcp_server"),
         ),
     ),
     DecisionHome(
@@ -4415,7 +4418,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_runtime/server/responses.py:_content`; `_runtime/protocols/pagination.py`: `_integer`, `_restored`, "
             "`_runtime/protocols/resume.py:state_count`, `_runtime/protocols/sources.py:_count`, "
             "`_runtime/protocols/uploads.py:_Upload._offered`, `_runtime/protocols/caches.py`, "
-            "`_runtime/client/timing.py:usable_seconds`, `_runtime/client/tools.py`: `_body`, `_dumped`"
+            "`_runtime/client/timing.py:usable_seconds`, `_runtime/client/tools.py`: `_body`, `_dumped`, "
+            "`_runtime/client/tool_server.py:_result` (the text of a tool's MCP result)"
         ),
         sites=(
             Home("_runtime/protocols/records.py", "plain_copy"),
@@ -4434,6 +4438,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("_runtime/protocols/caches.py"),
             Home("_runtime/client/tools.py", "_body"),
             Home("_runtime/client/tools.py", "_dumped"),
+            Home("_runtime/client/tool_server.py", "_result"),
         ),
     ),
     DecisionHome(

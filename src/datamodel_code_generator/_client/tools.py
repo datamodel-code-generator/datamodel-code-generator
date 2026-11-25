@@ -25,6 +25,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, ParameterSpec
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
+MCP_DEPENDENCY: Final = "mcp>=2.3.0"
+"""The requirement of a package whose tools are served over MCP: the release of the SDK its server is tested with."""
 _NAME: Final = re.compile(r"[A-Za-z0-9_.-]{1,128}")
 _SAFE: Final = frozenset({"get", "head", "options", "trace"})
 _IDEMPOTENT: Final = frozenset({*_SAFE, "put", "delete"})

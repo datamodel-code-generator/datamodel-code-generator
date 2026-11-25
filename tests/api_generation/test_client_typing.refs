@@ -72,6 +72,7 @@ pagination-querystring	api_generation/client_typing/package[pagination-querystri
 pagination-targets	api_generation/client_typing/package[pagination-targets].txt	= api_generation/client_typing/no_success[DataModelType.DataclassesDataclass-modelless-bodies].txt
 streams-mixed	api_generation/client_typing/package[streams-mixed].txt	= api_generation/client_typing/no_success[DataModelType.DataclassesDataclass-modelless-bodies].txt
 tools	api_generation/client_typing/package[tools].txt
+tools-mcp	api_generation/client_typing/package[tools-mcp].txt
 type-checking-imports-on	api_generation/client_typing/package[type-checking-imports-on].txt	= api_generation/client_typing/no_success[DataModelType.DataclassesDataclass-modelless-bodies].txt
 type-spellings-containers	api_generation/client_typing/package[type-spellings-containers].txt	= api_generation/client_typing/no_success[DataModelType.DataclassesDataclass-modelless-bodies].txt
 type-spellings-cycle	api_generation/client_typing/package[type-spellings-cycle].txt	= api_generation/client_typing/no_success[DataModelType.DataclassesDataclass-modelless-bodies].txt

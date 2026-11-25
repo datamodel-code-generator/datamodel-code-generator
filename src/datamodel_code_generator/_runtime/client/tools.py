@@ -179,6 +179,14 @@ class ToolPlan:
     result: ToolCodec
 
 
+@dataclass(frozen=True, slots=True)
+class ToolOutcome:
+    """What a call of a tool returned: its JSON value, and whether that is the error value of a refusal or failure."""
+
+    value: JSONValue
+    error: bool = False
+
+
 class _RefusalError(Exception):
     """The error value of a call whose arguments a tool refuses, raised to the call that returns it."""
 
@@ -197,6 +205,11 @@ class _Table(Generic[ClientT]):
         self.client = client
         self.read_only = read_only
         self._tools = {plan.name: plan for plan in self.plans if plan.safe or not read_only}
+
+    @property
+    def available(self) -> tuple[ToolPlan, ...]:
+        """Return the tools the table holds, in table order, without those a read-only table leaves out."""
+        return tuple(self._tools.values())
 
     def search(self, query: str = "", *, tag: str | None = None, limit: int = 10) -> list[dict[str, JSONValue]]:
         """Return the tools that match a query best, at most `limit`, each by its name, route, tags, and text.
@@ -226,6 +239,12 @@ class _Table(Generic[ClientT]):
     def schema(self, name: str) -> dict[str, JSONValue]:
         """Return a tool's name, description, and the JSON schemas of its arguments object and of its result."""
         plan = self._plan(name)
+        arguments, result = self.schemas(name)
+        return {"name": plan.name, "description": plan.description, "input_schema": arguments, "output_schema": result}
+
+    def schemas(self, name: str) -> tuple[dict[str, JSONValue], dict[str, JSONValue]]:
+        """Return the JSON schemas of a tool's arguments object and of its result, which the models' library derives."""
+        plan = self._plan(name)
         inputs: list[tuple[str, JsonSchemaMode, TypeAdapter[object]]] = [
             (argument.name, "validation", _adapter(argument.codec)) for argument in plan.arguments
         ]
@@ -236,12 +255,7 @@ class _Table(Generic[ClientT]):
         arguments: dict[str, JSONValue] = {"type": "object", "properties": properties, "additionalProperties": False}
         if required := [argument.name for argument in plan.arguments if argument.required]:
             arguments["required"] = [*required]
-        return {
-            "name": plan.name,
-            "description": plan.description,
-            "input_schema": {**arguments, **definitions},
-            "output_schema": _adapter(plan.result).json_schema(mode="serialization"),
-        }
+        return {**arguments, **definitions}, _adapter(plan.result).json_schema(mode="serialization")
 
     def _plan(self, name: str) -> ToolPlan:
         if (plan := self._tools.get(name)) is None:
@@ -297,16 +311,20 @@ class ToolTable(_Table[ClientT]):
 
         A name the table holds no tool of raises UnknownToolError.
         """
+        return self.outcome(name, arguments).value
+
+    def outcome(self, name: str, arguments: Mapping[str, object]) -> ToolOutcome:
+        """Call a tool as `call` does, and return its JSON value with whether it is an error value."""
         try:
             plan, resource, values = self._prepared(name, arguments)
         except _RefusalError as refusal:
-            return refusal.value
+            return ToolOutcome(refusal.value, error=True)
         with placed_credentials() as placed:
             try:
                 result = getattr(resource, plan.method)(**values)
             except SDKError as error:
-                return failed(error, placed)
-        return _dumped(plan, result)
+                return ToolOutcome(failed(error, placed), error=True)
+        return ToolOutcome(_dumped(plan, result))
 
 
 class AsyncToolTable(_Table[ClientT]):
@@ -317,16 +335,20 @@ class AsyncToolTable(_Table[ClientT]):
 
         A name the table holds no tool of raises UnknownToolError.
         """
+        return (await self.outcome(name, arguments)).value
+
+    async def outcome(self, name: str, arguments: Mapping[str, object]) -> ToolOutcome:
+        """Call a tool as `call` does, and return its JSON value with whether it is an error value."""
         try:
             plan, resource, values = self._prepared(name, arguments)
         except _RefusalError as refusal:
-            return refusal.value
+            return ToolOutcome(refusal.value, error=True)
         with placed_credentials() as placed:
             try:
                 result = await getattr(resource, plan.method)(**values)
             except SDKError as error:
-                return failed(error, placed)
-        return _dumped(plan, result)
+                return ToolOutcome(failed(error, placed), error=True)
+        return ToolOutcome(_dumped(plan, result))
 
 
 def _adapter(codec: ToolCodec) -> TypeAdapter[object]:

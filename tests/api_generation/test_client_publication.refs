@@ -23,6 +23,7 @@ pagination	api_generation/client_publication/client_capabilities[pagination].txt
 polling	api_generation/client_publication/client_capabilities[polling].txt
 sse	api_generation/client_publication/client_capabilities[sse].txt
 tools	api_generation/client_publication/client_capabilities[tools].txt
+tools-mcp	api_generation/client_publication/client_capabilities[tools-mcp].txt
 tools-pydantic-dataclass	api_generation/client_publication/client_capabilities[tools-pydantic-dataclass].txt
 uploads	api_generation/client_publication/client_capabilities[uploads].txt
 webhooks	api_generation/client_publication/client_capabilities[webhooks].txt

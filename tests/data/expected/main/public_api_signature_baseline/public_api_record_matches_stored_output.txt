@@ -1228,6 +1228,7 @@ class ClientSignatureStyle(Enum)
     Unpack = 'unpack'
 class ClientTools(Enum)
     Functions = 'functions'
+    Mcp = 'mcp'
 class ClientType(Enum)
     HTTPX2 = 'httpx2'
 class CollapseRootModelsNameStrategy(Enum)

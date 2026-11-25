@@ -6928,5 +6928,21 @@
       "tools": "functions",
       "operations": [{"ref": "/paths/~1pets~1{petId}/get", "runtime": {"request_id_header": "X-Request-Id"}}]
     }
+  },
+  "tools-mcp": {
+    "input": "tools.yaml",
+    "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+    "config": {"tools": "mcp"},
+    "modules": {"pydantic_v2.BaseModel": [["client", "mcp_server.py"]], "pydantic_v2.dataclass": false}
+  },
+  "tools-mcp-adversarial": {
+    "input": "tools-adversarial.yaml",
+    "model": {"use_schema_description": true},
+    "config": {"tools": "mcp"}
+  },
+  "tools-mcp-untrusted": {
+    "input": "tools-adversarial.yaml",
+    "model": {"use_schema_description": true, "untrusted_input": true},
+    "config": {"tools": "mcp"}
   }
 }

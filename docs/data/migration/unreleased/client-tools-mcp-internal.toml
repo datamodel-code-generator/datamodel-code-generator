@@ -1,0 +1,7 @@
+[[change]]
+id = "client-tools-mcp-internal"
+extends = "client-tools-functions-internal"
+covers = [
+    "model/compiled_templates/target_templates_match_jinja_oracle[client].rendered.txt",
+    "model_codecs/wire_values/runtime_imports_stay_embeddable.txt",
+]

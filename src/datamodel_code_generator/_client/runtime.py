@@ -59,6 +59,7 @@ _BINARY: Final = ("client/bodies.py", "client/body_sources.py")
 _MULTIPART: Final = (*_BINARY, "client/multipart.py", "client/parts.py")
 _HEADERS: Final = ("client/codecs.py", "model_codecs/parameter_reads.py")
 _TOOLS: Final = ("client/tool_search.py", "client/tools.py")
+_MCP: Final = (*_TOOLS, "client/tool_server.py")
 _BASE: Final = ("protocols/errors.py", "protocols/records.py", "protocols/references.py")
 _PAGES: Final = (*_BASE, "protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
 _RESUMED: Final = (*_PAGES, "protocols/resume.py")
@@ -99,7 +100,8 @@ class Capabilities:
     operation security, usable or not; `binary_bodies` and `multipart_requests` one whose operations send binary or
     form-data bodies, `form_data` one with a URL-encoded body or response no schema describes, `response_headers` one
     that decodes declared response headers, `multipart_responses` one that reads multipart responses, `extras` one
-    whose codecs write the extra members of Pydantic dataclasses, and `tools` one with a tool table.
+    whose codecs write the extra members of Pydantic dataclasses, `tools` one with a tool table, and `mcp` one whose
+    tool table is also served over MCP.
     """
 
     security: frozenset[Security]
@@ -115,6 +117,7 @@ class Capabilities:
     multipart_responses: bool = False
     extras: bool = False
     tools: bool = False
+    mcp: bool = False
 
     @property
     def oauth(self) -> bool:
@@ -142,6 +145,7 @@ class Capabilities:
             (self.multipart_responses, (*_MULTIPART, "client/multipart_responses.py")),
             (self.extras, EXTRAS.paths),
             (self.tools, _TOOLS),
+            (self.mcp, _MCP),
         ):
             if declared:
                 modules.update(needed)

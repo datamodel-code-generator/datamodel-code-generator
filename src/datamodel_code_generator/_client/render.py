@@ -14,6 +14,7 @@ from datamodel_code_generator._client._compiled_templates import arguments as ar
 from datamodel_code_generator._client._compiled_templates import client as client_template
 from datamodel_code_generator._client._compiled_templates import helper_plans as helper_plans_template
 from datamodel_code_generator._client._compiled_templates import helpers as helpers_template
+from datamodel_code_generator._client._compiled_templates import mcp_server as mcp_server_template
 from datamodel_code_generator._client._compiled_templates import operations as operations_template
 from datamodel_code_generator._client._compiled_templates import readme as readme_template
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
@@ -446,6 +447,26 @@ class _Facades:
                 ),
             ),
             exports=("AsyncToolset", "Toolset", "UnknownToolError"),
+        )
+
+    @staticmethod
+    def mcp_server(package: str) -> Templated:
+        """Return the MCP server module: a server over the asyncio client's tool table, served over stdio by `main`."""
+        return templated(
+            "mcp_server.jinja2",
+            mcp_server_template.render_with_scope,
+            docstring=f"An MCP server over this package's tools, for agents: `python -m {package}.mcp_server` runs it.",
+            imports="\n".join((
+                from_import("collections.abc", ("Callable", "Sequence")),
+                "",
+                from_import("mcp.server", ("Server",)),
+                "",
+                from_import("._async_client", ("AsyncClient",)),
+                from_import("._runtime.client.tool_server", ("command_line", "serve_stdio", "tool_server")),
+                from_import(".tools", ("AsyncToolset",)),
+            )),
+            name=stable_repr(package),
+            prog=stable_repr(f"python -m {package}.mcp_server"),
         )
 
     @staticmethod
@@ -3509,6 +3530,7 @@ class ClientRenderer:
             capabilities=sorted(capabilities.helpers),
             runtime=[{"package": package, "modules": modules} for package, modules in groups.items()],
             tools=self.tools is not None,
+            mcp=self.config.tools == "mcp",
             tool_example=next((tool.name for tool in self.tools or ()), "..."),
             tool_listing=json.dumps(
                 [{"tool": tool.name, **_named(tool.operation, "operation")} for tool in self.tools or ()],
@@ -3661,6 +3683,8 @@ class ClientRenderer:
             yield self.file(PurePosixPath("protocols", "__init__.py"), "protocols", protocols)
         if self.tools is not None:
             yield self.file(PurePosixPath("tools.py"), "tools", facades.tools())
+        if self.config.tools == "mcp":
+            yield self.file(PurePosixPath("mcp_server.py"), "mcp_server", facades.mcp_server(self.config.package))
         resources_docstring = facade_module("resources", "The resources of the clients.")
         yield self.file(PurePosixPath("resources", "__init__.py"), "package", resources_docstring)
 
@@ -3706,6 +3730,7 @@ class ClientRenderer:
             multipart_responses=any(media.kind == "multipart" for media in received),
             extras=self.codecs.extras,
             tools=self.tools is not None,
+            mcp=self.config.tools == "mcp",
         )
         assert self.batch.names is not None
         resources = _Resources(

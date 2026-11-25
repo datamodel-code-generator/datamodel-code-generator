@@ -147,10 +147,12 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
     "cli-option.client-tools": ExperimentalFeature(
         id="cli-option.client-tools",
         kind="cli-option",
-        target="--client-tools functions (client-tools in [tool.datamodel-codegen], client_tools in generate())",
+        target=(
+            "--client-tools functions and mcp (client-tools in [tool.datamodel-codegen], client_tools in generate())"
+        ),
         message=(
-            "The tool table of a generated client is experimental; its tools, their names, schemas, search, and "
-            "error values may change."
+            "The tool table of a generated client and its MCP server are experimental; its tools, their names, "
+            "schemas, annotations, search, and error values may change."
         ),
         since_version="0.102.0",
         note=(
@@ -164,7 +166,13 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "request ID and body. The arguments are the operation's parameters and body, never a parameter at a "
             "credential's position or the request options; `read_only=True` leaves out the tools of unsafe methods. "
             "An operation left out of the tools keeps its method, and generation warns why. Under "
-            "`--untrusted-input` a tool's description names its route only."
+            "`--untrusted-input` a tool's description names its route only. `--client-tools mcp` also adds "
+            "`mcp_server.py`, which serves the tools of the asyncio client over MCP through the low-level server of "
+            "the `mcp` SDK: `server(client)` returns the server, `serve(make_client)` and `python -m "
+            "<package>.mcp_server` serve it on stdin and stdout. Each tool is listed with its JSON schemas and with "
+            "read-only and idempotent annotations from its HTTP method; a refused argument or a failed call is a "
+            "result marked as an error, and an unknown tool a protocol error. The server looks up no credentials, "
+            "and the printed requirements gain `mcp`."
         ),
     ),
     "cli-option.generate-client": ExperimentalFeature(

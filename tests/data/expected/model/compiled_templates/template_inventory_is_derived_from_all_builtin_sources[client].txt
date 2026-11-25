@@ -1,9 +1,10 @@
-template count: 14
+template count: 15
 arguments.jinja2
 client.jinja2
 facade.jinja2
 helper_plans.jinja2
 helpers.jinja2
+mcp_server.jinja2
 model_bindings.jinja2
 operations.jinja2
 readme.jinja2

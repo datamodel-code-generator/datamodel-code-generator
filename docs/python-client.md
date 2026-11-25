@@ -1344,8 +1344,8 @@ Each also has `reason`, `operation_id`, `info` (the `ResponseInfo` when a respon
 
 !!! warning "Experimental"
 
-    The tool table is experimental: its tools, their names, schemas, search, and error values may change. See
-    [Experimental Features](experimental.md).
+    The tool table and its MCP server are experimental: the tools, their names, schemas, annotations, search, and
+    error values may change. See [Experimental Features](experimental.md).
 
 [`--client-tools functions`](cli-reference/target-generation-options.md#client-tools) adds `app/client/tools.py`, a
 tool for each operation that an agent, or the code that runs one, calls by name with JSON values. `Toolset(client)`
@@ -1433,6 +1433,41 @@ is the route, and generation warns once; the tags and routes, the models' descri
 `operation_id` of an error value still come from the document. The tools need Pydantic v2 models
 (`--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`), whose library gives the schemas, and the
 option refuses AsyncAPI input.
+
+### Serve the tools over MCP
+
+`--client-tools mcp` adds `app/client/mcp_server.py` beside `tools.py`: an MCP server over the tools of the
+`AsyncClient`, built on the low-level `Server` of the official `mcp` SDK. The printed `uv add` command and the
+README's dependencies gain `mcp>=2.3.0`; `--client-tools functions` adds no dependency.
+
+The server looks up no credentials. Build the client in a script of your own, the way your code builds it, and name
+the script in the agent's MCP configuration as the command it starts:
+
+```python
+import os
+
+from app.client import AsyncClient
+from app.client.mcp_server import serve
+
+serve(lambda: AsyncClient(base_url="https://eu.shelter.example/v1", bearer=os.environ["SHELTER_TOKEN"]))
+```
+
+- `serve(make_client, read_only=False)` serves on stdin and stdout until stdin ends. It builds the client once with
+  `make_client`, which every call of the session shares, and closes it at the end.
+- `server(client, read_only=False)` returns the `mcp.server.Server` for another transport, such as the SDK's
+  Streamable HTTP application, which you mount with your own authentication.
+- `python -m app.client.mcp_server [--base-url URL] [--read-only]` serves a client without credentials, for an API
+  that needs none.
+
+`tools/list` lists each tool with its description, the JSON schemas `schema(name)` gives as `inputSchema` and
+`outputSchema`, and annotations from its HTTP method: `readOnlyHint` for a safe method and `idempotentHint` for a safe
+method, PUT, and DELETE, as RFC 9110 defines them. A result that is not a JSON object, such as a list or the `None` of
+a 204 response, is the `result` member of the structured content, since protocol revisions before 2026-07-28 take an
+object only. The server only advertises the schemas: `tools/call` validates the arguments through the models, as
+`call` does. A refusal or a failure of the client is a result with `isError: true` whose text is the error value
+`call` returns, with the credentials redacted the same way, and a tool name the server does not list is a protocol
+error (`-32602`). `read_only=True` and `--read-only` leave out the tools of unsafe methods instead of relying on the
+annotations, which the protocol calls hints.
 
 ## Test code that uses the client
 

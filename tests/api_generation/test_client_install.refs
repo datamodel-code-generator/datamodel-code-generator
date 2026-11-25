@@ -43,3 +43,6 @@ oauth2-client-credentials-msgspec.Struct	api_generation/client_install/client_in
 oauth2-client-credentials-pydantic_v2.BaseModel	api_generation/client_install/client_install[oauth2-client-credentials-pydantic_v2.BaseModel].notice.txt	= api_generation/client_install/client_install[api-key-pydantic_v2.BaseModel].notice.txt
 oauth2-client-credentials-pydantic_v2.BaseModel	api_generation/client_install/client_install[oauth2-client-credentials-pydantic_v2.BaseModel].py
 oauth2-client-credentials-pydantic_v2.BaseModel	api_generation/client_install/client_install[oauth2-client-credentials-pydantic_v2.BaseModel].served.txt
+tools-mcp-pydantic_v2.BaseModel	api_generation/client_install/client_install[tools-mcp-pydantic_v2.BaseModel].notice.txt
+tools-mcp-pydantic_v2.BaseModel	api_generation/client_install/client_install[tools-mcp-pydantic_v2.BaseModel].py	= api_generation/client_install/client_install[minimal-pydantic_v2.BaseModel].py
+tools-mcp-pydantic_v2.BaseModel	api_generation/client_install/client_install[tools-mcp-pydantic_v2.BaseModel].served.txt

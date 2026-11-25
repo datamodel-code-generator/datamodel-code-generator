@@ -3321,6 +3321,14 @@ operation whose arguments or success results are no JSON value, such as a binary
 method and has no tool; generation warns why. The models must be Pydantic v2 ones, and AsyncAPI input refuses the
 option.
 
+`--client-tools mcp` also adds `mcp_server.py`, which serves the same tools of the asyncio client over MCP through
+the low-level server of the `mcp` SDK, whose release the printed requirements name. `server(client)` returns the
+server, and `serve(make_client)` serves it on stdin and stdout with the client a function of yours builds, so the
+credentials stay in your script; `python -m <package>.mcp_server --base-url URL` serves a client without credentials.
+Each tool is listed with the JSON schemas of the models and with read-only and idempotent annotations from its HTTP
+method, `read_only=True` or `--read-only` lists only the tools of safe methods, a refused argument or a failed call is a
+result marked as an error, and an unknown tool name is a protocol error.
+
 **Option relationships:**
 
 - **Requires:** [`--generate-client`](target-generation-options.md#generate-client) - `--client-tools` requires `--generate-client httpx2`.

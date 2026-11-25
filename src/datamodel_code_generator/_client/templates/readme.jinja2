@@ -230,6 +230,23 @@ with Client(base_url=...) as client:
 ```json
 {{ tool_listing }}
 ```
+{%- if mcp %}
+
+`{{ package }}.mcp_server` serves the same tools over MCP on stdin and stdout, through the low-level server of the `mcp`
+SDK: each tool is listed with its JSON schemas and with annotations from its HTTP method, a refused argument or a failed
+call is a result marked as an error, and an unknown tool name is a protocol error. The server looks up no credentials:
+build the client in a script of yours and name the script in the agent's MCP configuration.
+
+```python
+from {{ package }} import AsyncClient
+from {{ package }}.mcp_server import serve
+
+serve(lambda: AsyncClient({% if example %}{{ example.arguments }}{% else %}base_url=...{% endif %}))
+```
+
+`server(client)` returns the server for another transport, `read_only=True` lists only the tools of safe methods, and
+`python -m {{ package }}.mcp_server [--base-url URL] [--read-only]` serves a client without credentials.
+{%- endif %}
 {%- endif %}
 
 ## Dependencies

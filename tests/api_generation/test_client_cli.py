@@ -1662,7 +1662,15 @@ its JSON body as `body`, never a parameter at a credential's position or the req
 in the client. `read_only=True` leaves out the tools of methods that are not safe. An
 operation whose arguments or success results are no JSON value, such as a binary upload or an event stream, keeps its
 method and has no tool; generation warns why. The models must be Pydantic v2 ones, and AsyncAPI input refuses the
-option.""",
+option.
+
+`--client-tools mcp` also adds `mcp_server.py`, which serves the same tools of the asyncio client over MCP through
+the low-level server of the `mcp` SDK, whose release the printed requirements name. `server(client)` returns the
+server, and `serve(make_client)` serves it on stdin and stdout with the client a function of yours builds, so the
+credentials stay in your script; `python -m <package>.mcp_server --base-url URL` serves a client without credentials.
+Each tool is listed with the JSON schemas of the models and with read-only and idempotent annotations from its HTTP
+method, `read_only=True` or `--read-only` lists only the tools of safe methods, a refused argument or a failed call is a
+result marked as an error, and an unknown tool name is a protocol error.""",
     input_schema="generation_platform/client/tools.yaml",
     cli_args=["--output", "models.py", *OPTIONS, *CLIENT, "--client-tools", "functions"],
     golden_output="api_generation/client_cli/tools.table.py",
@@ -1679,6 +1687,22 @@ def test_client_cli_tools(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
             copy_files=[(SOURCE / "tools.yaml", tmp_path / "tools.yaml")],
         )
     assert_output((tmp_path / "client" / "tools.py").read_text(encoding="utf-8"), name="table", suffix=".py")
+
+
+def test_client_cli_tools_mcp(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Add the MCP server module beside the tool table; the printed requirements gain the MCP SDK."""
+    monkeypatch.chdir(tmp_path)
+    with pytest.warns(UserWarning, match=r"Leaving \S+ \S+ \(client\.pets\.\w+\) out of the tools, since "):
+        run_main_and_assert(
+            input_path=Path("tools.yaml"),
+            output_path=Path("models.py"),
+            input_file_type="openapi",
+            extra_args=[*OPTIONS, *CLIENT, "--client-tools", "mcp"],
+            copy_files=[(SOURCE / "tools.yaml", tmp_path / "tools.yaml")],
+        )
+    assert_output(capsys.readouterr().err, name="notice")
 
 
 @pytest.mark.parametrize(

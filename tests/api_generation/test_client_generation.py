@@ -304,6 +304,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "tools-untrusted",
         "tools-adversarial",
         "tools-extras",
+        "tools-mcp",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
