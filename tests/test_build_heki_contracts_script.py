@@ -430,6 +430,24 @@ def test_heki_reports_every_import_of_the_package_root_and_main(tmp_path: Path) 
     assert_output(found)
 
 
+def test_the_import_boundaries_raise_where_the_layer_table_is_out_of_step(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A layer the check does not classify, or a rule no module of the package is subject to, is an error."""
+    (tmp_path / PACKAGE).mkdir(parents=True)
+    (tmp_path / PACKAGE / "__init__.py").write_text("", encoding="utf-8")
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
+
+    with pytest.raises(
+        ValueError, match=r"^import boundaries without a module of the package to judge: root-import, facts-import,"
+    ):
+        build_heki_contracts.import_boundary_contracts(repo)
+    build_heki_contracts.import_boundary_contracts(repo, partial=True)
+    monkeypatch.setitem(build_heki_contracts._LEAF_IMPORTS, "no-such-layer", ((), "why"))
+    with pytest.raises(ValueError, match=r"classify: no-such-layer$"):
+        build_heki_contracts.import_boundary_contracts(repo, partial=True)
+
+
 def _layer_import_reports(tmp_path: Path, stubs: tuple[str, ...], places: dict[str, str]) -> str:
     """Place the fixtures at modules of their layers and return the import boundaries' findings as stored text."""
     package = tmp_path / PACKAGE
@@ -442,7 +460,7 @@ def _layer_import_reports(tmp_path: Path, stubs: tuple[str, ...], places: dict[s
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    _contracts_file(contracts, build_heki_contracts.import_boundary_contracts(repo))
+    _contracts_file(contracts, build_heki_contracts.import_boundary_contracts(repo, partial=True))
 
     result = _heki("--output-format", "json", cwd=tmp_path, config=contracts)
 

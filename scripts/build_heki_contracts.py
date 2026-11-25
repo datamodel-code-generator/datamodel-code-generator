@@ -109,7 +109,7 @@ import ast
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Final, NamedTuple
+from typing import TYPE_CHECKING, Final, NamedTuple, get_args
 
 import tomllib
 
@@ -117,8 +117,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
 from scripts.check_architecture_boundaries import (
     _PARSER_LAYERS,
+    _PRIVATE_PARSER_IMPORT_MESSAGE,
+    _ROOT_IMPORT_MESSAGE,
     _TARGET_MODULES,
     CONCRETE_BACKEND_ROOTS,
+    Layer,
     PackageIndex,
     _classify_source_path,
     _protocol_bases,
@@ -811,10 +814,6 @@ def host_contracts(repo: Repo) -> list[str]:
     ]
 
 
-_ROOT_MESSAGE: Final = (
-    "no module of the package imports the package root, and none but __main__ imports __main__: import the name from "
-    "the module that defines it (the root only re-exports it for users)"
-)
 _LEAF_IMPORTS: Final[dict[str, tuple[tuple[str, ...], str]]] = {
     "facts": (("_records",), "the attribute-to-fact table is read by checkers without the package"),
     "schema-graph": (
@@ -950,12 +949,17 @@ def import_layers(repo: Repo) -> dict[str, list[str]]:
     return layers
 
 
-def import_boundary_contracts(repo: Repo) -> list[str]:
+def import_boundary_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
     """Return the import boundaries of the layers (``IMP201``, ``IMP202``), one per rule of the layer table.
 
     Every import counts: in a function, by a name ``importlib.import_module`` or ``__import__`` is given, and under
-    ``TYPE_CHECKING``; an import heki cannot name is reported (``IMP202``).
+    ``TYPE_CHECKING``; an import heki cannot name is reported (``IMP202``). A leaf layer the classification does not
+    know, or a rule none of the package's modules is subject to, raises: the table is out of step with the layers and
+    would drop its contract silently. ``partial`` is for a seeded package that holds only some layers.
     """
+    if unknown := sorted(set(_LEAF_IMPORTS) - set(get_args(Layer))):
+        msg = f"_LEAF_IMPORTS names layers the architecture check does not classify: {', '.join(unknown)}"
+        raise ValueError(msg)
     layers = import_layers(repo)
     backends = _below(*(f"{PACKAGE}.model.{root}" for root in sorted(CONCRETE_BACKEND_ROOTS)))
     parser = _below(f"{PACKAGE}.parser")
@@ -964,8 +968,8 @@ def import_boundary_contracts(repo: Repo) -> list[str]:
     main = f"{PACKAGE}.__main__"
     others = sorted(m for found in layers.values() for m in found if m not in {PACKAGE, main})
     rows: list[tuple[str, list[str], dict[str, object], str]] = [
-        ("root-import", others, {"forbidden_imports": [PACKAGE, main]}, _ROOT_MESSAGE),
-        ("root-main-import", [PACKAGE], {"forbidden_imports": [main]}, _ROOT_MESSAGE),
+        ("root-import", others, {"forbidden_imports": [PACKAGE, main]}, _ROOT_IMPORT_MESSAGE),
+        ("root-main-import", [PACKAGE], {"forbidden_imports": [main]}, _ROOT_IMPORT_MESSAGE),
     ]
     for layer, (modules, why) in _LEAF_IMPORTS.items():
         allowed = ["the standard library", "typing_extensions", *(f"{PACKAGE}.{module}" for module in modules)]
@@ -1041,9 +1045,12 @@ def import_boundary_contracts(repo: Repo) -> list[str]:
                 m for layer, found in layers.items() if layer not in _PARSER_LAYERS for m in found if m not in leaves
             ),
             {"forbidden_imports": [f"{PACKAGE}.parser._*", f"{PACKAGE}.parser.*._*"]},
-            "code outside parser must move reusable helpers to a neutral package module",
+            _PRIVATE_PARSER_IMPORT_MESSAGE,
         ),
     ]
+    if not partial and (empty := [name for name, importers, _, _ in rows if not importers]):
+        msg = f"import boundaries without a module of the package to judge: {', '.join(empty)}"
+        raise ValueError(msg)
     return [
         _table(
             "import-boundaries",

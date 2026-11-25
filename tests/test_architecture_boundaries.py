@@ -67,14 +67,31 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
 
 
 def test_architecture_boundary_detector_fails_closed_where_the_source_model_cannot_read(tmp_path: Path) -> None:
-    """Report a module the source model refuses as a violation: no rule can read it, so none is silently skipped."""
-    copied = tmp_path / "source.py"
-    copyfile(FIXTURE_ROOT / "unreadable" / "source.py.txt", copied)
-    report = check_architecture_boundaries.format_report(
-        check_architecture_boundaries.check_files([(copied, "shared")], allowlist={})
-    )
+    """Report an import that leaves the top-level package and a module the source model refuses, as violations."""
+    stored = [FIXTURE_ROOT / "unreadable" / "import.py.txt", FIXTURE_ROOT / "unreadable" / "source.py.txt"]
+    files: list[tuple[Path, check_architecture_boundaries.Layer]] = []
+    for path in stored:
+        copied = tmp_path / path.name.removesuffix(".txt")
+        copyfile(path, copied)
+        files.append((copied, "shared"))
+    report = check_architecture_boundaries.format_report(check_architecture_boundaries.check_files(files, allowlist={}))
 
     assert_output(report.replace(tmp_path.as_posix(), "tests/data/architecture_boundaries/unreadable"))
+
+
+@pytest.mark.parametrize("layer", ["parser", "shared-model"])
+def test_architecture_boundary_detector_refuses_dynamic_imports_heki_cannot_judge(
+    layer: check_architecture_boundaries.Layer,
+) -> None:
+    """Refuse a dynamic import through a star import, and through another object outside shared model code.
+
+    heki's import boundaries judge ``importlib.import_module`` and ``__import__`` read through an import; the call that
+    reads as importlib stays unreported here, whatever it loads.
+    """
+    fixture = FIXTURE_ROOT / "unjudged_dynamic_import" / "forbidden.py"
+    violations = check_architecture_boundaries.check_files([(fixture, layer)], allowlist={})
+
+    assert_output(check_architecture_boundaries.format_report(violations))
 
 
 def test_architecture_boundary_detector_reports_a_dependency_the_source_model_refuses(

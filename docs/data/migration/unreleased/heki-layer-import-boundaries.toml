@@ -7,7 +7,6 @@ covers = [
     "architecture_boundaries/architecture_boundary_cli_reports_actionable_failures.txt",
     "architecture_boundaries/architecture_boundary_cli_reports_shared_model_backend_access[forbidden].txt",
     "architecture_boundaries/architecture_boundary_cli_reports_shared_model_backend_access[shared_model_dynamic_import].txt",
-    "architecture_boundaries/architecture_boundary_detector_fails_closed_where_the_source_model_cannot_read.txt",
     "architecture_boundaries/architecture_boundary_detector_handles_shared_model_dynamic_imports[clean].txt",
     "architecture_boundaries/architecture_boundary_detector_handles_shared_model_dynamic_imports[shared_model_dynamic_import].txt",
     "architecture_boundaries/architecture_boundary_detector_rejects_root_and_main_imports.txt",

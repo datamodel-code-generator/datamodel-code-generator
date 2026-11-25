@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from scripts._source_model import Import, Reference, Scope
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts._source_model import SourceModelError, SourceModule, bases
+from scripts._source_model import SourceModelError, SourceModule, Unreadable, bases
 from scripts._source_model import argument as call_argument
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -92,6 +92,16 @@ _ROOT_IMPORT_MESSAGE: Final = (
     "no module of the package imports the package root, and none but __main__ imports __main__: import the name from "
     "the module that defines it (the root only re-exports it for users)"
 )
+_PRIVATE_PARSER_IMPORT_MESSAGE: Final = "code outside parser must move reusable helpers to a neutral package module"
+_UNREADABLE_IMPORT_MESSAGE: Final = (
+    "the import leaves the top-level package, so no module name can be read from it: import by an absolute name"
+)
+_UNJUDGED_DYNAMIC_IMPORT_MESSAGE: Final = (
+    "heki judges a dynamic import only where the callee is importlib.import_module or __import__ read through an "
+    "import: call importlib.import_module (or __import__) by its own name, not through a star import or another object"
+)
+_DYNAMIC_IMPORT_NAMES: Final = frozenset({"__import__", "import_module"})
+_DYNAMIC_IMPORT_ORIGINS: Final = frozenset({"builtins.__import__", "importlib.__import__", "importlib.import_module"})
 _SHARED_MODEL_BACKEND_MODULE_ACCESS_MESSAGE: Final = (
     "shared model code must not inspect a concrete backend through sys.modules; "
     "move backend lifecycle or cache management to the backend or composition root"
@@ -395,10 +405,14 @@ class ArchitectureBoundaryReader:
                 )
 
     def _imported(self, item: Import) -> None:
-        """Reject a private name of a parser module that code outside the parser imports.
+        """Refuse an import source no module name can be read from, and a private name of a parser module.
 
-        heki's ``private-parser-import`` boundary judges the module an import loads; the name it takes is this check's.
+        heki's import boundaries judge the module an import loads: a relative import that leaves the top-level package
+        names none, and heki's ``private-parser-import`` does not see the name an import takes; both are this check's.
         """
+        if isinstance(item.source, Unreadable):
+            self._add(item.node, "unreadable-import", str(item.source), _UNREADABLE_IMPORT_MESSAGE)
+            return
         name = item.alias.name if item.kind == "from" and item.alias is not None else ""
         if (
             name.startswith("_")
@@ -410,12 +424,13 @@ class ArchitectureBoundaryReader:
                 item.node,
                 "private-parser-import",
                 f"{item.source}.{name}",
-                "code outside parser must move reusable helpers to a neutral package module",
+                _PRIVATE_PARSER_IMPORT_MESSAGE,
             )
 
     def _call(self, node: ast.Call) -> None:
         """Check semantic getattr, backend module identity helpers and module registry reads."""
         reading = self.reading
+        self._check_unjudged_dynamic_import(node)
         if (
             self.layer == "shared-model"
             and node.args
@@ -476,6 +491,27 @@ class ArchitectureBoundaryReader:
                 "backend-module-identity",
                 target,
                 "parser code must not identify an output backend by module/name; declare a neutral capability",
+            )
+
+    def _check_unjudged_dynamic_import(self, node: ast.Call) -> None:
+        """Refuse a dynamic import call that heki cannot read as ``importlib.import_module`` or ``__import__``.
+
+        A name only a star import may bind and, outside shared model code, an attribute of that name on any other
+        object count as dynamic imports; heki's import boundaries see neither, so they stay out of the code unjudged.
+        """
+        reading, func = self.reading, node.func
+        if reading.origins(func) & _DYNAMIC_IMPORT_ORIGINS or reading.last_name(func) not in _DYNAMIC_IMPORT_NAMES:
+            return
+        head = reading.head(func)
+        through_star = (
+            isinstance(func, ast.Name) and head is not None and reading.model.resolve(head.node).kind == "star"
+        )
+        if through_star or (isinstance(func, ast.Attribute) and self.layer != "shared-model"):
+            self._add(
+                node,
+                "unjudged-dynamic-import",
+                reading.spelled(func) or reading.last_name(func),
+                _UNJUDGED_DYNAMIC_IMPORT_MESSAGE,
             )
 
     def _compare(self, node: ast.Compare) -> None:

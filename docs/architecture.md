@@ -2120,7 +2120,9 @@ per rule into `scripts/heki.toml`, its importers the modules of a layer that `sc
 classifies, and every import counts, lazy, by name and under `TYPE_CHECKING` too; an import heki cannot name is
 reported (`IMP202`), so the baseline counts the imports of modules only the run knows. `python
 scripts/check_architecture_boundaries.py` holds what an import boundary cannot name: semantic backend inspection, a
-root name read through the bound root package, and a private name imported from a parser module. No module of the package imports the
+root name read through the bound root package, a private name imported from a parser module, an import source no module
+name can be read from (`unreadable-import`, a relative import that leaves the top-level package) and a dynamic import
+through a star import or another object (`unjudged-dynamic-import`). No module of the package imports the
 package root, and none but `__main__.py` imports `__main__` (rule `root-import`): every import form, relative ones,
 `TYPE_CHECKING` and function-local ones included, and a read of a root name through a bound root package fail; the root
 re-exports the names of the modules that define them for users, so the package imports each name from its module. A
