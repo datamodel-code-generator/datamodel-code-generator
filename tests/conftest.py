@@ -119,6 +119,7 @@ VALUE_CHECK_AREA_ENVS = (
     CHECK_SCHEMA_GRAPH_ENV,
     CHECK_RENDER_PLANS_ENV,
     CHECK_RENDER_MEMOS_ENV,
+    CHECK_FACT_FINALITY_ENV,
     CHECK_NAMING_ENV,
     CHECK_TEMPLATE_ASSIGNMENTS_ENV,
 )
@@ -127,7 +128,8 @@ CHECK_FACT_FINALITY_SWEEP_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SW
 CHECK_PASS_TRIGGERS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
 SWEEP_PYTHON = (3, 15)
 """The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` to `1`: one CI lane runs the sweep,
-the others compare only the models a pass touched. `CHECK_PASS_TRIGGERS_ENV` stays off unless the environment sets it
+the others compare only the models a pass touched; it widens `CHECK_FACT_FINALITY_ENV`, so a run that leaves that
+off runs no sweep either. `CHECK_PASS_TRIGGERS_ENV` stays off unless the environment sets it
 or `--check-pass-triggers` is given: the nightly workflow (`tox run -e pass-triggers`) runs the suite on `SWEEP_PYTHON`
 with it on."""
 CHILD_COVERAGE_ENV = {"COVERAGE_CORE": "ctrace"} if find_spec("coverage.tracer") else {}

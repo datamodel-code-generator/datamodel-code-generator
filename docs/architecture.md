@@ -793,8 +793,9 @@ decision registry follows the rules of the [Decision Phase](#decision-phase), an
 `GenerationStore.seal_facts` and the name-mangled members of `Parser` to its body. A pass trace (`scripts/check_pass_pipeline.py --trace`) records each pass that
 runs; the test suite keeps the traces of a few inputs and checks that some input runs every declared pass. The finality
 check ([Fact Finality](#fact-finality)) compares the writes of `fact` rows with the declarations while the generator
-runs; reads and the writes of presentation rows are declared from the code. A new pass gets a declaration and a table
-entry.
+runs; reads and the writes of presentation rows are declared from the code. heki's pass boundaries check the same
+declarations statically for the calls heki resolves ([Fact Finality](#fact-finality)). A new pass gets a declaration
+and a table entry.
 
 <!-- BEGIN AUTO-GENERATED PASS DECLARATIONS -->
 !!! note "Generated pass table"
@@ -1155,8 +1156,10 @@ reach a merged `_internal` module, except for a root model that the `parent` str
 which is removed from the module that holds it: unused roots of other collapses stay in merged modules. Later passes
 change presentation or derive from those facts.
 
-The finality check (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`, on in every test) checks
-this table and the pass declarations while the generator runs. It keeps a fingerprint per model: the values of the
+The finality check (`tests/checks/finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`) checks
+this table and the pass declarations while the generator runs. It is a value check of the test suite: the pull request
+shards pass `--skip-value-checks` except the Python 3.14 coverage shards, and runs of `main`, the schedule, manual runs
+and the nightly trigger run keep it on. It keeps a fingerprint per model: the values of the
 `fact` rows of `scripts/fact_tables.py` on the model, its fields and the data types of their types and of its bases,
 holding the objects it keys. When a pass ends, it compares the models the pass touched (the models of its module and the
 models they reference, for a module pass; the models that guarded writes and store operations reached; the models the
@@ -1197,6 +1200,21 @@ that a fingerprint holds (an attribute assignment of a fact or presentation row,
 `fields`, `base_classes` or `data_types`) is judged when it is made, inside store operations as well, with the same
 `frozen` rule: the facts the running pass declares among the row's facts, or all of the row's facts outside every pass.
 A write that changes no value is not judged, and it covers presentation rows, which no fingerprint holds.
+
+heki checks the declared writes statically as well, for the calls it resolves. `scripts/build_heki_contracts.py`
+builds an effect boundary `pass:<name>` for each pass after L1 and each decision from `scripts/pass_decls.py` and
+`scripts/fact_tables.py`: its scopes are the functions the table step runs (read from `parser/_passes/_tables.py`), or
+the `DecisionPass` of the decision, and it may write the rows of the facts the pass declares that are not frozen at a
+freeze point the pipeline has passed and whose `final_after` is not earlier than its phase; the `pass-glue` boundary (the hooks, the parser
+methods they call, `parser/_pipeline.py`) may write no fact row. A finding means the pass, through the calls heki
+follows, writes another row (`pass:<name>:<row>`), and `scripts/heki_baseline.toml` keeps today's findings that
+`KNOWN_FINDINGS` of the builder lists with what removes each. The boundaries leave `unresolved` at its default: most
+passes reach calls heki resolves to no function (a `getattr` call, a method of a protocol or of an object of unknown
+class, a callable kept in a table or passed as an argument) or writes on an object of unknown class, and a boundary
+says nothing there. A boundary cannot tell a type alias from another model either, so it lets a pass that declares
+`TYPE_ALIAS_BODY` write those rows on every model, and the `when` and `trigger` callables of a `PassSpec`, which the
+runner calls through an attribute, are in no scope. No heki finding therefore does not mean a pass keeps to its declaration, and the finality check keeps
+every rule above.
 
 ### Generation Store
 

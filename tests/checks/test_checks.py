@@ -232,6 +232,7 @@ _ENUM_TAGGED_VARIANTS = Path(__file__).parents[1] / "data/openapi/discriminator_
 """Variants in the module ``pets`` whose tag field is typed by an enum of the root module."""
 
 
+@pytest.mark.value_checks
 def test_trigger_check_reports_a_pass_that_writes_where_its_trigger_is_false(monkeypatch: pytest.MonkeyPatch) -> None:
     """A pass that rewrites what its trigger does not name fails the parse when the trigger check runs it anyway.
 
