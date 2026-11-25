@@ -8,3 +8,24 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "ruff:TID252@src"
+head = 368
+pr = 7527
+decision = ["#7527"]
+reason = "the MCP server runtime of #7527 is copied into every generated client like the rest of _runtime/client, so its two imports of the sibling model_codecs package stay relative, as the copied modules need (owner decision, 2026-11-25)"
+
+[[approved]]
+key = "ruff:RUF029@src"
+head = 4
+pr = 7527
+decision = ["#7527"]
+reason = "the MCP server of #7527 registers its list_tools handler with a server that awaits every handler, so the handler is async without an await (owner decision, 2026-11-25)"
+
+[[approved]]
+key = "abnormal-path@tests"
+head = 55
+pr = 7527
+decision = ["#7527"]
+reason = "the stdio transport of #7527 serves the process's own stdin and stdout, so its test runs the server over pipes (owner decision, 2026-11-25)"
