@@ -5,6 +5,91 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.102.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.102.0) - 2026-11-25
+
+## Breaking Changes
+
+### Code Generation Changes
+* A package class beside a same-named submodule no longer binds the class name through the import of the submodule's models - In dataclass, msgspec and TypedDict output the modules that use a model of the submodule now import it from the submodule, so they no longer bind the class name of the package (from .pkg import Warn) through that import. They read the class through it, and resolving their annotations (type hints, msgspec decoding) failed. (#7444)
+* A Pydantic package class beside a same-named submodule is refused where only the root package loads the submodule - Where a package's __init__.py defines a class named like one of its submodules and imports from the root package (from .. import common), the root's own import of the submodule (from .pkg import Warn) was taken as a load of the __init__.py. The root runs first, so that import ran after the class was defined and bound the class, and the root's model of the submodule (Warn.Detail) read the class. Where the classes evaluate their annotations as they are defined (Pydantic, which builds a class as it is defined, or output without from __future__ import annotations) the root failed at import with AttributeError, so no module of the package imported: those runs now refuse the class as for other packages that do not load the submodule, and name --rename-submodules-hidden-by-classes. Dataclasses, TypedDict and msgspec with deferred annotations, where every module imported, keep their output; the stored outputs of the root-imported and cyclic layouts pin that. (#7444)
+* --recommend-options takes the target Python version from requires-python - Experimental: `cli-option.recommend-options`. When no option, pyproject.toml key or preset sets the target Python version, --recommend-options takes the lower bound of requires-python in the project's pyproject.toml (>=3.12, ~=3.12, ==3.12.*, with upper bounds or exclusions beside it), clamped to the supported targets and to the lowest one a client or server target supports, starts from that preset, and adds --target-python-version to the command and the pyproject.toml block with a note naming the source; other forms keep the note that the default is assumed. Generation never reads requires-python. (#7493)
+
+### API/CLI Changes
+* Public names for --apply-default-values-to-true-properties - The option adds its config field; nothing is removed or changed. (#7455)
+* Public names for --distribute-allof-over-object-branches - The option adds its config field; nothing is removed or changed. (#7445)
+* A store operation that names the classes of the additional properties - GraphBuilder.name_additional_properties_classes() (and GenerationStore.name_additional_properties_classes()) gives a model the type of its additional properties with the classes they name, which replace those recorded; nothing is removed or changed. (#7473)
+* A store operation that drops one entry of a field's extras - GraphBuilder.drop_field_extra() (and GenerationStore.drop_field_extra()) drops one key of a field's extras in place, as drop_field_discriminator() does for the discriminator; nothing is removed or changed. (#7494)
+* Store signatures name the graph classes, and its operations lose their deprecation markers - GenerationStore.seal_facts, FinalFacts and the union keyword methods of DataTypeManager name DataType, DataModel and Reference where they named the read-only views of model/_views.py, which are gone. The operations of GenerationStore lose their @deprecated(category=None) markers, which warned no caller at run time, and GraphBuilder(store) takes no token; heki keeps the package's own calls of the operations inside the generation store. (#7484)
+* Public names for --write-pyproject-config - The option adds a row to the option table and the fast path of --generate-prompt steps aside for it; nothing is removed or changed. (#7495)
+
+## New Warnings
+
+* A pydantic dataclass that redeclares an inherited field without a pattern Python's re rejects warns - Where a pydantic_v2.dataclass selects python-re for a look-around pattern of a base and another base has a pattern Python's re rejects, such as \p{L}, the dataclass redeclares that field of a base of its module without the pattern and warns that the field is generated without the constraint. Such a module failed at import before. (#7489)
+* Warn where an allOf over a union drops what the union checks - Without --distribute-allof-over-unions an allOf member naming an allOf over a union warns that the model checks none of its branches (#5305), and without --distribute-allof-over-object-branches so does a branch of an allOf's union that is itself a union or an alias (#6869). The generated output does not change. (#7445)
+
+## New Options
+
+* New option `--apply-default-values-to-true-properties` (`--no-apply-default-values-to-true-properties`): Give a property whose schema is `true` the default that --default-values gives it, in the class that declares it and in a child that restates an inherited property as `true` (`name: str | None = 'rex'` for `Dog.name`); without it such a property takes no default, as in 0.100.0 (#7455)
+* New option `--distribute-allof-over-object-branches` (`--no-distribute-allof-over-object-branches`): Give an `allOf` over an `anyOf` or `oneOf` one union variant per object branch, also where a branch is itself an `anyOf` or `oneOf` (named by a `$ref` or written there), an `allOf` or a `$ref` with sibling keywords over one, or an alias of an object schema, and have each variant require every name a part of the `allOf` requires, typed as the field it takes from its branch (allOf: [Pet, {required: [name]}] with Pet a oneOf of Cat and Dog that declare name optional). Without it such a branch gives a variant of the other members alone, or none, and warns, and a variant takes the name as its bases hold it, optional or Any, as in 0.100.0 (#7445)
+* New option `--write-pyproject-config`: Write the pyproject.toml table that --recommend-options or --generate-pyproject-config prints into the project's pyproject.toml, setting only the keys it adds or changes, and print what was written (experimental). (#7495)
+
+## New Dated Presets
+
+* `standard-py3XX-20261124` and `practical-py3XX-20261124`: they keep the 20261123 options and add allOf distributed over object branches (`--distribute-allof-over-object-branches`): Give an allOf over an anyOf or oneOf one union variant per object branch, also where a branch is itself an anyOf or oneOf, named by a $ref or written there, and have each variant declare every name a part of the allOf requires as a required field, typed as its branch declares it, so a variant needs such a name, and output types that validate values reject one its branch rejects; Default values of true properties (`--apply-default-values-to-true-properties`): Under --default-values, give a property whose schema is true the default its Class.field or field key gives it, also where a child restates an inherited property as true, as a property whose schema is {} takes it. (#7455, #7445)
+
+## Experimental Features
+
+* `--write-pyproject-config, its report, and the written key of the recommend-options and pyproject-config JSON payloads` is experimental. Writing the pyproject.toml table is experimental; the file it chooses, the edits it refuses, and its report may change.
+
+## Changes That Need No Action
+
+* A package class beside a same-named submodule that its __init__.py loads first no longer hides the submodule's models - Where a package's __init__.py loads a submodule while its imports run (--all-exports-scope re-exports it, or a module it imports loads it) and also defines a class of the submodule's name, the modules that use a model of the submodule now import it from the submodule, as the output already did where the __init__.py names a type of the submodule. They read the class through the package: a Pydantic module failed at import with AttributeError, and the other backends failed where the annotations are resolved (type hints, msgspec decoding). They no longer bind the class name through that import. (#7444)
+* Select python-re in a pydantic dataclass that builds a base's lookaround - A pydantic_v2.dataclass whose config does not select python-re, such as one with its own config under --extra-fields, or one that takes the config of another first base, now selects it when a base it inherits has a pattern only Python's re reads, keeping every item of a config it took from a base, such as extra='forbid'. Such a module failed at import with a SchemaError. Where a base of its module also has a pattern Python's re rejects, such as \p{L}, the dataclass redeclares the inherited field without it and warns, and the base keeps its output. (#7489, #7452)
+* Read a boolean parameter schema as Any - An OpenAPI parameter or response header whose schema is true or false no longer stops the paths and parameters scopes with a validation error; the parameter is typed Any, like an empty schema. (#7483, #7454)
+* Flatten msgspec bases under --reuse-model by the models reuse merges - With --output-model-type msgspec.Struct, a model with two generated bases whose layouts still conflict once every module is processed stopped with incompatible layouts, for instance under --reuse-model when one base has the field names of another base's ancestor but a different type, default, description or constraint, or when a discriminator field of a base is not tagged. It declares the fields of its bases itself, as it does without --reuse-model. (#7446)
+* Show the warnings of msgspec runs that now generate - A msgspec run that stopped with incompatible layouts under --reuse-model now generates, so it shows the warnings its models raise, such as that msgspec cannot decode a union whose Struct types are not all tagged; a directory input shows those of every module, and the single-file attempt before its modular output now stops on the modular references. (#7446)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Flatten msgspec structs whose layouts conflict once reuse has run by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7446
+* Stamp the upgrade guide entries of 0.101.0 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7464
+* Move heki to 0.2.6 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7473
+* Join the dated presets from each option's own row by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7470
+* Read the derived preset dates' options and cases from rows and case files by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7471
+* Link preset release notes to option records; refuse empty preset dates by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7474
+* Build the preset pages in the docs workflows by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7475
+* Check FinalFacts and mangled members with heki contracts by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7476
+* Apply default values to properties a schema allows as true by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7455
+* Judge each commit of a push to main as its own change by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7479
+* Run the payload suite over the inputs a change reaches by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7480
+* Run the payload runtime lanes over the inputs a pull request changes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7482
+* Let the records covering a cell explain its differences together by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7485
+* Read a boolean parameter schema as Any instead of failing validation by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7483
+* Move heki to 0.2.7 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7488
+* Give an allOf over a union a complete variant per object branch by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7445
+* Prove the checker-only invariants with heki and drop their src code by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7484
+* Import a model from the submodule its package loads first by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7444
+* Bring the Test workflow under ten minutes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7486
+* Move pass triggers into the passes and list the ones that stay by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7490
+* Approve the heki baseline rise for the lazy import cycles by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7492
+* Take the recommended target Python version from requires-python by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7493
+* Check import cycles and the shared schema objects with heki by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7491
+* Fix the finality findings heki reports on main by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7494
+* Select python-re in a dataclass that builds a base's lookaround by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7489
+* Approve the abnormal-path rise for the pyproject.toml re-read test by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7496
+* Add --write-pyproject-config to write the table into pyproject.toml by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7495
+* Download the coverage artifacts with a script that exits when done by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7498
+* Hold new dependency releases for three days and lock the CI tools by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7500
+* Declare the known differences of the nightly composition draws by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7499
+* Return early in the runtime expression import pass instead of a trigger by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7514
+* Classify the template oracle and runtime import listings as internal by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7519
+
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.101.0...0.102.0
+
+---
+
 ## [0.101.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.101.0) - 2026-11-24
 
 ## Breaking Changes
