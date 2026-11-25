@@ -13,8 +13,9 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   ``scripts/fact_tables.py`` outside the parser run state, and the run-state rows that name store operations (the
   model lists ``Parser.results`` and ``ModuleContext.models``), one contract per kind and set of store operations; the
   operations and the generation store module may write the attributes, and each write is judged in the scope that
-  holds it. A ``__dict__`` key row names the value of its constant; a
-  cached-property row also forbids the decorator on its owner.
+  holds it. A ``__dict__`` key row names the value of its constant, and the cache contract forbids a
+  ``cached_property`` on every owner of a row outside the parser run state and the classes deriving from them, as a
+  cached property writes its own name into ``__dict__``: the baseline keeps today's, which cache rows name.
 - ``call-owners`` (``MUT204``, ``MUT207``) of the store operations: each operation that
   ``GENERATION_STORE_MUTATION_METHODS`` names is called only in the store module, where ``GraphBuilder`` calls it for
   the passes, and only the store module makes a ``GraphBuilder``.
@@ -356,21 +357,23 @@ def _store_hooks(repo: Repo) -> list[str]:
 
 
 def write_owner_contracts(repo: Repo) -> list[str]:
-    """Return the ``write-owners`` contracts of the fact rows."""
+    """Return the ``write-owners`` contracts of the fact rows.
+
+    The cache contract forbids a ``cached_property`` on every owner of a row outside the parser run state and on the
+    classes deriving from one: a cached property writes its own name into ``__dict__``, outside the store.
+    """
     hooks = _store_hooks(repo)
     groups: dict[tuple[str, tuple[str, ...]], list[str]] = defaultdict(list)
-    cached_on: set[str] = set()
     for row in ATTRIBUTE_FACTS:
         if row.kind not in WRITE_KINDS or (row.owner in PARSER_STATE_OWNERS and not row.store_ops):
             continue
-        if row.access is Access.CACHED_PROPERTY:
-            cached_on.add(row.owner)
         groups[row.kind.value, tuple(sorted(row.store_ops))].append(
             f"{row.owner}.{_attribute(repo, row.attribute, row.access)}"
         )
+    described = sorted({row.owner for row in ATTRIBUTE_FACTS if row.owner not in PARSER_STATE_OWNERS})
     contracts: list[str] = []
     for (kind, operations), targets in sorted(groups.items()):
-        cached = sorted(owner for owner in cached_on if kind == FactKind.CACHE.value)
+        cached = described if kind == FactKind.CACHE.value else []
         contracts.append(
             _table(
                 "write-owners",

@@ -11,7 +11,9 @@ without a row: heki can judge a write only of an attribute or key some row names
 
 heki checks the writes themselves: ``scripts/build_heki_contracts.py`` turns the rows into the ``write-owners``
 contracts of ``scripts/heki.toml``, and ``scripts/heki_baseline.toml`` records the writes outside store operations that
-exist today.
+exist today. A ``cached_property``, which writes its own name into ``__dict__``, is heki's too: the cache contract
+forbids one on every class the table describes and the classes deriving from them. A row of a ``__dict__`` key that
+the sources only read stays this check's: heki counts a read as naming the key.
 """
 
 from __future__ import annotations
@@ -389,7 +391,7 @@ class Violation:
 
 @dataclass(frozen=True)
 class DictKeyWrite:
-    """A write of a ``__dict__`` entry, or a ``cached_property`` (which writes its own name there), with a named key.
+    """A write of a ``__dict__`` entry with a named key.
 
     ``key`` is the literal key, or the name of the constant that holds it.
     """
@@ -504,8 +506,6 @@ class DictKeyVisitor(ast.NodeVisitor):
             return
         self._qualname.append(opened.code_name)
         if opened.kind == "class":
-            if self.scope == "model":
-                self._record_cached_properties(opened)
             super().visit(node)
         else:
             self._schema_objects.update(
@@ -517,15 +517,6 @@ class DictKeyVisitor(ast.NodeVisitor):
             super().visit(node)
             self._latest = enclosing
         self._qualname.pop()
-
-    def _record_cached_properties(self, scope: ModelScope) -> None:
-        for method in scope.children:
-            if method.kind == "function" and any(
-                _attribute_chain(decorator)[-1:] == ("cached_property",) for decorator in method.node.decorator_list
-            ):
-                self._qualname.append(method.code_name)
-                self._record(method.node, method.code_name)
-                self._qualname.pop()
 
     def visit_Assign(self, node: ast.Assign) -> None:
         """Check assignment targets and record local aliases."""
@@ -596,9 +587,9 @@ class DictKeyVisitor(ast.NodeVisitor):
         if (alias := self._alias_of(container)) is not None:
             self._record(node, key if alias.key is None else alias.key)
 
-    def _record(self, node: ast.AST, key: ast.AST | str | None) -> None:
+    def _record(self, node: ast.AST, key: ast.AST | None) -> None:
         """Record a write of a named key; a computed key is heki's to report (``MUT205``)."""
-        if (text := key if isinstance(key, str) else _key_text(key)) != "...":
+        if (text := _key_text(key)) != "...":
             self.writes.append(
                 DictKeyWrite(
                     path=self.path,
