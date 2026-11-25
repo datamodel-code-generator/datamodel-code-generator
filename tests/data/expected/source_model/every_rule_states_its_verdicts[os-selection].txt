@@ -1,0 +1,850 @@
+verdict problems: none
+undeclared questions: none
+bindings/annotation_without_value: annotation_without_value.py::f
+bindings/annotation_without_value: annotation_without_value.py::g
+bindings/annotation_without_value: annotation_without_value.py:10-11: f
+bindings/annotation_without_value: annotation_without_value.py:15-17: g
+bindings/assignment_targets_take: assignment_targets_take.py:15-15: <listcomp>
+bindings/augmented_assignment: augmented_assignment.py::bump
+bindings/augmented_assignment: augmented_assignment.py:8-11: bump
+bindings/binding_of_a_node: binding_of_a_node.py::Holder::grow
+bindings/binding_of_a_node: binding_of_a_node.py::handle
+bindings/binding_of_a_node: binding_of_a_node.py::load
+bindings/binding_of_a_node: binding_of_a_node.py::outer
+bindings/binding_of_a_node: binding_of_a_node.py:14-17: load
+bindings/binding_of_a_node: binding_of_a_node.py:21-28: outer
+bindings/binding_of_a_node: binding_of_a_node.py:24-26: outer.<locals>.bump
+bindings/binding_of_a_node: binding_of_a_node.py:32-42: handle
+bindings/binding_of_a_node: binding_of_a_node.py:42-42: handle.<locals>.<listcomp>
+bindings/binding_of_a_node: binding_of_a_node.py:49-49: Holder.grow
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py::C::method
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py::plain
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:24-24: C.method
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:28-28: plain
+bindings/class_defined_in_function: class_defined_in_function.py::_define_format_parser_configs
+bindings/class_defined_in_function: class_defined_in_function.py:5-11: _define_format_parser_configs
+bindings/class_defined_in_function: class_defined_in_function.py:9-9: _define_format_parser_configs.<locals>.GraphQLParserConfig.describe
+bindings/class_members_cited: class_members_cited.py::Parser::closure
+bindings/class_members_cited: class_members_cited.py::Parser::helper
+bindings/class_members_cited: class_members_cited.py::Parser::parse
+bindings/class_members_cited: class_members_cited.py::Parser::static
+bindings/class_members_cited: class_members_cited.py:22-27: Parser.parse
+bindings/class_members_cited: class_members_cited.py:31-31: Parser.helper
+bindings/class_members_cited: class_members_cited.py:34-37: Parser.closure
+bindings/class_members_cited: class_members_cited.py:35-35: Parser.closure.<locals>.inner
+bindings/class_members_cited: class_members_cited.py:41-41: Parser.static
+bindings/comprehension_in_annotation: comprehension_in_annotation.py::f
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:9-10: <genexpr>
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:17-17: <listcomp>
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:10-10: f
+bindings/comprehension_in_annotation: comprehension_in_annotation.py:14-14: Box.<dictcomp>
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py::pick
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py::read
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:15-15: Order.<lambda>.<locals>.<listcomp>
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:16-16: Order.<lambda>.<locals>.<dictcomp>
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:17-17: Order.<lambda>.<locals>.<lambda>.<locals>.<listcomp>
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:20-21: <lambda>.<locals>.<listcomp>
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:21-21: read
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:24-25: <genexpr>
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:24-25: <genexpr>.<locals>.<listcomp>
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:25-25: pick
+bindings/comprehension_in_annotation_lambda: comprehension_in_annotation_lambda.py:28-28: <lambda>.<locals>.<setcomp>
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py::collect
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10-12: collect
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:10-10: collect.<locals>.<lambda>.<locals>.<listcomp>
+bindings/comprehension_in_local_annotation: comprehension_in_local_annotation.py:11-11: collect.<locals>.<listcomp>
+bindings/comprehension_targets_local: comprehension_targets_local.py::f
+bindings/comprehension_targets_local: comprehension_targets_local.py:7-12: f
+bindings/comprehension_targets_local: comprehension_targets_local.py:11-11: f.<locals>.<listcomp>
+bindings/comprehension_targets_local: comprehension_targets_local.py:8-8: f.<locals>.<setcomp>
+bindings/comprehension_targets_local: comprehension_targets_local.py:9-9: f.<locals>.<dictcomp>
+bindings/comprehension_targets_local: comprehension_targets_local.py:10-10: f.<locals>.<genexpr>
+bindings/conditional_def_try_else: conditional_def_try_else.py::helper
+bindings/conditional_def_try_else: conditional_def_try_else.py:10-10: helper
+bindings/decorators_rebind: decorators_rebind.py::C::x
+bindings/decorators_rebind: decorators_rebind.py::g
+bindings/decorators_rebind: decorators_rebind.py:13-13: C.x
+bindings/decorators_rebind: decorators_rebind.py:18-18: g
+bindings/del_makes_local: del_makes_local.py::f
+bindings/del_makes_local: del_makes_local.py::g
+bindings/del_makes_local: del_makes_local.py:7-8: f
+bindings/del_makes_local: del_makes_local.py:12-12: g
+bindings/dictcomp_value_before_key: dictcomp_value_before_key.py::f
+bindings/dictcomp_value_before_key: dictcomp_value_before_key.py::g
+bindings/dictcomp_value_before_key: dictcomp_value_before_key.py:5-5: f
+bindings/dictcomp_value_before_key: dictcomp_value_before_key.py:5-5: f.<locals>.<dictcomp>
+bindings/dictcomp_value_before_key: dictcomp_value_before_key.py:5-5: f.<locals>.<genexpr>
+bindings/dictcomp_value_before_key: dictcomp_value_before_key.py:9-9: g
+bindings/dictcomp_value_before_key: dictcomp_value_before_key.py:9-9: g.<locals>.<dictcomp>
+bindings/dynamic_globals_write: dynamic_globals_write.py::f
+bindings/dynamic_globals_write: dynamic_globals_write.py:7-7: f
+bindings/dynamic_namespace_writes: dynamic_namespace_writes.py::f
+bindings/dynamic_namespace_writes: dynamic_namespace_writes.py:13-13: f
+bindings/except_name: except_name.py::f
+bindings/except_name: except_name.py:5-11: f
+bindings/except_star_name: except_star_name.py::f
+bindings/except_star_name: except_star_name.py:5-9: f
+bindings/global_declared_anywhere: global_declared_anywhere.py::_define
+bindings/global_declared_anywhere: global_declared_anywhere.py::reader
+bindings/global_declared_anywhere: global_declared_anywhere.py:7-14: _define
+bindings/global_declared_anywhere: global_declared_anywhere.py:18-18: reader
+bindings/global_in_nested_function: global_in_nested_function.py::outer
+bindings/global_in_nested_function: global_in_nested_function.py:5-14: outer
+bindings/global_in_nested_function: global_in_nested_function.py:8-9: outer.<locals>.inner
+bindings/global_in_nested_function: global_in_nested_function.py:12-12: outer.<locals>.reader
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::annotated_assignment
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::assignment
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::augmented_assignment
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::class_bodies
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::comprehension_targets
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::def_and_class_names
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::delete_target
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::except_name
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::for_target
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::global_and_nonlocal
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::import_names
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::match_captures
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::walrus_targets
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py::with_target
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:18-26: assignment
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:19-20: assignment.<locals>.rebinds
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:23-24: assignment.<locals>.unpacks
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:30-34: augmented_assignment
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:31-32: augmented_assignment.<locals>.rebinds
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:38-46: annotated_assignment
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:39-40: annotated_assignment.<locals>.rebinds
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:43-44: annotated_assignment.<locals>.declares
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:50-55: for_target
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:51-53: for_target.<locals>.rebinds
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:59-65: comprehension_targets
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:64-64: comprehension_targets.<locals>.<listcomp>
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:60-60: comprehension_targets.<locals>.<setcomp>
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:61-61: comprehension_targets.<locals>.<dictcomp>
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:62-62: comprehension_targets.<locals>.<genexpr>
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:69-73: with_target
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:70-71: with_target.<locals>.rebinds
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:77-83: except_name
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:78-81: except_name.<locals>.rebinds
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:87-112: import_names
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:88-90: import_names.<locals>.imports
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:93-95: import_names.<locals>.imports_a_package
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:98-100: import_names.<locals>.imports_as
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:103-105: import_names.<locals>.imports_from
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:108-110: import_names.<locals>.imports_from_as
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:116-132: def_and_class_names
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:117-119: def_and_class_names.<locals>.defines
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:117-117: def_and_class_names.<locals>.defines.<locals>.parser
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:122-124: def_and_class_names.<locals>.defines_async
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:122-122: def_and_class_names.<locals>.defines_async.<locals>.parser
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:127-130: def_and_class_names.<locals>.declares_a_class
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:136-154: match_captures
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:137-145: match_captures.<locals>.captures
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:148-152: match_captures.<locals>.ignores_wildcards
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:158-171: walrus_targets
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:159-161: walrus_targets.<locals>.rebinds
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:164-165: walrus_targets.<locals>.rebinds_from_a_comprehension
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:164-164: walrus_targets.<locals>.rebinds_from_a_comprehension.<locals>.<listcomp>
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:168-169: walrus_targets.<locals>.rebinds_in_a_lambda
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:175-180: delete_target
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:176-178: delete_target.<locals>.deletes
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:184-203: global_and_nonlocal
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:185-186: global_and_nonlocal.<locals>.declares_global
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:189-191: global_and_nonlocal.<locals>.declares_nonlocal
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:194-201: global_and_nonlocal.<locals>.rebinds
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:197-199: global_and_nonlocal.<locals>.rebinds.<locals>.declares_nonlocal_of_the_rebound_name
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:207-215: class_bodies
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:210-210: class_bodies.<locals>.Rebinds.<listcomp>
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:213-213: class_bodies.<locals>.Rebinds.method
+bindings/host_private_access_concern: host_private_access_concern.py::FixtureHost::_method
+bindings/host_private_access_concern: host_private_access_concern.py::FixtureParser::build
+bindings/host_private_access_concern: host_private_access_concern.py::FixtureParser::method
+bindings/host_private_access_concern: host_private_access_concern.py::declared
+bindings/host_private_access_concern: host_private_access_concern.py::declared_async
+bindings/host_private_access_concern: host_private_access_concern.py::other_annotations
+bindings/host_private_access_concern: host_private_access_concern.py::shadowed
+bindings/host_private_access_concern: host_private_access_concern.py::undeclared
+bindings/host_private_access_concern: host_private_access_concern.py:23-23: FixtureHost._method
+bindings/host_private_access_concern: host_private_access_concern.py:38-38: FixtureParser.method
+bindings/host_private_access_concern: host_private_access_concern.py:42-42: FixtureParser.build
+bindings/host_private_access_concern: host_private_access_concern.py:51-59: declared
+bindings/host_private_access_concern: host_private_access_concern.py:56-56: declared.<locals>.nested
+bindings/host_private_access_concern: host_private_access_concern.py:69-78: undeclared
+bindings/host_private_access_concern: host_private_access_concern.py:82-87: shadowed
+bindings/host_private_access_concern: host_private_access_concern.py:83-84: shadowed.<locals>.rebinds
+bindings/host_private_access_concern: host_private_access_concern.py:92-93: declared_async
+bindings/host_private_access_concern: host_private_access_concern.py:100-100: other_annotations
+bindings/host_private_access_receivers: host_private_access_receivers.py::FixtureParser::__init_subclass__
+bindings/host_private_access_receivers: host_private_access_receivers.py::FixtureParser::build
+bindings/host_private_access_receivers: host_private_access_receivers.py::FixtureParser::method
+bindings/host_private_access_receivers: host_private_access_receivers.py::FixtureParser::rebinds
+bindings/host_private_access_receivers: host_private_access_receivers.py::FixtureParser::second
+bindings/host_private_access_receivers: host_private_access_receivers.py::FixtureParser::static
+bindings/host_private_access_receivers: host_private_access_receivers.py::module_function
+bindings/host_private_access_receivers: host_private_access_receivers.py::module_function_on_a_host
+bindings/host_private_access_receivers: host_private_access_receivers.py:17-21: FixtureParser.method
+bindings/host_private_access_receivers: host_private_access_receivers.py:18-18: FixtureParser.method.<locals>.closure
+bindings/host_private_access_receivers: host_private_access_receivers.py:25-25: FixtureParser.build
+bindings/host_private_access_receivers: host_private_access_receivers.py:28-28: FixtureParser.__init_subclass__
+bindings/host_private_access_receivers: host_private_access_receivers.py:32-32: FixtureParser.static
+bindings/host_private_access_receivers: host_private_access_receivers.py:35-38: FixtureParser.rebinds
+bindings/host_private_access_receivers: host_private_access_receivers.py:36-36: FixtureParser.rebinds.<locals>.takes_its_own
+bindings/host_private_access_receivers: host_private_access_receivers.py:38-38: FixtureParser.rebinds.<locals>.<genexpr>
+bindings/host_private_access_receivers: host_private_access_receivers.py:41-41: FixtureParser.second
+bindings/host_private_access_receivers: host_private_access_receivers.py:45-45: module_function
+bindings/host_private_access_receivers: host_private_access_receivers.py:49-49: module_function_on_a_host
+bindings/host_private_access_unions: host_private_access_unions.py::read
+bindings/host_private_access_unions: host_private_access_unions.py:24-24: read
+bindings/import_binding_names: import_binding_names.py::f
+bindings/import_binding_names: import_binding_names.py:12-14: f
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py::f
+bindings/lambda_in_function_annotation: lambda_in_function_annotation.py:10-11: f
+bindings/lambda_parameters_and_defaults: lambda_parameters_and_defaults.py::f
+bindings/lambda_parameters_and_defaults: lambda_parameters_and_defaults.py:5-10: f
+bindings/loop_and_with_targets: loop_and_with_targets.py::read
+bindings/loop_and_with_targets: loop_and_with_targets.py:5-11: read
+bindings/match_captures: match_captures.py::f
+bindings/match_captures: match_captures.py:15-27: f
+bindings/match_mapping_rest_reads_keys: match_mapping_rest_reads_keys.py::f
+bindings/match_mapping_rest_reads_keys: match_mapping_rest_reads_keys.py:11-19: f
+bindings/name_mangling: name_mangling.py::Parser::__init__
+bindings/name_mangling: name_mangling.py::Parser::__read
+bindings/name_mangling: name_mangling.py:11-12: Parser.__init__
+bindings/name_mangling: name_mangling.py:15-15: Parser.__read
+bindings/nested_names: nested_names.py::Outer::method
+bindings/nested_names: nested_names.py::outer
+bindings/nested_names: nested_names.py::rebased
+bindings/nested_names: nested_names.py:10-13: Outer.method
+bindings/nested_names: nested_names.py:11-11: Outer.method.<locals>.inner
+bindings/nested_names: nested_names.py:11-11: Outer.method.<locals>.inner.<locals>.<listcomp>
+bindings/nested_names: nested_names.py:11-11: Outer.method.<locals>.inner.<locals>.<lambda>.<locals>.<genexpr>
+bindings/nested_names: nested_names.py:16-16: Outer.Nested.<listcomp>
+bindings/nested_names: nested_names.py:20-25: outer
+bindings/nested_names: nested_names.py:23-23: rebased
+bindings/nested_names: nested_names.py:25-25: outer.<locals>.<lambda>.<locals>.<listcomp>
+bindings/nonlocal_bound_later: nonlocal_bound_later.py::chain
+bindings/nonlocal_bound_later: nonlocal_bound_later.py::outer
+bindings/nonlocal_bound_later: nonlocal_bound_later.py:5-11: outer
+bindings/nonlocal_bound_later: nonlocal_bound_later.py:6-7: outer.<locals>.bump
+bindings/nonlocal_bound_later: nonlocal_bound_later.py:15-26: chain
+bindings/nonlocal_bound_later: nonlocal_bound_later.py:18-24: chain.<locals>.middle
+bindings/nonlocal_bound_later: nonlocal_bound_later.py:21-22: chain.<locals>.middle.<locals>.inner
+bindings/nonlocal_in_class_body: nonlocal_in_class_body.py::f
+bindings/nonlocal_in_class_body: nonlocal_in_class_body.py:5-11: f
+bindings/star_import_open_scope: star_import_open_scope.py::f
+bindings/star_import_open_scope: star_import_open_scope.py:7-7: f
+bindings/walrus_in_comprehension_condition: walrus_in_comprehension_condition.py::f
+bindings/walrus_in_comprehension_condition: walrus_in_comprehension_condition.py:5-6: f
+bindings/walrus_in_comprehension_condition: walrus_in_comprehension_condition.py:5-5: f.<locals>.<listcomp>
+bindings/walrus_in_comprehension_function: walrus_in_comprehension_function.py::f
+bindings/walrus_in_comprehension_function: walrus_in_comprehension_function.py:5-7: f
+bindings/walrus_in_comprehension_function: walrus_in_comprehension_function.py:6-6: f.<locals>.<listcomp>
+bindings/walrus_in_comprehension_module: walrus_in_comprehension_module.py:6-6: <listcomp>
+bindings/walrus_in_comprehension_module: walrus_in_comprehension_module.py:5-5: <genexpr>
+bindings/walrus_in_function: walrus_in_function.py::f
+bindings/walrus_in_function: walrus_in_function.py:5-9: f
+bindings/with_parenthesized_and_for_else: with_parenthesized_and_for_else.py::f
+bindings/with_parenthesized_and_for_else: with_parenthesized_and_for_else.py:5-14: f
+extents/annotations_without_future: annotations_without_future.py::convert
+extents/annotations_without_future: annotations_without_future.py:8-9: convert
+extents/clause_headers: clause_headers.py::f
+extents/clause_headers: clause_headers.py:5-33: f
+extents/code_token_lines: code_token_lines.py::f
+extents/code_token_lines: code_token_lines.py:5-11: f
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py::Holder::method
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py::clauses
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py::continued
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py::decorate
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py::decorated
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:9-9: decorate
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:16-16: decorated
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:20-37: clauses
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:43-43: Holder.method
+extents/coverage_excluded_clauses: coverage_excluded_clauses.py:47-49: continued
+extents/decorated_definitions: decorated_definitions.py::Ordered::value
+extents/decorated_definitions: decorated_definitions.py::cached
+extents/decorated_definitions: decorated_definitions.py::waits
+extents/decorated_definitions: decorated_definitions.py:9-9: cached
+extents/decorated_definitions: decorated_definitions.py:16-16: Ordered.value
+extents/decorated_definitions: decorated_definitions.py:21-21: waits
+extents/elif_branch_on_base_side: elif_branch_on_base_side.py::Base::run
+extents/elif_branch_on_base_side: elif_branch_on_base_side.py::Child::run
+extents/elif_branch_on_base_side: elif_branch_on_base_side.py:6-10: Base.run
+extents/elif_branch_on_base_side: elif_branch_on_base_side.py:15-15: Child.run
+extents/match_case_extents: match_case_extents.py::f
+extents/match_case_extents: match_case_extents.py:5-13: f
+extents/multi_line_statements: multi_line_statements.py::call
+extents/multi_line_statements: multi_line_statements.py:14-16: call
+extents/nested_first_iterables: nested_first_iterables.py::f
+extents/nested_first_iterables: nested_first_iterables.py:8-19: f
+extents/nested_first_iterables: nested_first_iterables.py:11-18: f.<locals>.<genexpr>
+extents/nested_first_iterables: nested_first_iterables.py:9-9: f.<locals>.<listcomp>
+extents/nested_first_iterables: nested_first_iterables.py:10-10: f.<locals>.<dictcomp>
+extents/non_ascii_columns: non_ascii_columns.py::f
+extents/non_ascii_columns: non_ascii_columns.py:6-6: f
+extents/one_line_compound_statements: one_line_compound_statements.py::f
+extents/one_line_compound_statements: one_line_compound_statements.py:4-4: f
+extents/shared_lines: shared_lines.py::outer
+extents/shared_lines: shared_lines.py:5-13: outer
+extents/shared_lines: shared_lines.py:12-12: outer.<locals>.<genexpr>
+extents/shared_lines: shared_lines.py:8-10: outer.<locals>.inner
+extents/skippable_segments: skippable_segments.py::pick
+extents/skippable_segments: skippable_segments.py:9-23: pick
+extents/skippable_segments: skippable_segments.py:11-11: pick.<locals>.<listcomp>
+extents/skippable_segments: skippable_segments.py:12-12: pick.<locals>.<dictcomp>
+extents/skippable_segments: skippable_segments.py:22-22: pick.<locals>.<genexpr>
+extents/typing_only_parts: typing_only_parts.py::Base::label
+extents/typing_only_parts: typing_only_parts.py::convert
+extents/typing_only_parts: typing_only_parts.py:28-29: convert
+extents/typing_only_parts: typing_only_parts.py:39-39: Base.label
+imports/a6_conditional_bindings: a6_conditional_bindings.py::_BaseModel::__getattr__
+imports/a6_conditional_bindings: a6_conditional_bindings.py::_define_configs
+imports/a6_conditional_bindings: a6_conditional_bindings.py::get_safe_loader
+imports/a6_conditional_bindings: a6_conditional_bindings.py:39-39: _BaseModel.__getattr__
+imports/a6_conditional_bindings: a6_conditional_bindings.py:43-46: _define_configs
+imports/a6_conditional_bindings: a6_conditional_bindings.py:50-54: get_safe_loader
+imports/submodule_and_parent_packages: deep.py::load
+imports/submodule_and_parent_packages: deep.py:10-12: load
+references/a6_lazy_exports: _lazy_exports.py::module_hooks
+references/a6_lazy_exports: _lazy_exports.py:5-11: module_hooks
+references/a6_lazy_exports: _lazy_exports.py:6-6: module_hooks.<locals>.module_getattr
+references/a6_lazy_exports: _lazy_exports.py:9-9: module_hooks.<locals>.module_dir
+references/a6_lazy_exports: table.py::_load_class
+references/a6_lazy_exports: table.py::_load_module
+references/a6_lazy_exports: table.py:15-24: _load_class
+references/a6_lazy_exports: table.py:19-19: _load_class.<locals>.Built.describe
+references/a6_lazy_exports: table.py:22-22: _load_class.<locals>.helper
+references/a6_lazy_exports: table.py:28-30: _load_module
+references/aliased_library_names: aliased_library_names.py::f
+references/aliased_library_names: aliased_library_names.py:16-16: f
+references/annotation_modes: annotation_modes.py::f
+references/annotation_modes: annotation_modes.py:16-17: f
+references/annotations_and_string_reads: annotations_and_string_reads.py::Later::method
+references/annotations_and_string_reads: annotations_and_string_reads.py:24-25: Later.method
+references/attribute_stores_on_receiver: attribute_stores_on_receiver.py::Parser::_factory
+references/attribute_stores_on_receiver: attribute_stores_on_receiver.py::Parser::parse
+references/attribute_stores_on_receiver: attribute_stores_on_receiver.py:11-19: Parser.parse
+references/attribute_stores_on_receiver: attribute_stores_on_receiver.py:22-22: Parser._factory
+references/backend_strings_and_modules: backend_strings_and_modules.py::build_backend
+references/backend_strings_and_modules: backend_strings_and_modules.py::inspect_async_backend
+references/backend_strings_and_modules: backend_strings_and_modules.py::inspect_backend
+references/backend_strings_and_modules: backend_strings_and_modules.py::inspect_output_metadata
+references/backend_strings_and_modules: backend_strings_and_modules.py::inspect_typed_dict_requirements
+references/backend_strings_and_modules: backend_strings_and_modules.py::load_backends
+references/backend_strings_and_modules: backend_strings_and_modules.py::load_private_facade_helper
+references/backend_strings_and_modules: backend_strings_and_modules.py::neutral_output_capabilities
+references/backend_strings_and_modules: backend_strings_and_modules.py::select_output_policy
+references/backend_strings_and_modules: backend_strings_and_modules.py:23-25: load_backends
+references/backend_strings_and_modules: backend_strings_and_modules.py:29-29: load_private_facade_helper
+references/backend_strings_and_modules: backend_strings_and_modules.py:33-38: inspect_backend
+references/backend_strings_and_modules: backend_strings_and_modules.py:42-42: inspect_async_backend
+references/backend_strings_and_modules: backend_strings_and_modules.py:46-46: build_backend
+references/backend_strings_and_modules: backend_strings_and_modules.py:50-57: inspect_output_metadata
+references/backend_strings_and_modules: backend_strings_and_modules.py:61-64: select_output_policy
+references/backend_strings_and_modules: backend_strings_and_modules.py:68-80: neutral_output_capabilities
+references/backend_strings_and_modules: backend_strings_and_modules.py:84-91: inspect_typed_dict_requirements
+references/builtin_shadowed_and_spelled: builtin_shadowed_and_spelled.py::module_rebinding
+references/builtin_shadowed_and_spelled: builtin_shadowed_and_spelled.py::shadowed
+references/builtin_shadowed_and_spelled: builtin_shadowed_and_spelled.py:7-7: shadowed
+references/builtin_shadowed_and_spelled: builtin_shadowed_and_spelled.py:11-11: module_rebinding
+references/call_arguments_by_parameter: call_arguments_by_parameter.py::cut
+references/call_arguments_by_parameter: call_arguments_by_parameter.py:10-19: cut
+references/check_main_calls: check_main_calls.py::helper
+references/check_main_calls: check_main_calls.py::test_discarded
+references/check_main_calls: check_main_calls.py::test_fixture
+references/check_main_calls: check_main_calls.py::test_nested
+references/check_main_calls: check_main_calls.py::test_rooted
+references/check_main_calls: check_main_calls.py::test_tree
+references/check_main_calls: check_main_calls.py:9-11: test_tree
+references/check_main_calls: check_main_calls.py:15-15: test_fixture
+references/check_main_calls: check_main_calls.py:19-20: test_rooted
+references/check_main_calls: check_main_calls.py:24-24: test_discarded
+references/check_main_calls: check_main_calls.py:28-28: helper
+references/check_main_calls: check_main_calls.py:32-35: test_nested
+references/check_main_calls: check_main_calls.py:33-33: test_nested.<locals>.inner
+references/check_main_calls: check_main_calls.py:35-35: test_nested.<locals>.<listcomp>
+references/class_body_comprehension: class_body_comprehension.py:8-8: C.<listcomp>
+references/class_body_comprehension: class_body_comprehension.py:9-9: C.<genexpr>
+references/class_body_reads_function_locals: class_body_reads_function_locals.py::build
+references/class_body_reads_function_locals: class_body_reads_function_locals.py:5-14: build
+references/class_body_reads_function_locals: class_body_reads_function_locals.py:12-12: build.<locals>.Config.describe
+references/class_cell_and_super: class_cell_and_super.py::Base::name
+references/class_cell_and_super: class_cell_and_super.py::Child::enclosing
+references/class_cell_and_super: class_cell_and_super.py::Child::explicit
+references/class_cell_and_super: class_cell_and_super.py::Child::name
+references/class_cell_and_super: class_cell_and_super.py::Child::nested
+references/class_cell_and_super: class_cell_and_super.py:6-6: Base.name
+references/class_cell_and_super: class_cell_and_super.py:11-11: Child.name
+references/class_cell_and_super: class_cell_and_super.py:14-14: Child.nested
+references/class_cell_and_super: class_cell_and_super.py:17-17: Child.explicit
+references/class_cell_and_super: class_cell_and_super.py:20-21: Child.enclosing
+references/class_scope_skipped: class_scope_skipped.py::C::m
+references/class_scope_skipped: class_scope_skipped.py:10-10: C.<listcomp>
+references/class_scope_skipped: class_scope_skipped.py:14-14: C.m
+references/comprehension_in_method_default: comprehension_in_method_default.py::C::m
+references/comprehension_in_method_default: comprehension_in_method_default.py:7-8: C.<listcomp>
+references/comprehension_in_method_default: comprehension_in_method_default.py:8-8: C.m
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py::comprehension
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py::except_name
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py::match_capture
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py:5-5: comprehension
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py:5-5: comprehension.<locals>.<listcomp>
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py:9-15: match_capture
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py:10-13: match_capture.<locals>.inner
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py:19-28: except_name
+references/comprehension_shadows_parameter: comprehension_shadows_parameter.py:20-26: except_name.<locals>.inner
+references/consumers_of_expressions: consumers_of_expressions.py::stream
+references/consumers_of_expressions: consumers_of_expressions.py:11-11: <listcomp>
+references/consumers_of_expressions: consumers_of_expressions.py:19-19: <genexpr>
+references/consumers_of_expressions: consumers_of_expressions.py:24-25: stream
+references/decorator_origins: decorator_origins.py::aliased
+references/decorator_origins: decorator_origins.py::arecorded
+references/decorator_origins: decorator_origins.py::cached_value
+references/decorator_origins: decorator_origins.py::recorded
+references/decorator_origins: decorator_origins.py:12-12: recorded
+references/decorator_origins: decorator_origins.py:17-17: arecorded
+references/decorator_origins: decorator_origins.py:22-22: aliased
+references/decorator_origins: decorator_origins.py:27-27: cached_value
+references/entrypoint_parser_private_access: entrypoint_parser_private_access.py::mutate_parser
+references/entrypoint_parser_private_access: entrypoint_parser_private_access.py:9-13: mutate_parser
+references/expected_paths_through_bindings: expected_paths_through_bindings.py::test_reads
+references/expected_paths_through_bindings: expected_paths_through_bindings.py:6-6: <listcomp>
+references/expected_paths_through_bindings: expected_paths_through_bindings.py:10-19: test_reads
+references/flaky_markers_by_origin: flaky_markers_by_origin.py::test_local
+references/flaky_markers_by_origin: flaky_markers_by_origin.py::test_marked
+references/flaky_markers_by_origin: flaky_markers_by_origin.py::test_parameter
+references/flaky_markers_by_origin: flaky_markers_by_origin.py:21-24: test_marked
+references/flaky_markers_by_origin: flaky_markers_by_origin.py:28-30: test_parameter
+references/flaky_markers_by_origin: flaky_markers_by_origin.py:34-36: test_local
+references/floor_syntax_oldest_grammar: floor_syntax_oldest_grammar.py::group
+references/floor_syntax_oldest_grammar: floor_syntax_oldest_grammar.py::match_it
+references/floor_syntax_oldest_grammar: floor_syntax_oldest_grammar.py::walrus
+references/floor_syntax_oldest_grammar: floor_syntax_oldest_grammar.py:11-17: match_it
+references/floor_syntax_oldest_grammar: floor_syntax_oldest_grammar.py:21-26: group
+references/floor_syntax_oldest_grammar: floor_syntax_oldest_grammar.py:30-32: walrus
+references/global_declared_in_middle_scope: global_declared_in_middle_scope.py::a
+references/global_declared_in_middle_scope: global_declared_in_middle_scope.py:7-12: a
+references/global_declared_in_middle_scope: global_declared_in_middle_scope.py:10-10: a.<locals>.b
+references/globals_registry_shapes: globals_registry_shapes.py::__dir__
+references/globals_registry_shapes: globals_registry_shapes.py::__getattr__
+references/globals_registry_shapes: globals_registry_shapes.py::method_in_hook
+references/globals_registry_shapes: globals_registry_shapes.py::shadowed
+references/globals_registry_shapes: globals_registry_shapes.py:20-20: __getattr__
+references/globals_registry_shapes: globals_registry_shapes.py:20-20: __getattr__.<locals>.<listcomp>
+references/globals_registry_shapes: globals_registry_shapes.py:24-24: __dir__
+references/globals_registry_shapes: globals_registry_shapes.py:28-28: shadowed
+references/globals_registry_shapes: globals_registry_shapes.py:32-35: method_in_hook
+references/globals_registry_shapes: globals_registry_shapes.py:33-33: method_in_hook.<locals>.helper
+references/hash_split_receivers: hash_split_receivers.py::builtin
+references/hash_split_receivers: hash_split_receivers.py::local
+references/hash_split_receivers: hash_split_receivers.py::others
+references/hash_split_receivers: hash_split_receivers.py::parameter
+references/hash_split_receivers: hash_split_receivers.py:10-10: builtin
+references/hash_split_receivers: hash_split_receivers.py:14-14: parameter
+references/hash_split_receivers: hash_split_receivers.py:18-19: local
+references/hash_split_receivers: hash_split_receivers.py:23-23: others
+references/header_parts_evaluated_outside: header_parts_evaluated_outside.py::factory
+references/header_parts_evaluated_outside: header_parts_evaluated_outside.py:5-13: factory
+references/header_parts_evaluated_outside: header_parts_evaluated_outside.py:7-7: factory.<locals>.inner
+references/header_parts_evaluated_outside: header_parts_evaluated_outside.py:12-12: factory.<locals>.<listcomp>
+references/keyword_separator: keyword_separator.py::cut
+references/keyword_separator: keyword_separator.py:8-8: cut
+references/lambda_closure_in_comprehension: lambda_closure_in_comprehension.py::f
+references/lambda_closure_in_comprehension: lambda_closure_in_comprehension.py:5-5: f
+references/lambda_closure_in_comprehension: lambda_closure_in_comprehension.py:5-5: f.<locals>.<listcomp>
+references/lazy_table_module_getattr: lazy_table_module_getattr.py::__dir__
+references/lazy_table_module_getattr: lazy_table_module_getattr.py::__getattr__
+references/lazy_table_module_getattr: lazy_table_module_getattr.py:10-10: <dictcomp>
+references/lazy_table_module_getattr: lazy_table_module_getattr.py:14-16: __getattr__
+references/lazy_table_module_getattr: lazy_table_module_getattr.py:20-20: __dir__
+references/legacy_row_reading_lines: reader.py::read
+references/legacy_row_reading_lines: reader.py::read_attribute
+references/legacy_row_reading_lines: reader.py:9-11: read
+references/legacy_row_reading_lines: reader.py:15-17: read_attribute
+references/legacy_row_reading_lines: rows.py::Policy::choose
+references/legacy_row_reading_lines: rows.py::branch
+references/legacy_row_reading_lines: rows.py::collect
+references/legacy_row_reading_lines: rows.py::decide
+references/legacy_row_reading_lines: rows.py::documented
+references/legacy_row_reading_lines: rows.py::empty
+references/legacy_row_reading_lines: rows.py::hand
+references/legacy_row_reading_lines: rows.py:17-17: Policy.choose
+references/legacy_row_reading_lines: rows.py:21-30: decide
+references/legacy_row_reading_lines: rows.py:34-36: documented
+references/legacy_row_reading_lines: rows.py:40-40: empty
+references/legacy_row_reading_lines: rows.py:48-52: collect
+references/legacy_row_reading_lines: rows.py:56-60: branch
+references/legacy_row_reading_lines: rows.py:64-64: hand
+references/mangled_module_global: mangled_module_global.py::C::m
+references/mangled_module_global: mangled_module_global.py:8-8: C.m
+references/method_receiver_by_position: method_receiver_by_position.py::C::build
+references/method_receiver_by_position: method_receiver_by_position.py::C::closure
+references/method_receiver_by_position: method_receiver_by_position.py::C::make
+references/method_receiver_by_position: method_receiver_by_position.py::C::none
+references/method_receiver_by_position: method_receiver_by_position.py::C::plain
+references/method_receiver_by_position: method_receiver_by_position.py::C::positional_only
+references/method_receiver_by_position: method_receiver_by_position.py::C::renamed
+references/method_receiver_by_position: method_receiver_by_position.py:9-9: C.plain
+references/method_receiver_by_position: method_receiver_by_position.py:12-12: C.renamed
+references/method_receiver_by_position: method_receiver_by_position.py:15-15: C.positional_only
+references/method_receiver_by_position: method_receiver_by_position.py:19-19: C.build
+references/method_receiver_by_position: method_receiver_by_position.py:23-23: C.make
+references/method_receiver_by_position: method_receiver_by_position.py:26-29: C.closure
+references/method_receiver_by_position: method_receiver_by_position.py:27-27: C.closure.<locals>.inner
+references/method_receiver_by_position: method_receiver_by_position.py:32-32: C.none
+references/nested_scope_shadows: nested_scope_shadows.py::outer
+references/nested_scope_shadows: nested_scope_shadows.py:5-17: outer
+references/nested_scope_shadows: nested_scope_shadows.py:6-15: outer.<locals>.nested
+references/output_policy_by_origin: output_policy_by_origin.py::rewrite_schema
+references/output_policy_by_origin: output_policy_by_origin.py::rewrite_shared_schema
+references/output_policy_by_origin: output_policy_by_origin.py:22-24: rewrite_schema
+references/output_policy_by_origin: output_policy_by_origin.py:28-30: rewrite_shared_schema
+references/parameter_shadows_global: parameter_shadows_global.py::f
+references/parameter_shadows_global: parameter_shadows_global.py::g
+references/parameter_shadows_global: parameter_shadows_global.py:8-8: f
+references/parameter_shadows_global: parameter_shadows_global.py:12-12: g
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py::Parser::__enter
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py::Parser::__leave
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py::Store::seal
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py::decorate
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py::outside
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py::reaches_by_name
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py::warns
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py::warns_later
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:12-12: decorate
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:19-19: Parser.__enter
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:22-22: Parser.__leave
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:31-31: Store.seal
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:35-37: outside
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:41-42: reaches_by_name
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:46-53: warns
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:51-51: warns.<locals>.nested
+references/pipeline_calls_and_parser_members: pipeline_calls_and_parser_members.py:57-57: warns_later
+references/portable_names_by_key: portable_names_by_key.py::count
+references/portable_names_by_key: portable_names_by_key.py::run
+references/portable_names_by_key: portable_names_by_key.py::run_through_a_name
+references/portable_names_by_key: portable_names_by_key.py::write
+references/portable_names_by_key: portable_names_by_key.py:17-18: write
+references/portable_names_by_key: portable_names_by_key.py:22-23: count
+references/portable_names_by_key: portable_names_by_key.py:27-29: run
+references/portable_names_by_key: portable_names_by_key.py:33-34: run_through_a_name
+references/portable_names_in_paths: portable_names_in_paths.py::build
+references/portable_names_in_paths: portable_names_in_paths.py::from_variables
+references/portable_names_in_paths: portable_names_in_paths.py::test_parametrized
+references/portable_names_in_paths: portable_names_in_paths.py::test_parametrized_pairs
+references/portable_names_in_paths: portable_names_in_paths.py:18-31: build
+references/portable_names_in_paths: portable_names_in_paths.py:40-51: from_variables
+references/portable_names_in_paths: portable_names_in_paths.py:56-56: test_parametrized
+references/portable_names_in_paths: portable_names_in_paths.py:61-62: test_parametrized_pairs
+references/posix_only_across_modules: cases.py::test_marked
+references/posix_only_across_modules: cases.py::test_package_only
+references/posix_only_across_modules: cases.py::test_passed_on
+references/posix_only_across_modules: cases.py::test_portable_function
+references/posix_only_across_modules: cases.py::test_through_a_class
+references/posix_only_across_modules: cases.py::test_through_a_from_import
+references/posix_only_across_modules: cases.py::test_through_the_module
+references/posix_only_across_modules: cases.py:11-11: test_through_the_module
+references/posix_only_across_modules: cases.py:15-15: test_through_a_from_import
+references/posix_only_across_modules: cases.py:19-19: test_through_a_class
+references/posix_only_across_modules: cases.py:23-23: test_passed_on
+references/posix_only_across_modules: cases.py:27-27: test_portable_function
+references/posix_only_across_modules: cases.py:31-31: test_package_only
+references/posix_only_across_modules: cases.py:36-36: test_marked
+references/posix_only_across_modules: script.py::Runner::start
+references/posix_only_across_modules: script.py::main
+references/posix_only_across_modules: script.py::portable
+references/posix_only_across_modules: script.py::run
+references/posix_only_across_modules: script.py::worker
+references/posix_only_across_modules: script.py:7-7: worker
+references/posix_only_across_modules: script.py:11-11: run
+references/posix_only_across_modules: script.py:15-15: main
+references/posix_only_across_modules: script.py:19-19: portable
+references/posix_only_across_modules: script.py:24-24: Runner.start
+references/posix_only_at_import: posix_only_at_import.py::Holder::method
+references/posix_only_at_import: posix_only_at_import.py::lazy
+references/posix_only_at_import: posix_only_at_import.py::shadowed
+references/posix_only_at_import: posix_only_at_import.py:35-35: Holder.method
+references/posix_only_at_import: posix_only_at_import.py:39-41: lazy
+references/posix_only_at_import: posix_only_at_import.py:45-45: shadowed
+references/posix_only_fixtures_by_pytest: cases.py::test_asks_for_a_fixture_that_asks
+references/posix_only_fixtures_by_pytest: cases.py::test_asks_for_the_fixture
+references/posix_only_fixtures_by_pytest: cases.py::test_marked
+references/posix_only_fixtures_by_pytest: cases.py::test_portable_fixture
+references/posix_only_fixtures_by_pytest: cases.py::test_usefixtures
+references/posix_only_fixtures_by_pytest: cases.py::test_without_fixtures
+references/posix_only_fixtures_by_pytest: cases.py:7-7: test_asks_for_the_fixture
+references/posix_only_fixtures_by_pytest: cases.py:11-11: test_asks_for_a_fixture_that_asks
+references/posix_only_fixtures_by_pytest: cases.py:16-16: test_usefixtures
+references/posix_only_fixtures_by_pytest: cases.py:21-21: test_marked
+references/posix_only_fixtures_by_pytest: cases.py:25-25: test_portable_fixture
+references/posix_only_fixtures_by_pytest: cases.py:29-29: test_without_fixtures
+references/posix_only_fixtures_by_pytest: conftest.py::pipe
+references/posix_only_fixtures_by_pytest: conftest.py::pipe_user
+references/posix_only_fixtures_by_pytest: conftest.py::portable
+references/posix_only_fixtures_by_pytest: conftest.py::unused
+references/posix_only_fixtures_by_pytest: conftest.py:8-9: pipe
+references/posix_only_fixtures_by_pytest: conftest.py:14-14: pipe_user
+references/posix_only_fixtures_by_pytest: conftest.py:19-19: portable
+references/posix_only_fixtures_by_pytest: conftest.py:24-24: unused
+references/posix_only_fixtures_by_pytest: cases.py::test_autouse_of_the_folder
+references/posix_only_fixtures_by_pytest: cases.py::test_marked
+references/posix_only_fixtures_by_pytest: cases.py:5-5: test_autouse_of_the_folder
+references/posix_only_fixtures_by_pytest: cases.py:10-10: test_marked
+references/posix_only_fixtures_by_pytest: conftest.py::pipe_everywhere
+references/posix_only_fixtures_by_pytest: conftest.py:8-8: pipe_everywhere
+references/posix_only_in_tests: posix_only_in_tests.py::TestAutouse::_pipe
+references/posix_only_in_tests: posix_only_in_tests.py::TestAutouse::test_runs_after_the_fixture
+references/posix_only_in_tests: posix_only_in_tests.py::TestInherits::test_inherited_method_called_on_self
+references/posix_only_in_tests: posix_only_in_tests.py::TestMarked::test_method
+references/posix_only_in_tests: posix_only_in_tests.py::TestPlain::test_method
+references/posix_only_in_tests: posix_only_in_tests.py::TestSelf::_portable
+references/posix_only_in_tests: posix_only_in_tests.py::TestSelf::_spawn
+references/posix_only_in_tests: posix_only_in_tests.py::TestSelf::test_method_called_on_self
+references/posix_only_in_tests: posix_only_in_tests.py::TestSelf::test_portable_method_called_on_self
+references/posix_only_in_tests: posix_only_in_tests.py::TestUsefixturesMark::test_pytestmark
+references/posix_only_in_tests: posix_only_in_tests.py::lock
+references/posix_only_in_tests: posix_only_in_tests.py::lock_when_present
+references/posix_only_in_tests: posix_only_in_tests.py::make_pipe
+references/posix_only_in_tests: posix_only_in_tests.py::peak
+references/posix_only_in_tests: posix_only_in_tests.py::pipe_dir
+references/posix_only_in_tests: posix_only_in_tests.py::test_fixture
+references/posix_only_in_tests: posix_only_in_tests.py::test_from_import
+references/posix_only_in_tests: posix_only_in_tests.py::test_guarded
+references/posix_only_in_tests: posix_only_in_tests.py::test_guarded_import_does_not_guard_its_readers
+references/posix_only_in_tests: posix_only_in_tests.py::test_linux
+references/posix_only_in_tests: posix_only_in_tests.py::test_nested
+references/posix_only_in_tests: posix_only_in_tests.py::test_one_capability_excludes_windows
+references/posix_only_in_tests: posix_only_in_tests.py::test_posix
+references/posix_only_in_tests: posix_only_in_tests.py::test_python_version_is_no_platform
+references/posix_only_in_tests: posix_only_in_tests.py::test_read_of_a_name_that_may_be_none
+references/posix_only_in_tests: posix_only_in_tests.py::test_read_under_a_test_of_the_name
+references/posix_only_in_tests: posix_only_in_tests.py::test_shadowed
+references/posix_only_in_tests: posix_only_in_tests.py::test_string
+references/posix_only_in_tests: posix_only_in_tests.py::test_unknown_capability
+references/posix_only_in_tests: posix_only_in_tests.py::test_unmarked
+references/posix_only_in_tests: posix_only_in_tests.py::test_usefixtures_decorator
+references/posix_only_in_tests: posix_only_in_tests.py::test_usefixtures_marked
+references/posix_only_in_tests: posix_only_in_tests.py::through_a_helper
+references/posix_only_in_tests: posix_only_in_tests.py::unused_helper
+references/posix_only_in_tests: posix_only_in_tests.py:24-24: make_pipe
+references/posix_only_in_tests: posix_only_in_tests.py:28-28: through_a_helper
+references/posix_only_in_tests: posix_only_in_tests.py:33-34: pipe_dir
+references/posix_only_in_tests: posix_only_in_tests.py:38-38: test_unmarked
+references/posix_only_in_tests: posix_only_in_tests.py:43-43: test_posix
+references/posix_only_in_tests: posix_only_in_tests.py:48-48: test_linux
+references/posix_only_in_tests: posix_only_in_tests.py:53-53: test_one_capability_excludes_windows
+references/posix_only_in_tests: posix_only_in_tests.py:58-58: test_python_version_is_no_platform
+references/posix_only_in_tests: posix_only_in_tests.py:63-63: test_unknown_capability
+references/posix_only_in_tests: posix_only_in_tests.py:67-67: test_fixture
+references/posix_only_in_tests: posix_only_in_tests.py:71-73: test_from_import
+references/posix_only_in_tests: posix_only_in_tests.py:77-80: test_nested
+references/posix_only_in_tests: posix_only_in_tests.py:78-78: test_nested.<locals>.test_inner
+references/posix_only_in_tests: posix_only_in_tests.py:84-85: test_guarded
+references/posix_only_in_tests: posix_only_in_tests.py:89-89: test_string
+references/posix_only_in_tests: posix_only_in_tests.py:93-93: test_shadowed
+references/posix_only_in_tests: posix_only_in_tests.py:97-97: unused_helper
+references/posix_only_in_tests: posix_only_in_tests.py:104-104: TestMarked.test_method
+references/posix_only_in_tests: posix_only_in_tests.py:109-109: TestPlain.test_method
+references/posix_only_in_tests: posix_only_in_tests.py:122-122: peak
+references/posix_only_in_tests: posix_only_in_tests.py:126-127: lock_when_present
+references/posix_only_in_tests: posix_only_in_tests.py:131-131: lock
+references/posix_only_in_tests: posix_only_in_tests.py:135-135: test_guarded_import_does_not_guard_its_readers
+references/posix_only_in_tests: posix_only_in_tests.py:139-139: test_read_under_a_test_of_the_name
+references/posix_only_in_tests: posix_only_in_tests.py:143-143: test_read_of_a_name_that_may_be_none
+references/posix_only_in_tests: posix_only_in_tests.py:148-148: TestSelf._spawn
+references/posix_only_in_tests: posix_only_in_tests.py:151-151: TestSelf._portable
+references/posix_only_in_tests: posix_only_in_tests.py:154-154: TestSelf.test_method_called_on_self
+references/posix_only_in_tests: posix_only_in_tests.py:157-157: TestSelf.test_portable_method_called_on_self
+references/posix_only_in_tests: posix_only_in_tests.py:162-162: TestInherits.test_inherited_method_called_on_self
+references/posix_only_in_tests: posix_only_in_tests.py:167-167: test_usefixtures_decorator
+references/posix_only_in_tests: posix_only_in_tests.py:173-173: test_usefixtures_marked
+references/posix_only_in_tests: posix_only_in_tests.py:180-180: TestUsefixturesMark.test_pytestmark
+references/posix_only_in_tests: posix_only_in_tests.py:186-186: TestAutouse._pipe
+references/posix_only_in_tests: posix_only_in_tests.py:189-189: TestAutouse.test_runs_after_the_fixture
+references/posonly_receiver_members: posonly_receiver_members.py::C::__init__
+references/posonly_receiver_members: posonly_receiver_members.py::C::make
+references/posonly_receiver_members: posonly_receiver_members.py:9-9: C.__init__
+references/posonly_receiver_members: posonly_receiver_members.py:13-13: C.make
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py::annotated
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py::bump
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py::comprehension
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py::late
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py::reader
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py::shadow
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:23-23: reader
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:27-27: shadow
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:31-31: comprehension
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:31-31: comprehension.<locals>.<listcomp>
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:35-36: bump
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:40-40: annotated
+references/private_globals_read_or_shadowed: private_globals_read_or_shadowed.py:48-48: late
+references/private_names_by_string_argument: private_names_by_string_argument.py::read
+references/private_names_by_string_argument: private_names_by_string_argument.py:10-16: read
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py::TestGroup::test_inner
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py::TestGroup::test_method
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py::helper
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py::test_aliased
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py::test_bare
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py::test_data
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py::test_either
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py::test_session_data
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py::test_value
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:25-25: test_data
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:30-30: test_session_data
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:35-35: test_bare
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:40-40: test_aliased
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:45-45: test_either
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:51-51: test_value
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:58-58: TestGroup.test_inner
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:61-61: TestGroup.test_method
+references/pytest_fixtures_by_decorator_origin: pytest_fixtures_by_decorator_origin.py:66-66: helper
+references/reexport_chain_across_modules: other.py::late
+references/reexport_chain_across_modules: other.py:7-9: late
+references/reexported_names_by_origin: reexported_names_by_origin.py::load
+references/reexported_names_by_origin: reexported_names_by_origin.py:15-15: load
+references/reference_backend_definitions: reference_backend_definitions.py::build_dataclass_resolver
+references/reference_backend_definitions: reference_backend_definitions.py::load_backend
+references/reference_backend_definitions: reference_backend_definitions.py:20-20: build_dataclass_resolver
+references/reference_backend_definitions: reference_backend_definitions.py:24-24: load_backend
+references/relative_dynamic_imports_by_origin: relative_dynamic_imports_by_origin.py::aliased
+references/relative_dynamic_imports_by_origin: relative_dynamic_imports_by_origin.py::two_packages
+references/relative_dynamic_imports_by_origin: relative_dynamic_imports_by_origin.py:14-14: aliased
+references/relative_dynamic_imports_by_origin: relative_dynamic_imports_by_origin.py:18-18: two_packages
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py::NeutralImporter::import_module
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py::use_shadowed_alias
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py::use_shadowed_provider
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:16-16: use_shadowed_alias
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:21-21: NeutralImporter.import_module
+references/shared_model_dynamic_import_neutral: shared_model_dynamic_import_neutral.py:30-30: use_shadowed_provider
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py::ReboundImporter::import_module
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py::inspect_conditional_provider
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py::inspect_forward_provider
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:30-30: inspect_forward_provider
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:43-43: inspect_conditional_provider
+references/shared_model_dynamic_import_providers: shared_model_dynamic_import_providers.py:51-51: ReboundImporter.import_module
+references/skip_markers_by_origin: skip_markers_by_origin.py::TestCase::test_method
+references/skip_markers_by_origin: skip_markers_by_origin.py::test_aliased
+references/skip_markers_by_origin: skip_markers_by_origin.py::test_local
+references/skip_markers_by_origin: skip_markers_by_origin.py::test_parameter
+references/skip_markers_by_origin: skip_markers_by_origin.py:20-21: test_aliased
+references/skip_markers_by_origin: skip_markers_by_origin.py:29-29: TestCase.test_method
+references/skip_markers_by_origin: skip_markers_by_origin.py:33-34: test_parameter
+references/skip_markers_by_origin: skip_markers_by_origin.py:38-39: test_local
+references/star_import_hides_builtins: star_import_hides_builtins.py::cut
+references/star_import_hides_builtins: star_import_hides_builtins.py::shadowed
+references/star_import_hides_builtins: star_import_hides_builtins.py:10-10: <listcomp>
+references/star_import_hides_builtins: star_import_hides_builtins.py:14-14: cut
+references/star_import_hides_builtins: star_import_hides_builtins.py:18-18: shadowed
+references/star_import_hides_dynamic_imports: star_import_hides_dynamic_imports.py::shadowed
+references/star_import_hides_dynamic_imports: star_import_hides_dynamic_imports.py:15-15: shadowed
+references/store_writes_through_bindings: store_writes_through_bindings.py::Holder::method
+references/store_writes_through_bindings: store_writes_through_bindings.py::annotation_keeps_the_alias
+references/store_writes_through_bindings: store_writes_through_bindings.py::bound_twice
+references/store_writes_through_bindings: store_writes_through_bindings.py::capture_rebinds
+references/store_writes_through_bindings: store_writes_through_bindings.py::closure_keeps_the_schema_object
+references/store_writes_through_bindings: store_writes_through_bindings.py::closure_writes_the_alias
+references/store_writes_through_bindings: store_writes_through_bindings.py::comprehension_target
+references/store_writes_through_bindings: store_writes_through_bindings.py::def_rebinds
+references/store_writes_through_bindings: store_writes_through_bindings.py::import_rebinds
+references/store_writes_through_bindings: store_writes_through_bindings.py::in_place_operator_keeps_the_alias
+references/store_writes_through_bindings: store_writes_through_bindings.py::lambda_parameter
+references/store_writes_through_bindings: store_writes_through_bindings.py::local_setattr_alias
+references/store_writes_through_bindings: store_writes_through_bindings.py::right_side_reads_the_old_binding
+references/store_writes_through_bindings: store_writes_through_bindings.py::schema_object_in_a_string
+references/store_writes_through_bindings: store_writes_through_bindings.py::shadowed_setattr
+references/store_writes_through_bindings: store_writes_through_bindings.py::uncalled_nonlocal_keeps_the_alias
+references/store_writes_through_bindings: store_writes_through_bindings.py:13-18: closure_writes_the_alias
+references/store_writes_through_bindings: store_writes_through_bindings.py:16-16: closure_writes_the_alias.<locals>.inner
+references/store_writes_through_bindings: store_writes_through_bindings.py:22-25: closure_keeps_the_schema_object
+references/store_writes_through_bindings: store_writes_through_bindings.py:23-23: closure_keeps_the_schema_object.<locals>.inner
+references/store_writes_through_bindings: store_writes_through_bindings.py:32-32: Holder.method
+references/store_writes_through_bindings: store_writes_through_bindings.py:36-37: local_setattr_alias
+references/store_writes_through_bindings: store_writes_through_bindings.py:41-41: shadowed_setattr
+references/store_writes_through_bindings: store_writes_through_bindings.py:45-46: lambda_parameter
+references/store_writes_through_bindings: store_writes_through_bindings.py:50-52: comprehension_target
+references/store_writes_through_bindings: store_writes_through_bindings.py:51-51: comprehension_target.<locals>.<listcomp>
+references/store_writes_through_bindings: store_writes_through_bindings.py:56-57: schema_object_in_a_string
+references/store_writes_through_bindings: store_writes_through_bindings.py:61-64: capture_rebinds
+references/store_writes_through_bindings: store_writes_through_bindings.py:68-71: import_rebinds
+references/store_writes_through_bindings: store_writes_through_bindings.py:75-80: def_rebinds
+references/store_writes_through_bindings: store_writes_through_bindings.py:78-78: def_rebinds.<locals>.extras
+references/store_writes_through_bindings: store_writes_through_bindings.py:84-86: annotation_keeps_the_alias
+references/store_writes_through_bindings: store_writes_through_bindings.py:90-92: in_place_operator_keeps_the_alias
+references/store_writes_through_bindings: store_writes_through_bindings.py:96-101: bound_twice
+references/store_writes_through_bindings: store_writes_through_bindings.py:105-111: uncalled_nonlocal_keeps_the_alias
+references/store_writes_through_bindings: store_writes_through_bindings.py:108-109: uncalled_nonlocal_keeps_the_alias.<locals>.inner
+references/store_writes_through_bindings: store_writes_through_bindings.py:115-120: right_side_reads_the_old_binding
+references/string_annotation_forward: string_annotation_forward.py::f
+references/string_annotation_forward: string_annotation_forward.py:12-12: f
+references/string_annotation_type_positions: string_annotation_type_positions.py::f
+references/string_annotation_type_positions: string_annotation_type_positions.py:9-9: f
+references/syntax_read_by_origin: syntax_read_by_origin.py::Finder::visit_Call
+references/syntax_read_by_origin: syntax_read_by_origin.py::Finder::visit_Lambda
+references/syntax_read_by_origin: syntax_read_by_origin.py::built
+references/syntax_read_by_origin: syntax_read_by_origin.py::comment
+references/syntax_read_by_origin: syntax_read_by_origin.py::definitions
+references/syntax_read_by_origin: syntax_read_by_origin.py::stores
+references/syntax_read_by_origin: syntax_read_by_origin.py::table
+references/syntax_read_by_origin: syntax_read_by_origin.py:15-22: stores
+references/syntax_read_by_origin: syntax_read_by_origin.py:26-26: definitions
+references/syntax_read_by_origin: syntax_read_by_origin.py:26-26: definitions.<locals>.<listcomp>
+references/syntax_read_by_origin: syntax_read_by_origin.py:30-30: built
+references/syntax_read_by_origin: syntax_read_by_origin.py:34-34: table
+references/syntax_read_by_origin: syntax_read_by_origin.py:38-38: comment
+references/syntax_read_by_origin: syntax_read_by_origin.py:43-43: Finder.visit_Lambda
+references/syntax_read_by_origin: syntax_read_by_origin.py:46-46: Finder.visit_Call
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py::ClassScope::method
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py::conditional_neutral_backend
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py::first_sibling
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py::parameter_shadow
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py::rebuild_namespace
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py::second_sibling
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py::shadowed_import_aliases
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:12-12: rebuild_namespace
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:16-16: parameter_shadow
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:20-24: conditional_neutral_backend
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:28-33: shadowed_import_aliases
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:37-37: first_sibling
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:41-41: second_sibling
+references/sys_modules_registry_neutral: sys_modules_registry_neutral.py:48-48: ClassScope.method
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::ForwardModuleClass::inspect
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::cleared_later_module_constant
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::cleared_module_constant
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_backend
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_conditional_backend
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_conditional_later_module_constant
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_conditional_registry
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_decorator
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_default
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_later_module_constant
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_local_dynamic_alias
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_local_import_aliases
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_local_registry
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_local_strings
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::inspect_registry_rebinding
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::reassigned_module_constant
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::reassigned_registry
+references/sys_modules_registry_reads: sys_modules_registry_reads.py::reassigned_string
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:32-39: inspect_backend
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:43-46: inspect_local_registry
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:50-57: inspect_local_import_aliases
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:61-65: inspect_local_strings
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:69-70: inspect_registry_rebinding
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:74-75: inspect_local_dynamic_alias
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:79-79: inspect_later_module_constant
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:83-83: inspect_conditional_later_module_constant
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:87-90: inspect_conditional_registry
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:94-100: inspect_conditional_backend
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:104-104: inspect_default
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:109-109: inspect_decorator
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:128-128: ForwardModuleClass.inspect
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:141-143: reassigned_registry
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:147-150: reassigned_string
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:154-155: cleared_module_constant
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:159-160: reassigned_module_constant
+references/sys_modules_registry_reads: sys_modules_registry_reads.py:164-165: cleared_later_module_constant
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py::read
+references/type_expressions_and_any_aliases: type_expressions_and_any_aliases.py:35-36: read
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py::f
+references/typevar_string_bound_and_cast: typevar_string_bound_and_cast.py:12-12: f
+references/writes_through_a_name: writes_through_a_name.py::read
+references/writes_through_a_name: writes_through_a_name.py:17-17: read
