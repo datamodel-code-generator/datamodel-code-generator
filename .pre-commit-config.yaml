@@ -90,7 +90,7 @@ repos:
     name: Check the package against the heki contracts
     entry: heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src
     language: python
-    additional_dependencies: [heki==0.4.0]
+    additional_dependencies: [heki==0.5.0]
     files: ^(src/datamodel_code_generator/.*\.py|scripts/heki\.toml|scripts/heki_baseline\.toml)$
     pass_filenames: false
   - id: zizmor
