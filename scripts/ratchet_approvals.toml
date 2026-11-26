@@ -8,3 +8,10 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "allowlist:heki-baseline:EFF201:no-environment-reads"
+head = 48
+pr = 7541
+decision = ["#7541"]
+reason = "#7541 moves heki to 0.7.0, whose catalog sees Path.cwd, Path.expanduser, Path.absolute, Path.home and os.path.relpath: the 54 such reads go through one home per call in _paths.py, and the 5 left (four homes and the runtime package's own read) are recorded (owner decision, 2026-11-26)"
