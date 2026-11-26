@@ -1,5 +1,5 @@
 [[change]]
-id = "heki-arch-090"
+id = "architecture-checker-heki-contracts"
 category = "internal"
 title = "Hold the architecture rules with heki contracts"
 summary = "The architecture checker's read rules moved to heki contracts built from the layers; the checker and its tests are removed and the package writes the same output"

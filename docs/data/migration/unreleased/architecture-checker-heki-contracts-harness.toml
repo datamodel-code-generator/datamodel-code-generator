@@ -1,5 +1,5 @@
 [[change]]
-id = "heki-arch-090-harness"
+id = "architecture-checker-heki-contracts-harness"
 category = "harness"
 title = "Run the layer fixtures through the heki architecture contracts"
 summary = "The heki layer fixtures report the architecture contracts' findings and the checks run on the tree no longer list the removed checker; the package writes the same output"
