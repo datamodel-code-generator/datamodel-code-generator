@@ -97,6 +97,8 @@ intersect-merged-allof-members-practical	main/preset_opt_in_options/preset_sets_
 intersect-merged-allof-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-merged-allof-members-standard].model.py
 keep-bases-beside-generic-base-class-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-beside-generic-base-class-practical].model.py
 keep-bases-beside-generic-base-class-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-beside-generic-base-class-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-beside-generic-base-class-practical].model.py
+keep-bases-of-typed-dicts-listed-before-their-parents-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-of-typed-dicts-listed-before-their-parents-practical].tree/
+keep-bases-of-typed-dicts-listed-before-their-parents-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-of-typed-dicts-listed-before-their-parents-standard].tree/
 keep-constrained-root-models-in-every-container-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].model.py
 keep-constrained-root-models-in-every-container-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].model.py
 keep-content-parameter-refs-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-content-parameter-refs-practical].model.py

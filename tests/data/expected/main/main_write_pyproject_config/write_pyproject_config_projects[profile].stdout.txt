@@ -2,7 +2,7 @@ Updated pyproject.toml:
   [tool.datamodel-codegen.profiles.api]
   collapse-reuse-models = true
   naming-strategy = "enclosing-model"
-  preset = "standard-py310-20261124"
+  preset = "standard-py310-20261125"
   reuse-model = true
   treat-dot-as-module = false
   use-tag-as-union-variant-name = true
