@@ -57,9 +57,9 @@ becomes final and where a decision belongs.
   `Reference.children` a `MUT203` one: call the store operation or ask the generation index instead.
   `scripts/check_generation_store_usage.py` checks that every attribute the model graph declares has a row in the
   table; a write of a `__dict__` key no row names is a heki finding (`unlisted-dict-keys`), and a row whose attribute
-  or key nothing has a heki error (`unmatched-contract-entries`). A `cached_property` on a model-graph owner of a row, or on a class deriving from one, is a
-  `MUT201` finding of the cache contract (`forbid-cached-property-on`); the baseline holds today's, which cache rows
-  name.
+  or key nothing has is a heki error (`unmatched-contract-entries`). A `cached_property` on a model-graph owner of a
+  row, or on a class deriving from one, is a `MUT201` finding of the cache contract (`forbid-cached-property-on`); the
+  baseline holds today's, which cache rows name.
 - Every pass has a declaration in `scripts/pass_decls.py` and an entry, by name, in the pipeline tables of `Parser`; the
   finality check of the test suite (`tests/checks/finality.py`) runs it inside the scope of that declaration; a pass
   that conflicts with an earlier one of its segment needs an `after` edge with

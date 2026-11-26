@@ -795,9 +795,9 @@ The local pre-commit hook `generation-store-usage` runs
 attribute on `DataType`, a field or a model needs a row in `ATTRIBUTE_FACTS`,
 and an attribute row that names nothing the classes declare fails. A new
 `__dict__` key needs a row too: heki reports a write of a key no row names, and
-a row whose attribute or key the package no longer has. The hook runs when a parser
-file changes; after editing `model/`, `types.py` or the table, run the script
-yourself (the test suite runs it too).
+a row whose attribute or key the package no longer has. The hook runs when a
+parser file changes; after editing `model/`, `types.py` or the table, run the
+script yourself (the test suite runs it too).
 
 If a new mutation helper is needed, add the method to `SITE_EFFECTS` or
 `NO_SITE_EFFECT` (which make up `GENERATION_STORE_MUTATION_METHODS`), name it in
