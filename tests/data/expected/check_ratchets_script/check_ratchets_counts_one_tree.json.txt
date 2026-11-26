@@ -3,9 +3,6 @@ exit status 0
  "abnormal-path@tests": {
   "tests/test_d.py": 1
  },
- "allowlist:DEFAULT_ALLOWLIST": {
-  "scripts/check_architecture_boundaries.py": 1
- },
  "allowlist:FROZEN_EXEMPT_FILES": {
   "tests/assert_helper_allowlists.py": 1
  },

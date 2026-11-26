@@ -11,7 +11,6 @@ import re
 import subprocess
 import sys
 import tempfile
-import typing
 from collections import Counter
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -27,7 +26,6 @@ from scripts import _decision_home_reads as home_reads
 from scripts import _import_cycles as import_cycles
 from scripts import _source_model as source_model
 from scripts import (
-    check_architecture_boundaries,
     check_generation_store_usage,
     check_pass_pipeline,
     check_ratchets,
@@ -61,7 +59,7 @@ PYTHON = (sys.version_info.major, sys.version_info.minor)
 OLDEST_PYTHON = (3, 11)
 """The oldest Python the package supports, the ``min-python`` of a form that names none."""
 _DIRECTIVE = re.compile(
-    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|layers|bases"
+    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|bases"
     r"|nested-names|assignments|annotations|segments|decorators)"
     r": *(.*)$",
     re.MULTILINE,
@@ -717,55 +715,6 @@ def _source_rules(form: Path) -> list[Finding]:
         ]
 
 
-ARCHITECTURE_LAYERS: tuple[check_architecture_boundaries.Layer, ...] = (
-    "entrypoint",
-    "parser",
-    "config",
-    "input-model",
-    "reference",
-    "shared-model",
-)
-"""The layers a form runs under unless it names its own: those with rules of their own on names."""
-
-
-def _architecture_boundaries(form: Path) -> list[Finding]:
-    """Run the layer rules of the layers above over a form's modules, as files of a temporary tree."""
-    with tempfile.TemporaryDirectory() as folder:
-        root = Path(folder)
-        paths = []
-        for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
-            target = root / (path.relative_to(form) if form.is_dir() else path.name.removesuffix(".txt"))
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-            paths.append(target)
-        asked = [item.strip() for item in _directives(form).get("layers", "").split(",") if item.strip()]
-        if unknown := sorted(set(asked) - set(typing.get_args(check_architecture_boundaries.Layer))):
-            msg = f"{form.name}: layers that are none of the guard's: {unknown}"
-            raise ValueError(msg)
-        found = []
-        for name in asked or ARCHITECTURE_LAYERS:
-            violations = check_architecture_boundaries.check_files([(path, name) for path in paths], allowlist={})
-            found += [
-                Finding(
-                    f"{name}/{violation.rule}",
-                    _site(form, place, violation.line),
-                    f"{name}: {place}:{violation.line}: {violation.rule}: {violation.target} (in {violation.qualname})",
-                )
-                for violation in violations
-                for place in [violation.path.removeprefix(root.as_posix()).lstrip("/")]
-            ]
-        return found
-
-
-def test_a_form_names_only_the_layers_the_guard_has(tmp_path: Path) -> None:
-    """A layer the guard does not have stops the form, instead of selecting no run and finding nothing."""
-    form = tmp_path / "form.py"
-    form.write_text('"""A form.\nlayers: parser, shared_model\n"""\n', encoding="utf-8")
-    with pytest.raises(ValueError, match="layers") as error:
-        _architecture_boundaries(form)
-    assert_output(str(error.value) + "\n")
-
-
 def _where_disagreements(form: Path) -> list[Finding]:
     """Compare what `scripts.where` answers on a form's modules with the model's own answers and with every file read.
 
@@ -1199,11 +1148,6 @@ RULES: dict[str, RuleRun] = {
         "scripts.check_source_rules",
         frozenset({"bindings", "references", "imports", "suppressions", "extents"}),
         _source_rules,
-    ),
-    "architecture-boundaries": RuleRun(
-        "scripts.check_architecture_boundaries",
-        frozenset({"bindings", "references", "imports"}),
-        _architecture_boundaries,
     ),
     "where-agrees-with-the-model": RuleRun(
         "scripts.where", frozenset({"bindings", "references", "imports", "extents"}), _where_disagreements

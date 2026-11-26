@@ -374,12 +374,15 @@ SEEDED_LAYERS = {
     "constraints/forbidden.py": "_constraint_applicability.py",
     "regex/forbidden.py": "_regex_syntax.py",
     "runtime/forbidden.py": "_runtime/seeded.py",
+    "unjudged_dynamic_import/forbidden.py": "parser/dynamic.py",
+    "unreadable/import.py.txt": "parser/unreadable.py",
 }
 """The fixtures of the layers (``tests/data/architecture_boundaries``), each placed at a module of its layer."""
 SEEDED_LAYER_STUBS = (
     "__init__.py",
     "_api_generation.py",
     "_api_types.py",
+    "_format_types.py",
     "_json_schema.py",
     "_runtime/__init__.py",
     "_runtime/client.py",
@@ -407,13 +410,30 @@ SEEDED_LAYER_STUBS = (
     "types.py",
 )
 """The empty modules the fixtures import: heki judges an import of a module the package has."""
+SEEDED_LAYER_DEFINITIONS = {
+    "_format_types.py": (
+        "class PythonVersion:\n    has_typed_dict_closed = True\n    has_typed_dict_non_required = True\n\n"
+        "    def _meets(self, construct):\n        return True\n"
+    ),
+    "_requirements.py": "\n\ndef python_target_meets(construct, version_key):\n    return True\n",
+    "enums.py": "class DataModelType:\n    MsgspecStruct = 'msgspec.Struct'\n",
+    "model/typed_dict.py": "class TypedDict:\n    pass\n",
+    "parser/base.py": (
+        "class Parser:\n    _diagnostic_source_path = None\n    _formatter_cwd = None\n\n"
+        "    def _dispose(self):\n        pass\n"
+    ),
+}
+"""The definitions the architecture contracts name, appended to the modules of the seeded package that hold them."""
 
 
 @needs("heki")
 def test_heki_reports_the_imports_that_cross_a_layer(tmp_path: Path) -> None:
-    """Each import a layer may not make is a finding, however it is written; an import heki cannot name is one too.
+    """Each import or read a layer may not make is a finding, however it is written; one heki cannot name is one too.
 
-    The import boundaries come from the layers of `check_architecture_boundaries._classify_source_path`. An import
+    The import boundaries and the architecture contracts come from the layers of `_package_layers.classify_source_path`.
+    A read of a member only a backend reads, a backend named by module, an output family selected, a module of
+    ``sys.modules`` read by shared model code and a private member of a parser reached from the entry point are
+    findings, through ``getattr`` and ``hasattr`` too, and on a value heki cannot tie to a class by name. An import
     counts in a function, under ``TYPE_CHECKING``, guarded and by name (``importlib.import_module`` with a constant,
     an alias, a relative name and its package, ``__import__``); a by-name import of a name the code does not fix is
     ``IMP202``. The ``allowed.py`` fixtures and the composition root give none; a name bound to ``importlib`` on one
@@ -472,7 +492,7 @@ def test_the_import_boundaries_raise_where_the_layer_table_is_out_of_step(
 
 
 def _layer_import_reports(tmp_path: Path, stubs: tuple[str, ...], places: dict[str, str]) -> str:
-    """Place the fixtures at modules of their layers and return the import boundaries' findings as stored text."""
+    """Place the fixtures at modules of their layers and return the findings of the layer contracts as stored text."""
     package = tmp_path / PACKAGE
     for stub in stubs:
         (package / stub).parent.mkdir(parents=True, exist_ok=True)
@@ -480,10 +500,20 @@ def _layer_import_reports(tmp_path: Path, stubs: tuple[str, ...], places: dict[s
     for fixture, place in places.items():
         (package / place).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(LAYER_FIXTURES / fixture, package / place)
+    for place, definitions in SEEDED_LAYER_DEFINITIONS.items():
+        if (package / place).is_file():
+            with (package / place).open("a", encoding="utf-8") as module:
+                module.write(definitions)
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    _contracts_file(contracts, build_heki_contracts.import_boundary_contracts(repo, partial=True))
+    _contracts_file(
+        contracts,
+        [
+            *build_heki_contracts.import_boundary_contracts(repo, partial=True),
+            *build_heki_contracts.architecture_contracts(repo, partial=True),
+        ],
+    )
 
     result = _heki("--output-format", "json", cwd=tmp_path, config=contracts)
 

@@ -564,13 +564,12 @@ Before adding a dependency between layers, check `docs/architecture.md` and run:
 
 ```bash
 heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src
-python scripts/check_architecture_boundaries.py
 ```
 
 heki's import boundaries (`scripts/heki.toml`) reject concrete output-backend imports in parsers, configuration and
-shared model modules, private `parser._*` imports from shared code and parser imports from configuration. The guard
-rejects backend-name inspection in parsers, `sys.modules` lookups from shared model modules, backend references from
-configuration, and local output-family mappings in `input_model.py`. Move
+shared model modules, private `parser._*` imports from shared code and parser imports from configuration. Its
+architecture contracts reject backend-name inspection in parsers, `sys.modules` lookups from shared model modules,
+backend references from configuration, and local output-family mappings in `input_model.py`. Move
 output behavior to a neutral capability on `DataModel` or `DataModelFieldBase`,
 keep backend lifecycle and cache management with its backend or the model
 composition root, and move reusable helpers to a neutral package module. Do not
@@ -711,11 +710,11 @@ the tree, each with arguments that run it on the tree (read with the check's own
 parser). A mention, such as a `paths:` filter or a hook `files:` pattern, is no
 run, and neither is a lookup such as `check_ratchets.py --ruff-pin`.
 
-Tests for the checker use source fixtures and expected reports under
-`tests/data/architecture_boundaries/` and
-`tests/data/expected/architecture_boundaries/`. Keep diagnostics specific enough
-that a contributor or coding agent can identify the owning layer and the expected
-remediation without reading the checker implementation.
+The tests of the layer contracts place the source fixtures of
+`tests/data/architecture_boundaries/` at modules of their layers and run heki on
+them (`tests/test_build_heki_contracts_script.py`). Keep the `message` of each
+contract specific enough that a contributor or coding agent can identify the
+owning layer and the expected remediation without reading the builder.
 
 ## Decision homes
 

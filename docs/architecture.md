@@ -1298,7 +1298,7 @@ it, the `Phase` whose passes write it last today and its freeze point: the lates
 pass pipeline is in place. The finality checks still check each `Fact` at B1 unless a pass declares an exception.
 Bookkeeping rows name no fact and no store operation. The module docstring lists the three allowed exceptions to the
 kind rules (plan rows, rendered nullability, the schema-validator plan cache). The module imports only the standard
-library and `typing_extensions` (`scripts/check_architecture_boundaries.py` classifies it as the `facts` leaf layer,
+library and `typing_extensions` (`scripts/_package_layers.py` classifies it as the `facts` leaf layer,
 whose import boundary in `scripts/heki.toml` holds that), so the checkers can read it without importing the package.
 
 heki checks the writes against that table: `scripts/build_heki_contracts.py` turns the `fact`, `presentation` and
@@ -2118,13 +2118,17 @@ paths:
   `types.py` exports, are views of its rows.
 
 heki holds the imports of these rules: `scripts/build_heki_contracts.py` writes one `[[import-boundaries]]` contract
-per rule into `scripts/heki.toml`, its importers the modules of a layer that `scripts/check_architecture_boundaries.py`
+per rule into `scripts/heki.toml`, its importers the modules of a layer that `scripts/_package_layers.py`
 classifies, and every import counts, lazy, by name and under `TYPE_CHECKING` too; an import heki cannot name is
-reported (`IMP202`), so the baseline counts the imports of modules only the run knows. `python
-scripts/check_architecture_boundaries.py` holds what an import boundary cannot name: semantic backend inspection, a
-root name read through the bound root package, a private name imported from a parser module, an import source no module
-name can be read from (`unreadable-import`, a relative import that leaves the top-level package) and a dynamic import
-through a star import or another object (`unjudged-dynamic-import`). No module of the package imports the
+reported (`IMP202`), so the baseline counts the imports of modules only the run knows: a relative import that leaves
+the top-level package, and a call that may be `importlib.import_module` or `__import__` through another object or a
+name bound to it on one path only. A private name imported from a parser module is an `IMP201` of the
+`private-parser-import` boundary. The architecture contracts of the same file (`architecture_contracts`) hold what an
+import boundary cannot name: parser code reads no member only a backend reads (`getattr` and `hasattr` included),
+asks the target version for no TypedDict construct, names no backend module by a `module=` argument or by a model's
+`__module__`, and selects no output family; input-model code selects none either; shared model code reads no module
+of `sys.modules`; configuration reads no backend name outside the defaults of `ParserConfig`; the entry point reaches
+no private member of a parser; and no module reads a name through the bound root package. No module of the package imports the
 package root, and none but `__main__.py` imports `__main__` (rule `root-import`): every import form, relative ones,
 `TYPE_CHECKING` and function-local ones included, and a read of a root name through a bound root package fail; the root
 re-exports the names of the modules that define them for users, so the package imports each name from its module. A

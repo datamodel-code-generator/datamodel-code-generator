@@ -1,7 +1,6 @@
 exit status 0
 key                                            count
 abnormal-path@tests                                1
-allowlist:DEFAULT_ALLOWLIST                        1
 allowlist:FROZEN_EXEMPT_FILES                      1
 allowlist:JUSTIFIED_VIOLATIONS                     1
 cast@src                                           1
