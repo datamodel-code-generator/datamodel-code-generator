@@ -95,8 +95,9 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   depends on the environment cost review rounds.
 
 Tables of one kind and family that differ only in their ``targets`` are written as one table (`group_contracts`): the
-file holds one table per distinct setting, not one per target. A key that every table of a kind sets, with one value
-in most of them, is written once in the kind's defaults table (`kind_defaults`).
+file holds one table per distinct setting, not one per target. A key with one value in most tables of a kind
+is written once in the kind's defaults table (`kind_defaults`); a table that leaves the key out counts with the value
+heki documents for it (`HEKI_KEY_DEFAULTS`).
 
 Each effect boundary's report carries the help of its kind, ``BOUNDARY_ADVICE`` of ``scripts/check_ratchets.py``
 (``ENVIRONMENT_ADVICE``, ``PASS_ADVICE``, ``GLUE_ADVICE``, ``DECISION_READ_ADVICE``): the ratchet key that counts
@@ -270,19 +271,61 @@ def _hashable(value: object) -> object:
     return tuple(value) if isinstance(value, list) else value
 
 
-def _defaulted(defaults: Mapping[str, object], key: str, value: object) -> bool:
-    """Return whether the defaults of a kind give a key of a table the value the table gives it."""
-    return key in defaults and _hashable(defaults[key]) == _hashable(value)
+HEKI_KEY_DEFAULTS: Mapping[str, Mapping[str, object]] = {
+    "write-owners": {
+        "fresh-objects": "allow",
+        "unresolved": "ignore",
+        "attribution": "call-graph",
+        "own-receiver": "report",
+    },
+    "read-owners": {"unresolved": "ignore", "attribution": "call-graph", "own-receiver": "report"},
+    "call-owners": {
+        "subclasses": True,
+        "unresolved": "ignore",
+        "references": "ignore",
+        "attribution": "call-graph",
+        "own-receiver": "report",
+        "targets-call-each-other": "allow",
+    },
+    "effect-boundaries": {
+        "write-universe": [],
+        "allow-writes": [],
+        "fresh-objects": "allow",
+        "references": "ignore",
+        "import-probes": "allow",
+        "unresolved": "ignore",
+    },
+    "import-boundaries": {"type-checking": "ignore", "reach": "statement", "unresolved": "ignore"},
+}
+"""The value heki takes for a key a table of a kind leaves out, for the keys whose default is a value and not a choice
+of what to judge (heki 0.8.0, the "Default" column of the key tables of each kind on
+https://heki.koxudaxi.dev/configuration/: write-owners, read-owners, call-owners, effect-boundaries, import-boundaries).
+The installed package carries no configuration text, so the page is the one source; ``message``, ``fail`` and the keys
+that select what a table judges (targets, scopes, importers, allowed-*, forbidden-*, forbid, read-targets, ...) are not
+listed, since leaving one out is not a value another table could share. ``kind_defaults`` writes a key a table leaves
+out as heki's value where the kind's defaults table gives the key another one."""
+
+
+_MISSING = object()
+"""The marker of a key without a default to compare with."""
+
+
+def _effective(kind: str, table: Mapping[str, object], key: str) -> object:
+    """Return the value heki reads for a key of a table: its own, else the documented default of the key."""
+    return table[key] if key in table else HEKI_KEY_DEFAULTS.get(kind, {}).get(key)
 
 
 def kind_defaults(contracts: Iterable[str]) -> tuple[list[str], list[str]]:
     """Return the defaults table of each contract kind and the contracts written without the keys it sets.
 
-    A key that every table of a kind sets, other than ``name`` and ``targets`` (heki refuses them in a defaults
-    table), goes into ``[<kind>-defaults]`` with the value more than half of the tables give it, where the kind has
-    two tables or more; a table keeps the key only where its value differs, since a table's own key overrides the
-    default and a list replaces it whole. A key some table of the kind leaves out stays in the tables: a default would
-    change what heki reads for that table, which takes heki's own default today.
+    A key goes into ``[<kind>-defaults]`` with the value more than half of the kind's tables give it, where the kind
+    has two tables or more, and every table of the kind sets the key or leaves it out for a value heki documents in
+    ``HEKI_KEY_DEFAULTS``; the tables that leave the key out count with heki's value, and name, targets and the keys
+    without a documented default stay out (heki refuses the first two in a defaults table). A table keeps a key only
+    where its value differs from the one it reads otherwise: its own key overrides the default and a list replaces it
+    whole, so a table that left the key out is written with heki's value where the defaults table gives another. Where
+    the common value is heki's own, the defaults table would say nothing, so it is left out and the tables drop the
+    keys that state heki's value.
     """
     tables = [next(iter(tomllib.loads(text).items())) for text in contracts]
     members: dict[str, list[dict[str, object]]] = defaultdict(list)
@@ -290,20 +333,37 @@ def kind_defaults(contracts: Iterable[str]) -> tuple[list[str], list[str]]:
         members[kind].append(table)
     defaults: dict[str, dict[str, object]] = {}
     for kind, kind_tables in members.items():
-        for key in [key for key in kind_tables[0] if key not in _IDENTITY]:
-            if not all(key in table for table in kind_tables):
+        documented = HEKI_KEY_DEFAULTS.get(kind, {})
+        keys = dict.fromkeys(key for table in kind_tables for key in table if key not in _IDENTITY)
+        for key in [*keys, *(key for key in documented if key not in keys)]:
+            if not all(key in table or key in documented for table in kind_tables):
                 continue
-            ((value, count),) = Counter(_hashable(table[key]) for table in kind_tables).most_common(1)
-            if 2 * count > len(kind_tables) > 1:
-                defaults.setdefault(kind, {})[key] = next(t[key] for t in kind_tables if _hashable(t[key]) == value)
-    written = [
-        _table(kind, **{key: v for key, v in table.items() if not _defaulted(defaults.get(kind, {}), key, v)})
-        for kind, (table,) in tables
-    ]
+            ((value, count),) = Counter(_hashable(_effective(kind, table, key)) for table in kind_tables).most_common(1)
+            if 2 * count > len(kind_tables) > 1 and not (key in documented and value == _hashable(documented[key])):
+                defaults.setdefault(kind, {})[key] = next(
+                    _effective(kind, t, key) for t in kind_tables if _hashable(_effective(kind, t, key)) == value
+                )
+    written: list[str] = []
+    for kind, (table,) in tables:
+        kind_values = defaults.get(kind, {})
+        documented = HEKI_KEY_DEFAULTS.get(kind, {})
+        keys = {key: value for key, value in table.items() if not _same(kind_values, documented, key, value)}
+        keys.update({
+            key: documented[key]
+            for key in kind_values
+            if key not in table and key in documented and _hashable(documented[key]) != _hashable(kind_values[key])
+        })
+        written.append(_table(kind, **keys))
     return [
         "\n".join([f"[{kind}-defaults]", *(f"{key} = {_value(value)}" for key, value in keys.items())]) + "\n"
         for kind, keys in defaults.items()
     ], written
+
+
+def _same(defaults: Mapping[str, object], documented: Mapping[str, object], key: str, value: object) -> bool:
+    """Return whether a table key states what its kind reads without it: the defaults table's value, else heki's."""
+    read = defaults[key] if key in defaults else documented.get(key, _MISSING)
+    return read is not _MISSING and _hashable(read) == _hashable(value)
 
 
 def _module(path: str) -> str:
