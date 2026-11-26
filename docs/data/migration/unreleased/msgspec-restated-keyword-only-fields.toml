@@ -116,18 +116,10 @@ covers = [
 
 [[change.cells]]
 input = [
-    "tests/data/jsonschema/msgspec_restated_keyword_only/deeper.json",
-    "tests/data/jsonschema/msgspec_restated_keyword_only/mid_restates_unchanged.json",
-    "tests/data/jsonschema/msgspec_restated_keyword_only/narrowed_further.json",
-    "tests/data/jsonschema/msgspec_restated_keyword_only/narrowed_same.json",
-    "tests/data/jsonschema/msgspec_restated_keyword_only/own_optional_field.json",
-    "tests/data/jsonschema/msgspec_restated_keyword_only/restated_required.json",
-    "tests/data/jsonschema/msgspec_restated_keyword_only/restated_with_default.json",
-    "tests/data/jsonschema/msgspec_restated_keyword_only/root_typed.json",
-    "tests/data/jsonschema/msgspec_restated_keyword_only/use_default.json",
-    "tests/data/openapi/msgspec_restated_keyword_only/modules.json",
+    "tests/data/jsonschema/msgspec_restated_keyword_only/**",
+    "tests/data/openapi/msgspec_restated_keyword_only/**",
 ]
-backends = "*"
+backends = ["msgspec.Struct"]
 options = "*"
 
 [[change.cells]]
