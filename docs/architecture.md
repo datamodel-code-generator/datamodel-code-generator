@@ -1319,11 +1319,11 @@ reference.
 `scripts/check_generation_store_usage.py` (with `tests/parser/test_generation_store_usage.py`) reads the table and
 the store mutations (`SITE_EFFECTS`, `NO_SITE_EFFECT`) through `scripts/_source_model.py` and checks the table itself:
 it fails when a row's kind, facts, freeze point or store operations contradict each other, when a model-graph class
-sets an attribute (in any method) without a row, when `parser/`, `model/` or `types.py` writes a `__dict__` key without
-a row (heki can judge a write only of a key some row names; a key the store writes needs none), and when a row names
-nothing the sources declare or write. Writes through the parser itself (`self`) and through schema objects
-(parameters annotated `JsonSchemaObject`, and the copies and `SCHEMA_OBJECT_TYPE.model_validate` results made from
-them) write no model-graph key. A module the source model cannot read is a problem of its own.
+sets an attribute (in any method) without a row, and when an attribute or cached property row names nothing the classes
+declare. A module the source model cannot read is a problem of its own. The `__dict__` keys are heki's: every
+`write-owners` contract reports a write of a key no row names (`unlisted-dict-keys`, `MUT201`, or `MUT205` on a value
+heki cannot tie to a class), the `bookkeeping` contract names the bookkeeping rows, which any function may write, and a
+row whose attribute or key nothing in `src/` has is an error (`unmatched-contract-entries`).
 
 heki's contracts are the one check of this rule: they judge every write site of `src/`, whether a test reaches it or
 not, and report a write through a receiver heki cannot resolve (`MUT205`) instead of passing it. The write guards of

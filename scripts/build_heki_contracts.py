@@ -509,19 +509,23 @@ def _methods(
 
 
 def _store_methods(
-    repo: Repo, members: Iterable[StoreMember] = STORE_MEMBERS
+    repo: Repo, members: Iterable[StoreMember] | None = None
 ) -> dict[StoreMember | DecisionAccessor, list[str]]:
-    """Return the ``CALL`` rows of ``STORE_MEMBERS``, each with the scopes of the method and of its overrides."""
-    return _methods(repo, (member for member in members if member.use is MemberUse.CALL), "STORE_MEMBERS")
+    """Return the ``CALL`` rows of ``members``, each with the scopes of the method and of its overrides.
+
+    ``members`` defaults to ``STORE_MEMBERS``, read when the function runs.
+    """
+    rows = STORE_MEMBERS if members is None else members
+    return _methods(repo, (member for member in rows if member.use is MemberUse.CALL), "STORE_MEMBERS")
 
 
-def _store_hooks(repo: Repo, members: Iterable[StoreMember] = STORE_MEMBERS) -> list[str]:
+def _store_hooks(repo: Repo, members: Iterable[StoreMember] | None = None) -> list[str]:
     """Return the scopes of the methods that write the graph for the store operations, overrides included."""
     return sorted({scope for scopes in _store_methods(repo, members).values() for scope in scopes})
 
 
 def write_owner_contracts(
-    repo: Repo, rows: Iterable[AttributeFact] = ATTRIBUTE_FACTS, members: Iterable[StoreMember] = STORE_MEMBERS
+    repo: Repo, rows: Iterable[AttributeFact] = ATTRIBUTE_FACTS, members: Iterable[StoreMember] | None = None
 ) -> list[str]:
     """Return the ``write-owners`` contracts of the fact rows.
 

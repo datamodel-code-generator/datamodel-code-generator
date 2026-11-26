@@ -792,10 +792,10 @@ heki cannot tell, such as an unannotated parameter or a callback), and a read of
 
 The local pre-commit hook `generation-store-usage` runs
 `scripts/check_generation_store_usage.py`, which checks the table itself: a new
-attribute on `DataType`, a field or a model, and a new `__dict__` key that
-`parser/`, `model/` or `types.py` writes, needs a row in `ATTRIBUTE_FACTS`, and
-a row that names nothing the sources declare or write fails. heki can judge a
-write only of an attribute or key that a row names. The hook runs when a parser
+attribute on `DataType`, a field or a model needs a row in `ATTRIBUTE_FACTS`,
+and an attribute row that names nothing the classes declare fails. A new
+`__dict__` key needs a row too: heki reports a write of a key no row names, and
+a row whose attribute or key the package no longer has. The hook runs when a parser
 file changes; after editing `model/`, `types.py` or the table, run the script
 yourself (the test suite runs it too).
 

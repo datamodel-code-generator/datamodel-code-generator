@@ -55,8 +55,9 @@ becomes final and where a decision belongs.
   one. A call of a method the store runs (`STORE_MEMBERS`: `replace_data_type`, `set_base_class`, `process_const`,
   ...) outside the store is a `MUT204` finding (`MUT207` on a receiver whose class heki cannot tell), and a read of
   `Reference.children` a `MUT203` one: call the store operation or ask the generation index instead.
-  `scripts/check_generation_store_usage.py` checks that every attribute and `__dict__` key the model graph writes has
-  a row in the table. A `cached_property` on a model-graph owner of a row, or on a class deriving from one, is a
+  `scripts/check_generation_store_usage.py` checks that every attribute the model graph declares has a row in the
+  table; a write of a `__dict__` key no row names is a heki finding (`unlisted-dict-keys`), and a row whose attribute
+  or key nothing has a heki error (`unmatched-contract-entries`). A `cached_property` on a model-graph owner of a row, or on a class deriving from one, is a
   `MUT201` finding of the cache contract (`forbid-cached-property-on`); the baseline holds today's, which cache rows
   name.
 - Every pass has a declaration in `scripts/pass_decls.py` and an entry, by name, in the pipeline tables of `Parser`; the

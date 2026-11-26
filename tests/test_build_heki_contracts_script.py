@@ -735,9 +735,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from datamodel_code_generator import types
 from datamodel_code_generator.types import _BOOKKEEPING_KEY, _LISTED_KEY
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.model.enum import Enum
     from datamodel_code_generator.parser.schema import JsonSchemaObject
@@ -847,6 +850,68 @@ def reference(reference: Reference) -> None:
     reference.__dict__["_new_reference"] = 1
 
 
+def module_constant(data_type: DataType) -> None:
+    data_type.__dict__[types._MODULE_KEY] = 1
+
+
+def annotated_target(data_type: DataType) -> None:
+    data_type.__dict__["_new_annotated"]: int = 1
+
+
+def starred_target(data_type: DataType, pair: list) -> None:
+    [*data_type.__dict__["_new_starred"]] = pair
+
+
+def alias_popped(data_type: DataType) -> None:
+    namespace = data_type.__dict__
+    namespace.pop("_new_alias_popped")
+
+
+def alias_of_an_alias(data_type: DataType) -> None:
+    namespace = data_type.__dict__
+    copied = namespace
+    copied["_new_copied"] = 1
+
+
+def vars_alias(data_type: DataType) -> None:
+    state = vars(data_type)
+    state["_new_vars_alias"] = 1
+
+
+def getattr_alias(data_type: DataType) -> None:
+    got = getattr(data_type, "__dict__")
+    got["_new_getattr_alias"] = 1
+
+
+def closure_direct(data_type: DataType):
+    def inner() -> None:
+        data_type.__dict__["_new_closure_direct"] = 1
+
+    return inner
+
+
+def rebound_in_a_loop(schema: JsonSchemaObject, items: list) -> None:
+    for schema in items:
+        schema.__dict__["_new_rebound_loop"] = 1
+
+
+def built(build) -> None:
+    build().__dict__["_new_built"] = 1
+
+
+def computed(data_type: DataType, name: str) -> None:
+    data_type.__dict__[name] = 1
+
+
+def no_key(data_type: DataType) -> None:
+    data_type.__dict__.update({})
+    data_type.__dict__.get("_new_read")
+
+
+def callable_namespace(action: Callable[[], str]) -> None:
+    action.__dict__["_marker"] = True
+
+
 def entry_append(data_type: DataType) -> None:
     data_type.__dict__["_listed"].append(1)
 
@@ -876,14 +941,16 @@ class ParserState:
 """Writes of ``__dict__`` keys by a pass, one form per function: keys no row names on typed, untyped and ``Any``
 values, a key a fact row names and a bookkeeping key, then every way to reach the namespace (``vars``, ``getattr``, an
 alias, a walrus, an annotated and a rebound alias), every write (``del``, ``pop``, ``+=``, a tuple target), the
-namespace of each owner and of a subclass, mutations of an entry, and the namespaces of a schema object and of a class
-no row describes."""
+namespace of each owner and of a subclass, a key constant read from its module, an annotated and a starred target, a
+pop through an alias, an alias of an alias, aliases of ``vars`` and ``getattr``, a write in a closure, a schema-object
+name rebound by a loop, a call result, a computed key and calls that write no key, mutations of an entry, and the
+namespaces of a callable, a schema object and a class no row describes."""
 SEEDED_KEYS = {
     "pyproject.toml": SEEDED_PACKAGE["pyproject.toml"],
     f"{PACKAGE}/__init__.py": "",
     f"{PACKAGE}/types.py": (
         '_LISTED_KEY = "_listed"\n_BOOKKEEPING_KEY = "_bookkeeping"\n_GONE_KEY = "_gone"\n'
-        '_GONE_BOOKKEEPING_KEY = "_gone_bookkeeping"\n_READ_ONLY_KEY = "_read_only"\n\n\n'
+        '_GONE_BOOKKEEPING_KEY = "_gone_bookkeeping"\n_READ_ONLY_KEY = "_read_only"\n_MODULE_KEY = "_new_module"\n\n\n'
         'class DataType:\n    def __init__(self) -> None:\n        self.type = ""\n\n'
         "    def read(self) -> object:\n        return self.__dict__.get(_READ_ONLY_KEY)\n"
     ),
@@ -941,9 +1008,10 @@ def test_heki_reports_unlisted_dict_keys_and_rows_that_name_nothing(tmp_path: Pa
     """A write of a ``__dict__`` key no row names is a finding, in every form; a row naming nothing is an error.
 
     On an owner of a row or a subclass of one the write is ``MUT201``, on a value heki cannot tie to a class
-    ``MUT205``; a key a fact row names is judged by that row's contract, a bookkeeping key any function may write. A
-    mutation of an entry writes no key: the entry exists only after a write of its key, which is judged. The namespaces
-    of a schema object and of a class no row describes are none of the contracts'.
+    ``MUT205``; a key a fact row names is judged by that row's contract, a bookkeeping key any function may write, and
+    the store module any key. A write whose key heki cannot read, or a call on the namespace that may write one, is
+    ``MUT205`` on the class. A mutation of an entry writes no key: the entry exists only after a write of its key, which
+    is judged. The namespaces of a callable, a schema object and a class no row describes are none of the contracts'.
     """
     for name, text in SEEDED_KEYS.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
@@ -964,28 +1032,40 @@ def test_heki_reports_unlisted_dict_keys_and_rows_that_name_nothing(tmp_path: Pa
         1,
         [
             ("enum.py", "Enum.mark", "MUT201", "Enum._new_own", 6),
-            ("keys.py", "literal", "MUT201", "DataType._new_literal", 18),
-            ("keys.py", "constant", "MUT201", "DataType._new_constant", 22),
-            ("keys.py", "untyped", "MUT205", "_new_untyped", 26),
-            ("keys.py", "loop", "MUT205", "_new_loop", 31),
-            ("keys.py", "any_value", "MUT205", "_new_any", 35),
-            ("keys.py", "listed", "MUT201", "DataType._listed", 39),
-            ("keys.py", "through_vars", "MUT201", "DataType._new_vars", 47),
-            ("keys.py", "through_getattr", "MUT201", "DataType._new_getattr", 51),
-            ("keys.py", "through_an_alias", "MUT201", "DataType._new_alias", 56),
-            ("keys.py", "through_a_walrus", "MUT201", "DataType._new_walrus", 60),
-            ("keys.py", "deleted", "MUT201", "DataType._new_deleted", 65),
-            ("keys.py", "popped", "MUT201", "DataType._new_popped", 69),
-            ("keys.py", "augmented", "MUT201", "DataType._new_augmented", 73),
-            ("keys.py", "in_a_tuple", "MUT201", "DataType._new_tuple", 77),
-            ("keys.py", "through_an_annotated_alias", "MUT201", "DataType._new_annotated_alias", 83),
-            ("keys.py", "through_a_rebound_alias", "MUT201", "DataType._new_rebound", 89),
-            ("keys.py", "optional", "MUT201", "DataType._new_optional", 94),
-            ("keys.py", "field", "MUT201", "DataModelFieldBase._new_field", 98),
-            ("keys.py", "model", "MUT201", "DataModel._new_model", 102),
-            ("keys.py", "subclass", "MUT201", "Enum._new_subclass", 106),
-            ("keys.py", "model_vars", "MUT201", "DataModel._new_model_vars", 110),
-            ("keys.py", "reference", "MUT201", "Reference._new_reference", 114),
+            ("keys.py", "literal", "MUT201", "DataType._new_literal", 21),
+            ("keys.py", "constant", "MUT201", "DataType._new_constant", 25),
+            ("keys.py", "untyped", "MUT205", "_new_untyped", 29),
+            ("keys.py", "loop", "MUT205", "_new_loop", 34),
+            ("keys.py", "any_value", "MUT205", "_new_any", 38),
+            ("keys.py", "listed", "MUT201", "DataType._listed", 42),
+            ("keys.py", "through_vars", "MUT201", "DataType._new_vars", 50),
+            ("keys.py", "through_getattr", "MUT201", "DataType._new_getattr", 54),
+            ("keys.py", "through_an_alias", "MUT201", "DataType._new_alias", 59),
+            ("keys.py", "through_a_walrus", "MUT201", "DataType._new_walrus", 63),
+            ("keys.py", "deleted", "MUT201", "DataType._new_deleted", 68),
+            ("keys.py", "popped", "MUT201", "DataType._new_popped", 72),
+            ("keys.py", "augmented", "MUT201", "DataType._new_augmented", 76),
+            ("keys.py", "in_a_tuple", "MUT201", "DataType._new_tuple", 80),
+            ("keys.py", "through_an_annotated_alias", "MUT201", "DataType._new_annotated_alias", 86),
+            ("keys.py", "through_a_rebound_alias", "MUT201", "DataType._new_rebound", 92),
+            ("keys.py", "optional", "MUT201", "DataType._new_optional", 97),
+            ("keys.py", "field", "MUT201", "DataModelFieldBase._new_field", 101),
+            ("keys.py", "model", "MUT201", "DataModel._new_model", 105),
+            ("keys.py", "subclass", "MUT201", "Enum._new_subclass", 109),
+            ("keys.py", "model_vars", "MUT201", "DataModel._new_model_vars", 113),
+            ("keys.py", "reference", "MUT201", "Reference._new_reference", 117),
+            ("keys.py", "module_constant", "MUT201", "DataType._new_module", 121),
+            ("keys.py", "annotated_target", "MUT201", "DataType._new_annotated", 125),
+            ("keys.py", "starred_target", "MUT201", "DataType._new_starred", 129),
+            ("keys.py", "alias_popped", "MUT201", "DataType._new_alias_popped", 134),
+            ("keys.py", "alias_of_an_alias", "MUT201", "DataType._new_copied", 140),
+            ("keys.py", "vars_alias", "MUT201", "DataType._new_vars_alias", 145),
+            ("keys.py", "getattr_alias", "MUT201", "DataType._new_getattr_alias", 150),
+            ("keys.py", "closure_direct.<locals>.inner", "MUT201", "DataType._new_closure_direct", 155),
+            ("keys.py", "rebound_in_a_loop", "MUT205", "_new_rebound_loop", 162),
+            ("keys.py", "built", "MUT205", "_new_built", 166),
+            ("keys.py", "computed", "MUT205", "DataType", 170),
+            ("keys.py", "no_key", "MUT205", "DataType", 174),
         ],
         [
             ("targets", "DataModel.gone_cached", "cache:no store operation"),
