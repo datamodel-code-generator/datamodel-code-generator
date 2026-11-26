@@ -5092,7 +5092,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 318>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 319>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
