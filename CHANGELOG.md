@@ -5,6 +5,69 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.103.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.103.0) - 2026-11-26
+
+## Breaking Changes
+
+### Code Generation Changes
+* A subclass listed before its parent, in a module written first, types a property the parent requires - Where a schema extends a parent through allOf and restates or requires a property that the parent requires and takes from its own base, and the subclass is listed before the parent in a module processed first (a deeper package such as com.example.pets.Child over com.example.Mid, or a module name that sorts later), Pydantic, dataclass and msgspec output now type the property as the parent's base declares it (x: int), as when the parent is listed first. Since 0.72.0 it was typed None, so the model rejected every valid value and accepted null. The copy also carries what the parent's base declares beside the type: a type override of the restated property keeps the inherited examples and constraints (a Pydantic Field takes examples=[4] and, under --field-constraints, ge=1, so it rejects values below the bound, as the schema does), and a subclass that now equals another one reuses it under --reuse-model and is collapsed into it under --collapse-reuse-models. TypedDict output is unchanged. (#7535, #7532)
+
+### API/CLI Changes
+* A model method that says whether a subclass keeps the types of inherited fields - DataModel.keeps_inherited_field_types() returns whether a subclass declares an inherited field as its bases declare it, as a TypedDict does; the parser reads it to decide how a subclass written before its parent takes a property the parent requires. Nothing is removed or changed. (#7535)
+* Public names for --client-tools - The option adds the ClientTools enum, its config field and the client_tools option of generate(); nothing is removed or changed. (#7517)
+* A store operation that records the class scope of a field's aliases - GraphBuilder.record_alias_resolution_scope() (and GenerationStore.record_alias_resolution_scope()) records the class scope under which --aliases names a field, which the parser wrote into the field directly before; nothing is removed or changed. (#7515)
+* Public names for --keep-bases-of-typed-dicts-listed-before-their-parents and the 20261125 presets - The option adds its config field and the 20261125 presets add their names; nothing is removed or changed. (#7538)
+
+## New Options
+
+* New option `--client-tools`: Add a tool table over the client's operations for agents: tools.py, whose Toolset and AsyncToolset search the tools, give their JSON schemas from the models, and call them with JSON arguments; mcp also adds mcp_server.py, which serves them over MCP (experimental). (#7517, #7527)
+* New option `--keep-bases-of-typed-dicts-listed-before-their-parents` (`--no-keep-bases-of-typed-dicts-listed-before-their-parents`): Type a key that a TypedDict restates or requires and that its parent requires as the parent's bases declare it, also where the TypedDict is listed before its parent in a module written before the parent's, as when the parent is listed first, so the TypedDict keeps its generated bases (`class Child(Mid)` with `x: int`). Without it such a TypedDict copies the parent's key before the key has a type, as in 0.102.0: it declares the keys of its bases itself and drops them, and where it keeps its bases (a custom template, or a base the output imports in place of a generated model) the key is typed `None`. Other output model types type such a key either way. (#7538)
+
+## New Dated Presets
+
+* `standard-py3XX-20261125` and `practical-py3XX-20261125`: they keep the 20261124 options and add Bases of TypedDicts listed before their parents (`--keep-bases-of-typed-dicts-listed-before-their-parents`): Type a key that a TypedDict restates or requires and that its parent requires as the parent's bases declare it, also where the TypedDict is listed before its parent in a module written first, so the TypedDict keeps its generated bases as when the parent is listed first, and no such key is typed None. (#7538)
+
+## Experimental Features
+
+* `--client-tools functions and mcp (client-tools in [tool.datamodel-codegen], client_tools in generate())` is experimental. The tool table of a generated client and its MCP server are experimental; its tools, their names, schemas, annotations, search, and error values may change.
+
+## Changes That Need No Action
+
+* The copied client runtime notes the credentials a call places - Experimental: `cli-option.generate-client`. positions.py of every generated client package gains placed_credentials() and note_placed(), which the auth runtime calls for each credential it places on a request, so the tools of --client-tools can leave them out of error values. Requests, responses and errors of a client are unchanged. (#7517)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Approve the heki baseline rise for the pass boundaries by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7521
+* Approve the relative import rise for the client tools runtime by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7523
+* Stamp the upgrade guide entries of 0.102.0 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7522
+* Move heki to 0.4.0 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7515
+* Run Ubuntu Python 3.12 and 3.13 without coverage on main by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7524
+* Approve one more heki pass-boundary finding for #7513 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7525
+* Check the declared fact writes of each pass with heki as well by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7513
+* Count each heki effect boundary kind under its own ratchet key by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7526
+* Approve the ratchet rises of the MCP tool server by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7529
+* Add --client-tools functions, a tool table over the client's operations by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7517
+* Serve the tools of a generated client over MCP by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7527
+* Approve the heki baseline rise of the layer import boundaries by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7531
+* Hold the layer imports with heki import boundaries by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7530
+* Move heki to 0.5.0 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7533
+* Forbid cached properties on every fact row owner with heki by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7534
+* Read the written pyproject configs as listings in the change records by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7536
+* Resolve an inherited property whose parent's module is processed later by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7535
+* Keep the bases of TypedDicts listed before their parents under an option by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7538
+* Sign no report-only family cell in the PR tier by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7539
+* Select the Windows and macOS pull request tests with --os-selection by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7537
+* Share oracle test generations and re-record the shard weights by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7540
+* Approve the heki baseline rise of the environment reads by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7542
+* Summarise the shard weights and heki baseline in the release diff by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7543
+* Move heki to 0.7.0 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/7541
+
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.102.0...0.103.0
+
+---
+
 ## [0.101.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.101.0) - 2026-11-24
 
 ## Breaking Changes
