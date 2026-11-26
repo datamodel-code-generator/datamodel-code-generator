@@ -847,11 +847,6 @@ def _check_runs(form: Path) -> list[Finding]:
         ]
 
 
-def _unquoted(target: str) -> str:
-    """Return a target without whitespace and double quotes, which a verdict's site list cannot hold."""
-    return re.sub(r"[\s\"]", "", target)
-
-
 def _generation_store_usage(form: Path) -> list[Finding]:
     """Read the attributes a form's classes declare, as the fact table check reads the classes of the model graph.
 
@@ -867,7 +862,7 @@ def _generation_store_usage(form: Path) -> list[Finding]:
         problems = check_generation_store_usage.table_problems(rows=(), declaration_paths=paths)
         places = [problem.path.relative_to(base).as_posix() for problem in problems]
     pairs = zip(problems, places, strict=True)
-    return [Finding(_unquoted(p.target), _site(form, at, p.line), f"{at}:{p.line}: {p.message}") for p, at in pairs]
+    return [Finding(p.target, _site(form, at, p.line), f"{at}:{p.line}: {p.message}") for p, at in pairs]
 
 
 def _pass_pipeline(form: Path) -> list[Finding]:
