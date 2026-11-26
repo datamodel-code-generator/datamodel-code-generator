@@ -710,11 +710,12 @@ def test_record_contracts_judge_the_scope_that_makes_the_access() -> None:
     """Homes, builders, held parse methods, dispatch tables, fact rows and store members are judged where they are used.
 
     A call handed to a private helper is the helper's, not its caller's, as the baseline records it by the scope that
-    holds it; a write is the function's that makes it, as heki names it with lexical attribution.
+    holds it; a write is the function's that makes it, as heki names it with lexical attribution. A table that sets
+    no attribution takes the one of the defaults table of its kind.
     """
     contracts = tomllib.loads(CONTRACTS.read_text(encoding="utf-8"))
     judged = [
-        (table["name"], table.get("attribution"))
+        (table["name"], table.get("attribution", contracts.get(f"{kind}-defaults", {}).get("attribution")))
         for kind in ("call-owners", "read-owners", "write-owners")
         for table in contracts[kind]
         if table["name"].startswith((
@@ -1852,8 +1853,13 @@ def test_pass_boundaries_name_the_function_each_decision_runs() -> None:
 
 @pytest.mark.allow_direct_assert("a boundary without the help of its kind must fail, not be stored as an output")
 def test_each_effect_boundary_carries_the_help_its_ratchet_prints() -> None:
-    """Each effect boundary's message is the help of its kind, which the rise of its baseline sites prints too."""
-    boundaries = tomllib.loads(CONTRACTS.read_text(encoding="utf-8"))["effect-boundaries"]
+    """Each effect boundary's message is the help of its kind, which the rise of its baseline sites prints too.
+
+    A boundary that sets no message takes the one of ``[effect-boundaries-defaults]``.
+    """
+    contracts = tomllib.loads(CONTRACTS.read_text(encoding="utf-8"))
+    default = contracts.get("effect-boundaries-defaults", {}).get("message")
+    boundaries = contracts["effect-boundaries"]
     targets = [
         entry["target"]
         for entry in tomllib.loads(BASELINE.read_text(encoding="utf-8"))["entries"]
@@ -1862,9 +1868,10 @@ def test_each_effect_boundary_carries_the_help_its_ratchet_prints() -> None:
     kinds = {check_ratchets.boundary_kind(boundary["name"]) for boundary in boundaries}
 
     assert {
-        boundary["name"]: boundary.get("message")
+        boundary["name"]: boundary.get("message", default)
         for boundary in boundaries
-        if boundary.get("message") != check_ratchets.BOUNDARY_ADVICE.get(check_ratchets.boundary_kind(boundary["name"]))
+        if boundary.get("message", default)
+        != check_ratchets.BOUNDARY_ADVICE.get(check_ratchets.boundary_kind(boundary["name"]))
     } == {}
     assert kinds == set(check_ratchets.BOUNDARY_ADVICE)
     assert {check_ratchets.boundary_kind(target) for target in targets} <= kinds

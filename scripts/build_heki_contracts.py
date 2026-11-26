@@ -95,7 +95,8 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   depends on the environment cost review rounds.
 
 Tables of one kind and family that differ only in their ``targets`` are written as one table (`group_contracts`): the
-file holds one table per distinct setting, not one per target.
+file holds one table per distinct setting, not one per target. A key that every table of a kind sets, with one value
+in most of them, is written once in the kind's defaults table (`kind_defaults`).
 
 Each effect boundary's report carries the help of its kind, ``BOUNDARY_ADVICE`` of ``scripts/check_ratchets.py``
 (``ENVIRONMENT_ADVICE``, ``PASS_ADVICE``, ``GLUE_ADVICE``, ``DECISION_READ_ADVICE``): the ratchet key that counts
@@ -111,7 +112,7 @@ from __future__ import annotations
 import argparse
 import ast
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, NamedTuple, get_args
 
@@ -264,6 +265,47 @@ def group_contracts(contracts: Iterable[str]) -> list[str]:
     ]
 
 
+def _hashable(value: object) -> object:
+    """Return the value of a table key in a form that can be counted and compared: a list as a tuple."""
+    return tuple(value) if isinstance(value, list) else value
+
+
+def _defaulted(defaults: Mapping[str, object], key: str, value: object) -> bool:
+    """Return whether the defaults of a kind give a key of a table the value the table gives it."""
+    return key in defaults and _hashable(defaults[key]) == _hashable(value)
+
+
+def kind_defaults(contracts: Iterable[str]) -> tuple[list[str], list[str]]:
+    """Return the defaults table of each contract kind and the contracts written without the keys it sets.
+
+    A key that every table of a kind sets, other than ``name`` and ``targets`` (heki refuses them in a defaults
+    table), goes into ``[<kind>-defaults]`` with the value more than half of the tables give it, where the kind has
+    two tables or more; a table keeps the key only where its value differs, since a table's own key overrides the
+    default and a list replaces it whole. A key some table of the kind leaves out stays in the tables: a default would
+    change what heki reads for that table, which takes heki's own default today.
+    """
+    tables = [next(iter(tomllib.loads(text).items())) for text in contracts]
+    members: dict[str, list[dict[str, object]]] = defaultdict(list)
+    for kind, (table,) in tables:
+        members[kind].append(table)
+    defaults: dict[str, dict[str, object]] = {}
+    for kind, kind_tables in members.items():
+        for key in [key for key in kind_tables[0] if key not in _IDENTITY]:
+            if not all(key in table for table in kind_tables):
+                continue
+            ((value, count),) = Counter(_hashable(table[key]) for table in kind_tables).most_common(1)
+            if 2 * count > len(kind_tables) > 1:
+                defaults.setdefault(kind, {})[key] = next(t[key] for t in kind_tables if _hashable(t[key]) == value)
+    written = [
+        _table(kind, **{key: v for key, v in table.items() if not _defaulted(defaults.get(kind, {}), key, v)})
+        for kind, (table,) in tables
+    ]
+    return [
+        "\n".join([f"[{kind}-defaults]", *(f"{key} = {_value(value)}" for key, value in keys.items())]) + "\n"
+        for kind, keys in defaults.items()
+    ], written
+
+
 def _module(path: str) -> str:
     """Return the dotted module of a path relative to the package directory."""
     parts = path.removesuffix(".py").split("/")
@@ -271,8 +313,11 @@ def _module(path: str) -> str:
 
 
 def _scope(module: str, name: str) -> list[str]:
-    """Return the patterns of a scope of a module and the scopes inside it, or of the whole module without a name."""
-    return [f"{module}:{name}", f"{module}:{name}.*"] if name else [f"{module}:*"]
+    """Return the pattern of a scope of a module and the scopes inside it, or of the whole module without a name.
+
+    ``{,.*}`` is a glob alternative that may be empty: ``m:f{,.*}`` names ``f`` and every scope nested in it.
+    """
+    return [f"{module}:{name}{{,.*}}"] if name else [f"{module}:*"]
 
 
 def _package_modules(repo: Repo) -> dict[str, str]:
@@ -1436,22 +1481,24 @@ def required_version() -> str:
 def generate() -> str:
     """Return the contents of scripts/heki.toml."""
     repo = Repo(ROOT, Page([], [], [], []))
-    contracts = group_contracts([
-        *write_owner_contracts(repo),
-        *store_member_contracts(repo),
-        *store_operation_contracts(repo),
-        *decision_home_contracts(repo),
-        *decision_writer_contracts(repo),
-        *decision_contracts(repo),
-        *import_ledger_contracts(repo),
-        *builder_contracts(repo),
-        *host_contracts(repo),
-        *import_boundary_contracts(repo),
-        *pipeline_contracts(repo),
-        *shared_object_contracts(repo),
-        *environment_contracts(),
-        *finality_contracts(repo),
-    ])
+    defaults, contracts = kind_defaults(
+        group_contracts([
+            *write_owner_contracts(repo),
+            *store_member_contracts(repo),
+            *store_operation_contracts(repo),
+            *decision_home_contracts(repo),
+            *decision_writer_contracts(repo),
+            *decision_contracts(repo),
+            *import_ledger_contracts(repo),
+            *builder_contracts(repo),
+            *host_contracts(repo),
+            *import_boundary_contracts(repo),
+            *pipeline_contracts(repo),
+            *shared_object_contracts(repo),
+            *environment_contracts(),
+            *finality_contracts(repo),
+        ])
+    )
     head = "\n".join([
         HEADER,
         f"required-version = {_quote(required_version())}",
@@ -1464,7 +1511,7 @@ def generate() -> str:
         f"cycle-edges = {_array(IMPORT_EDGES)}",
         "",
     ])
-    return "\n".join([head, *contracts])
+    return "\n".join([head, *defaults, *contracts])
 
 
 def main(argv: list[str] | None = None) -> int:
