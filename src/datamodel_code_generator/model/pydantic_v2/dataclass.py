@@ -23,7 +23,9 @@ from datamodel_code_generator.model._decisions.assignment import (
 )
 from datamodel_code_generator.model._render_plan import FORCED_ASSIGNMENT, CallPlan, Kwarg, Positional, RuleId, Why
 from datamodel_code_generator.model.base import (
+    _REDECLARED_FIELDS_KEY,
     UNDEFINED,
+    _class_body_fields,
     _classify_field_assignment,
     _find_base_classes,
     _has_opaque_custom_base,
@@ -46,7 +48,6 @@ from datamodel_code_generator.model.pydantic_v2.base_model import (
     _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
     _built_bases,
     _config_dict_items,
-    _import_rendered_alias_generator,
     _PydanticV2Model,
     has_lookaround_pattern,
 )
@@ -62,8 +63,6 @@ from datamodel_code_generator.python_literal import represent_python_value
 
 has_field_assignment = _dataclass_module.has_field_assignment
 _MUTABLE_DEFAULT_FACTORY = Why(RuleId("D4.default.dataclass-mutable-factory"), keyword="default")
-_REDECLARED_FIELDS_KEY = "redeclared_python_rejected_fields"
-"""The copies of inherited fields a dataclass writes without a pattern its engine cannot build (#7452)."""
 _VISIBLE_METADATA = Why(RuleId("D11.pydantic-dataclass.visible-metadata"), option="--use-annotated")
 """The dataclass must see the call's metadata: the call follows a plain annotation instead of going into it."""
 
@@ -202,7 +201,6 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
 
         if config_parameters:
             self._store_config(config_parameters)
-            _import_rendered_alias_generator(self, self._rendered_config_items())
 
         self._lookaround_regex_engine_checked = False
 
@@ -339,8 +337,10 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         The dataclass builds each declaration it inherits (``get_effective_fields``) with its own config, which
         selects ``python-re`` for a base's pattern (#7452). A declaration of a model the engine builds (``built``)
         already leaves out a pattern Python's ``re`` rejects (#6593), and so does a copy that a dataclass between it
-        and the declaring base writes, which decides first; for another declaration of its module, the dataclass
-        writes a copy that leaves the pattern out, so the base keeps its output, and warns as for its own fields.
+        and the declaring base writes, which decides first; for another declaration, of its module or another one,
+        the dataclass writes a copy that leaves the pattern out, so the base keeps its output, and warns as for its
+        own fields. A copy names the models of its type from the module of the dataclass, which imports them
+        (``render_prep.finalize_type_alias_users``).
         """
         if id(self) in done:
             return
@@ -352,11 +352,11 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         redeclared: list[DataModelFieldBase] = []
         for field in get_effective_fields(self):
             owner = field.parent
-            if owner is None or owner is self or id(owner) in built or owner.module_path != self.module_path:
+            if owner is None or owner is self or id(owner) in built:
                 continue
             if any(
                 isinstance(base, DataClass)
-                and any(copy.name == field.name for copy in DataClass._class_body_fields(base))
+                and any(copy.name == field.name for copy in _class_body_fields(base))
                 and any(ancestor is owner for ancestor in _built_bases(base))
                 for base in bases
                 if base is not owner
@@ -375,11 +375,6 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
                 redeclared.append(copy)
         if redeclared:
             self._set_internal_template_data(_REDECLARED_FIELDS_KEY, redeclared)
-
-    @override
-    def _class_body_fields(self) -> list[DataModelFieldBase]:
-        """Return the fields the class body writes: the inherited ones it redeclares, then its own."""
-        return [*self._internal_template_data.get(_REDECLARED_FIELDS_KEY, ()), *self.fields]
 
     @override
     def _takes_config_of(self, base: DataModel) -> bool:

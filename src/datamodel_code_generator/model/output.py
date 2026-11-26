@@ -9,6 +9,7 @@ from datamodel_code_generator.model._rendered_names import _class_bodies, _expre
 from datamodel_code_generator.model.base import (
     _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY,
     ALL_MODEL,
+    _class_body_fields,
     _mark_forbids_unknown_fields,
 )
 from datamodel_code_generator.reference import ModelType
@@ -101,7 +102,7 @@ def _model_field_name_collisions(model: DataModel, rendered: str | None, import_
     A field annotation loads its names wherever it stands; a default and a method decorator load the names of the
     fields assigned before them.
     """
-    field_names = {field.name for field in model.fields if field.name is not None}
+    field_names = {field.name for field in _class_body_fields(model) if field.name is not None}
     candidates = field_names.intersection(import_names)
     if not candidates:
         return set()

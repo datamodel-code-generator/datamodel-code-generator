@@ -91,6 +91,7 @@ ImportPass: TypeAlias = Literal[
     "generic-base-class",
     "inherited-keyword-only-copies",
     "type-alias-fields",
+    "redeclared-python-rejected-copies",
     "model-imports-snapshot",
     "unused-models",
     "schema-validators",
@@ -137,6 +138,8 @@ ImportPass: TypeAlias = Literal[
 * ``inherited-keyword-only-copies``: ``fix_constructor_field_ordering`` (L6), the models that the keyword-only copies of
   inherited fields name from the module of the model that takes them.
 * ``type-alias-fields``: ``prepare_type_alias_fields``, drops the imports a prepared type-alias body no longer uses.
+* ``redeclared-python-rejected-copies``: ``finalize_type_alias_users``, the models that the copies a Pydantic dataclass
+  writes of inherited fields whose pattern its engine cannot build name from its module.
 * ``model-imports-snapshot``: ``_finalize_modules``, the imports of each model once more, read after the generic base
   class.
 * ``unused-models``: ``_finalize_modules``, drops the imports of the models that collapse left unused.

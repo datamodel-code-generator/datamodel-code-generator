@@ -188,6 +188,8 @@ _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY = "additionalPropertiesType"
 _FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY = "_forbid_unknown_fields"
 """Set under --use-msgspec-forbid-unknown-fields on a model whose schema admits no property but its own, and on every
 model with --extra-fields forbid."""
+_REDECLARED_FIELDS_KEY: Final = "redeclared_python_rejected_fields"
+"""The copies of inherited fields a Pydantic dataclass writes without a pattern its engine cannot build (#7452)."""
 # This key remains part of the legacy template contract, including custom outputs.
 _USE_TYPED_DICT_BACKPORT_TEMPLATE_DATA_KEY = "use_typeddict_backport"
 _USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY = "use_closed_typed_dict"
@@ -3298,7 +3300,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def imports(self) -> tuple[Import, ...]:
         """Get all imports required by this model and its fields: the fields' kept imports, then the model's own."""
         return chain_as_tuple(
-            (i for f in self._class_body_fields() for i in field_imports(f)),
+            (i for f in _class_body_fields(self) for i in field_imports(f)),
             self._additional_imports,
         )
 
@@ -3822,7 +3824,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     @property
     def _custom_template_fields(self) -> Sequence[DataModelFieldBase | _RenderedDataModelField]:
         """Return custom-template fields, allocating proxies only when escaping changes a docstring."""
-        fields = self._class_body_fields()
+        fields = _class_body_fields(self)
         if not any(
             field.use_field_description or field.use_field_description_example or field.use_inline_field_description
             for field in fields
@@ -3888,12 +3890,22 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return fields with docstrings prepared for built-in templates."""
         return [
             _RenderedDataModelField(field, self._format_docstring(field.docstring, self.FIELD_DOCSTRING_INDENT))
-            for field in self._class_body_fields()
+            for field in _class_body_fields(self)
         ]
 
-    def _class_body_fields(self) -> list[DataModelFieldBase]:
-        """Return the fields the class body writes: the model's own."""
-        return self.fields
+
+def _redeclared_fields(model: DataModel) -> Sequence[DataModelFieldBase]:
+    """Return the copies of inherited fields the class body of a model writes before its own fields.
+
+    A Pydantic dataclass writes them (``_REDECLARED_FIELDS_KEY``) where it builds an inherited pattern with an engine
+    that cannot build it.
+    """
+    return model._internal_template_data.get(_REDECLARED_FIELDS_KEY, ())  # noqa: SLF001
+
+
+def _class_body_fields(model: DataModel) -> list[DataModelFieldBase]:
+    """Return the fields the class body of a model writes: the inherited ones it redeclares, then its own."""
+    return [*redeclared, *model.fields] if (redeclared := _redeclared_fields(model)) else model.fields
 
 
 def _model_package_class(cls: type) -> bool:

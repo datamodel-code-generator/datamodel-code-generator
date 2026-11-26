@@ -84,6 +84,19 @@ PatternConstraints = _PatternConstraints
 UnionIntFloat = _UnionIntFloat
 
 
+def _unbuilt_type_alias(data_type: DataType, visiting: frozenset[int]) -> DataModel | None:
+    """Return the type alias with a body that ``data_type`` names, unless a config selecting ``python-re`` builds it.
+
+    Such an alias keeps the patterns of its body as written (``PYTHON_ENGINE_BUILDS_KEY``); an alias of ``visiting``,
+    which a walk is in, is left out.
+    """
+    if (reference := data_type.reference) is None or not isinstance(alias := reference.source, DataModel):
+        return None
+    if not alias.IS_ALIAS or not alias.fields or id(alias) in visiting:
+        return None
+    return None if getattr(alias, "_internal_template_data", {}).get(PYTHON_ENGINE_BUILDS_KEY) else alias
+
+
 def _constraint_arguments(constraints: type[_ConstraintsBase]) -> dict[str, str]:
     """Return the ``Field()`` argument that a constraints model writes each schema keyword as."""
     return {info.alias: name for name, info in constraints.model_fields.items() if info.alias is not None}
@@ -247,6 +260,9 @@ class DataModelField(DataModelFieldBase):
     """The type manager of the output model, whose tables give the keywords the value of an enum's base takes."""
     _TYPE_WITHOUT_PATTERN: ClassVar[Callable[[DataType], DataType] | None] = None
     """The type a type of the output writes without its pattern (``_written_type``), or None to keep every pattern."""
+    _CONSTRAINED_STRING: ClassVar[Callable[[DataType, Mapping[str, object]], DataType] | None] = None
+    """The string type of the output that writes the length constraints of a type alias's string body as keywords
+    (``_written_type``), or None to leave them to the alias."""
     constraints: Optional[Constraints] = None
 
     @property
@@ -384,17 +400,60 @@ class DataModelField(DataModelFieldBase):
 
         The rule that leaves such a pattern out of ``Field()`` (``_python_engine_rejects``) decides for the pattern of
         every type the field writes: a ``constr``, an annotated string, a type alias body, an ``EncodedStr``, nested in
-        items, values, keys and union members.
+        items, values, keys and union members. A type alias the config of the field's model builds, which keeps its
+        patterns as no config selecting ``python-re`` builds it (``_unbuilt_type_alias``), gives those of its body.
         """
         if not self._python_engine_builds():
             return []
         return [
             (data_type, pattern)
             for data_type in self.data_type.all_data_types
-            if data_type.kwargs
-            and isinstance(pattern := data_type.kwargs.get("pattern"), str)
-            and self._python_engine_rejects(pattern)
+            for pattern in self._rejected_patterns_of(data_type, frozenset())
         ]
+
+    def _rejected_patterns_of(self, data_type: DataType, visiting: frozenset[int]) -> list[str]:
+        """Return the patterns of a type that ``python-re`` builds and Python's ``re`` rejects: its own, or its alias's.
+
+        The body of a type alias holds them in its types and in the constraints of its field; ``visiting`` holds the
+        aliases the walk is in.
+        """
+        if data_type.kwargs and isinstance(pattern := data_type.kwargs.get("pattern"), str):
+            return [pattern] if self._python_engine_rejects(pattern) else []
+        if (alias := _unbuilt_type_alias(data_type, visiting)) is None:
+            return []
+        body, inner = alias.fields[0], visiting | {id(alias)}
+        own = getattr(body.constraints, "pattern", None)
+        return [
+            *([own] if isinstance(own, str) and self._python_engine_rejects(own) else []),
+            *(
+                pattern
+                for nested in body.data_type.all_data_types
+                for pattern in self._rejected_patterns_of(nested, inner)
+            ),
+        ]
+
+    def _type_without_rejected_patterns(self, data_type: DataType, visiting: frozenset[int]) -> DataType:
+        """Return the type ``data_type`` writes without the patterns of ``_rejected_patterns_of``.
+
+        A type writes itself without its pattern (``_TYPE_WITHOUT_PATTERN``). A type alias is written as its body
+        without them (``_written_type``), which keeps the lengths that the constraints of its field set on a string
+        (``_CONSTRAINED_STRING``).
+        """
+        without = cast("Callable[[DataType], DataType]", self._TYPE_WITHOUT_PATTERN)
+        if (alias := _unbuilt_type_alias(data_type, visiting)) is None:
+            return without(data_type)
+        body = alias.fields[0]
+        written = self._written_type(body.data_type, visiting | {id(alias)}) or without(body.data_type)
+        lengths = {
+            key: value for key in ("min_length", "max_length") if (value := getattr(body.constraints, key, None))
+        }
+        if (
+            self._python_engine_rejects(getattr(body.constraints, "pattern", None))
+            and lengths
+            and (constrained := self._CONSTRAINED_STRING) is not None
+        ):
+            return constrained(written, lengths)
+        return written
 
     def _python_rejected_patterns(self) -> list[object]:
         """Return the patterns ``python-re`` builds and Python's ``re`` rejects that the field leaves out.
@@ -407,20 +466,27 @@ class DataModelField(DataModelFieldBase):
             *(pattern for _, pattern in self._rejected_type_patterns()),
         ]
 
-    def _written_type(self) -> DataType | None:
-        """Return the copy of the field's type its hint writes without the patterns of ``_rejected_type_patterns``.
+    def _written_type(
+        self, data_type: DataType | None = None, visiting: frozenset[int] = frozenset()
+    ) -> DataType | None:
+        """Return the copy of a type, the field's own by default, its hint writes without the patterns it rejects.
 
-        None when it writes its own type. The copy holds each such type written without its pattern
-        (``_TYPE_WITHOUT_PATTERN``) and shares the field's references, as msgspec's copies do.
+        None when it writes the type as it is. The copy holds each type with a pattern of ``_rejected_patterns_of``
+        written without them (``_type_without_rejected_patterns``) and shares the field's references, as msgspec's
+        copies do; ``visiting`` holds the type aliases whose body it is.
         """
-        if (without := self._TYPE_WITHOUT_PATTERN) is None or not (rejected := self._rejected_type_patterns()):
+        if self._TYPE_WITHOUT_PATTERN is None or not self._python_engine_builds():
             return None
-        return _copy_data_type(
-            self.data_type,
-            register_references=False,
-            link_parents=False,
-            replacements={id(data_type): without(data_type) for data_type, _ in rejected},
-        )
+        written = self.data_type if data_type is None else data_type
+        if not (
+            replacements := {
+                id(nested): self._type_without_rejected_patterns(nested, visiting)
+                for nested in written.all_data_types
+                if self._rejected_patterns_of(nested, visiting)
+            }
+        ):
+            return None
+        return _copy_data_type(written, register_references=False, link_parents=False, replacements=replacements)
 
     @override
     def _hint_data_type(self) -> DataType:

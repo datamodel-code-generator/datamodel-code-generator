@@ -1472,12 +1472,20 @@ FINALIZE_TYPE_ALIAS_USERS = PassDecl(
     Phase.RENDER_PREPARATION,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.MODEL_KIND, Fact.FIELD_TYPES, Fact.CONSTRAINTS),
-    writes=_facts(RenderFact.BACKEND_CONFIG),
+    reads=_facts(
+        Fact.MODEL_KIND,
+        Fact.FIELD_TYPES,
+        Fact.CONSTRAINTS,
+        RenderFact.MODULE_MEMBERSHIP,
+        RenderFact.CLASS_NAMES,
+        RenderFact.MODULE_IMPORTS,
+    ),
+    writes=_facts(RenderFact.BACKEND_CONFIG, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
     summary=(
         "Lets the backend configure the regex engine of its models from their final patterns, also through the type "
-        "aliases they use (model hook)."
+        "aliases they use (model hook), then imports the models that the inherited fields a model redeclares name."
     ),
+    after=(After("prepare_type_alias_fields", "the alias bodies, whose patterns the copies leave out, are final"),),
 )
 MARK_SET_ITEM_MODELS_HASHABLE = PassDecl(
     "mark_set_item_models_hashable",
@@ -1494,7 +1502,10 @@ FINALIZE_STRUCTURED_IMPORTS = PassDecl(
     PassKind.TRANSFORM,
     reads=_facts(Fact.DEFAULTS, Fact.CONSTRAINTS, Fact.FIELD_NAMES, RenderFact.MODULE_IMPORTS),
     writes=_facts(RenderFact.DEFAULT_EXPRESSION, RenderFact.IMPORT_ALIASES, RenderFact.MODULE_IMPORTS),
-    after=(After("prepare_type_alias_fields", "aliases imports after alias bodies dropped their con* imports"),),
+    after=(
+        After("prepare_type_alias_fields", "aliases imports after alias bodies dropped their con* imports"),
+        After("finalize_type_alias_users", "aliases imports after the copies a model redeclares imported their models"),
+    ),
     summary="Aliases imports that runtime default expressions shadow (Avro also aligns shared defaults).",
     target=Phase.IMPORTS,
 )

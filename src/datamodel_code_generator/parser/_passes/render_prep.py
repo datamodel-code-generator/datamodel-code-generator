@@ -36,6 +36,7 @@ from datamodel_code_generator.model.base import (
     _effective_field_owners,
     _model_key_of_model,
     _model_of_reference,
+    _redeclared_fields,
     ordering_constructor_fields,
     set_item_models_keeping_builtin_hash,
 )
@@ -1401,6 +1402,28 @@ def collect_live_models(state: _PreparedModule[Any]) -> None:
         state.live_models = state.model_list
         return
     state.live_models = UnusedModels(unused_models).written(state.model_list)
+
+
+def finalize_type_alias_users(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:
+    """Let the backend configure its models from their final patterns, then import what the copies it writes name.
+
+    The model hook (``DataModel.finalize_type_alias_users``) may make a model write copies of inherited fields
+    (``_redeclared_fields``), whose types name the models of the module of their base; the model names
+    them from its own module, importing those of others.
+    """
+    parser.data_model_type.finalize_type_alias_users(state.all_models)
+    holders = [(ctx, model) for ctx in state.contexts for model in ctx.models if _redeclared_fields(model)]
+    if not holders:
+        return
+    for ctx, model in holders:
+        import_references(
+            parser,
+            ModuleImportTarget.of(parser.imports, ctx, state),
+            model,
+            (data_type for field in _redeclared_fields(model) for data_type in field.data_type.all_data_types),
+            members=module_member_keys(parser, ctx.models, row="members"),
+            producer=ImportProducer("redeclared-python-rejected-copies", model),
+        )
 
 
 def prepare_type_alias_fields(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:

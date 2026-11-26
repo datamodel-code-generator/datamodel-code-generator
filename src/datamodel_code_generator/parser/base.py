@@ -138,6 +138,7 @@ from datamodel_code_generator.model.base import (
     DataModelFieldBase,
     _bind_bare_loads,
     _build_for_target,
+    _class_body_fields,
     _has_root_field_constraints,
     _model_of_reference,
     _model_package_class,
@@ -495,8 +496,8 @@ def dump_templates(templates: list[DataModel]) -> str:
 
 
 def _hint_data_types(model: DataModel) -> Iterator[tuple[DataModelFieldBase, DataType]]:
-    """Yield each field of a model with the type its hint writes (``DataModelFieldBase._hint_data_type``)."""
-    for field in model.fields:
+    """Yield each field the class body of a model writes with the type its hint writes (``_hint_data_type``)."""
+    for field in _class_body_fields(model):
         yield field, field._hint_data_type()  # noqa: SLF001
 
 

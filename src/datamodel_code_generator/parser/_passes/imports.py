@@ -64,7 +64,7 @@ from datamodel_code_generator.model._decisions.msgspec_str_like import (
 from datamodel_code_generator.model._decisions.tag_value import struct_union_refusal
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model._rendered_names import FieldNameBindings, _bare_loads_of
-from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _model_key_of_model
+from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _class_body_fields, _model_key_of_model
 from datamodel_code_generator.model.enum import Enum, Member, get_raw_enum_member_value
 from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase
@@ -506,7 +506,7 @@ def _bind_module_field_names(
     bind. Type aliases sit at module scope, so an import they name keeps its name beside the alias. ``texts`` are the
     rendered models; without them a model renders where it holds a field of such a name.
     """
-    field_names = {field.name for model in models for field in model.fields if field.name is not None}
+    field_names = {field.name for model in models for field in _class_body_fields(model) if field.name is not None}
     shadowable_imports = {binding: key for key, binding in _import_bindings(imports) if binding in field_names}
     shadowable_imports.update(
         (name, ("builtins", name))

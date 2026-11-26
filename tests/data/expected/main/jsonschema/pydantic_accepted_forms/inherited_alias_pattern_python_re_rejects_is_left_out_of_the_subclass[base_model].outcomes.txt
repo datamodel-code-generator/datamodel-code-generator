@@ -1,0 +1,8 @@
+Named
+valid: valid
+digits: string_pattern_mismatch
+long: string_too_long
+Both
+valid: string_pattern_mismatch
+long: string_too_long
+lookahead: string_pattern_mismatch

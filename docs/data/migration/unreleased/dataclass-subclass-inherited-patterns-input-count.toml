@@ -1,0 +1,9 @@
+[[change]]
+id = "dataclass-subclass-inherited-patterns-input-count"
+category = "docs-text"
+title = "The payload test lists the inputs of the inherited pattern tests"
+summary = "A JSON Schema input and an OpenAPI document were added for the pydantic dataclasses that redeclare inherited fields of another module or a type alias without a pattern Python's re rejects, so the count of discovered schema files moves."
+refs = ["#1"]
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]
