@@ -2529,6 +2529,27 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
+        "legacy-struct-conflicts-at-collected-places",
+        (
+            "a msgspec struct is written `kw_only=True` where a required field follows a default at the places "
+            "dataclasses give the fields, also where msgspec, which puts each struct's keyword-only fields last, "
+            "would create it without (`parser/_passes/_shared.py:get_constructor_conflicts`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/msgspec_restated_keyword_only/use_default.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-default",
+            "--keep-defaults-of-inherited-required-fields",
+            "--formatters",
+            "builtin",
+        ),
+    ),
+    LegacyRow(
         "legacy-reference-only",
         (
             "the field renames of `change_field_name` read the references a field's annotation names, not the enum of "

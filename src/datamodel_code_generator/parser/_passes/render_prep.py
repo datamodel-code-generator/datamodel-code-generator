@@ -66,8 +66,8 @@ from datamodel_code_generator.parser._passes._shared import (
     assignment_facts_of,
     constructor_base_models,
     definition_reads,
+    get_constructor_conflicts,
     get_constructor_field_adjustment,
-    get_constructor_ordering_conflicts,
     get_inherited_constructor_info,
     has_import_override,
     module_member_keys,
@@ -107,6 +107,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
     from datamodel_code_generator.parser._passes._shared import (
+        ConstructorPlaces,
         UnusedModelsHolder,
         _ConstructorFieldAdjustment,
         _InheritedConstructorInfo,
@@ -792,7 +793,15 @@ def fix_tag_opt_out_field_ordering(
             name: (field, owner, None)
             for name, (owner, field) in _effective_field_owners(model, ancestors, class_vars="no-place").items()
         }
-        if get_constructor_ordering_conflicts(model, effective_fields, set(), assignment_facts_of(model)).own:
+        if get_constructor_conflicts(
+            model,
+            ancestors,
+            effective_fields,
+            set(),
+            assignment_facts_of(model),
+            stand_ins={},
+            places="legacy-struct-conflicts-at-collected-places",
+        ).own:
             model.enable_model_keyword_only()
 
 
@@ -844,6 +853,7 @@ def fix_constructor_field_ordering_of(
 ) -> None:
     """Fix the constructor field ordering of ``models`` (``fix_constructor_field_ordering``)."""
     written = {} if copies is None else {id(model): ctx for ctx in copies.contexts for model in ctx.models}
+    places: ConstructorPlaces = "collected" if early else "legacy-struct-conflicts-at-collected-places"
     for model in models:
         restored_inherited_state = False
         for field in model.fields:
@@ -851,7 +861,7 @@ def fix_constructor_field_ordering_of(
                 parser._graph_builder.restore_required_inherited_field(model, field) or restored_inherited_state
             )
 
-        if (inherited := get_inherited_constructor_info(parser, model, early=early)) is None:
+        if (inherited := get_inherited_constructor_info(parser, model, early=early, places=places)) is None:
             if (order_key := get_local_constructor_ordering_key(model)) is not None:
                 parser._graph_builder.set_fields(model, sorted(model.fields, key=order_key))
             continue
@@ -861,7 +871,7 @@ def fix_constructor_field_ordering_of(
             and (copied := copy_inherited_conflicts(parser, model, inherited, ctx, written, copies))
         ):
             parser._graph_builder.set_fields(model, [*copied, *model.fields])
-            inherited = cast("_InheritedConstructorInfo", get_inherited_constructor_info(parser, model))
+            inherited = cast("_InheritedConstructorInfo", get_inherited_constructor_info(parser, model, places=places))
         field_adjustments: Iterator[tuple[DataModelFieldBase, _ConstructorFieldAdjustment]] = (
             (field, adjustment)
             for field in model.fields

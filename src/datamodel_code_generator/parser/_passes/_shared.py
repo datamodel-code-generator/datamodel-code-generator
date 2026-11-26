@@ -62,6 +62,7 @@ from datamodel_code_generator.model.base import (
     _field_source_name,
     _find_base_classes,
     _inherited_field_owners,
+    _keyword_only_last_places,
     _ModelKeys,
     _written_name,
     direct_base_models,
@@ -943,12 +944,14 @@ def get_constructor_ordering_conflicts(
     effective_fields: Mapping[str, tuple[DataModelFieldBase, DataModel, bool | None]],
     required_assignment_names: set[str],
     facts_of: Callable[[DataModelFieldBase], AssignmentFacts],
+    *,
+    place_defaults: bool = True,
 ) -> ConstructorConflicts:
     """Return the positional fields of the model's effective constructor that follow a positional default.
 
-    A field of the model's own follows one as the class body writes the defaults, which the class rejects, or as
-    each field takes its place (``AssignmentFacts.has_place_default``), which keeps 0.86.0's keyword-only fields; an
-    inherited field, which only the copies fix, follows one as they are written.
+    A field of the model's own follows one as the class body writes the defaults, which the class rejects, or, with
+    ``place_defaults``, as each field takes its place (``AssignmentFacts.has_place_default``), which keeps 0.86.0's
+    keyword-only fields; an inherited field, which only the copies fix, follows one as they are written.
     """
     seen_constructor_default = seen_signature_default = seen_place_default = False
     ordering_conflicts: set[str] = set()
@@ -974,7 +977,7 @@ def get_constructor_ordering_conflicts(
             follows_written_default = (seen_constructor_default and not field_has_constructor_default) or (
                 seen_signature_default and not field_has_signature_default
             )
-            if follows_written_default or (seen_place_default and not field_has_place_default):
+            if follows_written_default or (place_defaults and seen_place_default and not field_has_place_default):
                 ordering_conflicts.add(field_name)
         elif seen_constructor_default and not field_has_constructor_default:
             inherited_conflicts.append((field, declaring_model))
@@ -982,6 +985,57 @@ def get_constructor_ordering_conflicts(
         seen_signature_default = seen_signature_default or field_has_signature_default
         seen_place_default = seen_place_default or field_has_place_default
     return ConstructorConflicts(frozenset(ordering_conflicts), tuple(inherited_conflicts))
+
+
+ConstructorPlaces: TypeAlias = Literal["collected", "legacy-struct-conflicts-at-collected-places"]
+"""Where `get_constructor_conflicts` looks for the fields that follow a default:
+
+* ``collected``: at the places the fields take as ``dataclasses`` collects them (`_effective_field_owners`), the
+  reading of the modules, before the defaults and the keyword-only classes are final;
+* ``legacy-struct-conflicts-at-collected-places``: also, where keyword-only is an option of the class
+  (``REQUIRES_MODEL_LEVEL_KW_ONLY``, msgspec), at the places such a class gives the fields: each puts its keyword-only
+  fields after its positional ones (`_keyword_only_last_places`). A msgspec struct keeps the conflicts at the collected
+  places too, so it stays keyword-only where every release since 0.72.0 made it so, also where msgspec would accept it
+  without.
+"""
+
+
+def get_constructor_conflicts(
+    model: DataModel,
+    ancestors: Sequence[DataModel],
+    effective_fields: Mapping[str, tuple[DataModelFieldBase, DataModel, bool | None]],
+    required_assignment_names: set[str],
+    facts_of: Callable[[DataModelFieldBase], AssignmentFacts],
+    *,
+    stand_ins: Mapping[int, Reference | None],
+    places: ConstructorPlaces = "collected",
+) -> ConstructorConflicts:
+    """Return the constructor ordering conflicts of ``model`` at the places ``places`` names.
+
+    ``effective_fields`` are its fields at the collected places (`get_constructor_ordering_conflicts`), ``ancestors``
+    and ``stand_ins`` its bases as ``effective_fields`` reads them. At the places of its class a field conflicts only
+    after a default the class body writes, as msgspec rejects the class there; the conflicts of both readings count,
+    the collected ones first.
+    """
+    collected = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names, facts_of)
+    if places != "legacy-struct-conflicts-at-collected-places" or not model.REQUIRES_MODEL_LEVEL_KW_ONLY:
+        return collected
+    placed = get_constructor_ordering_conflicts(
+        model,
+        {
+            name: effective_fields[name]
+            for name in _keyword_only_last_places(model, ancestors, stand_ins)
+            if name in effective_fields
+        },
+        required_assignment_names,
+        facts_of,
+        place_defaults=False,
+    )
+    collected_inherited = {id(field) for field, _ in collected.inherited}
+    return ConstructorConflicts(
+        collected.own | placed.own,
+        (*collected.inherited, *(item for item in placed.inherited if id(item[0]) not in collected_inherited)),
+    )
 
 
 def _is_pydantic_v2_root_model(model: DataModel, root_model_type: type[DataModel] | None) -> bool:
@@ -2269,9 +2323,9 @@ def constructor_base_models(
 
 
 def get_inherited_constructor_info(
-    host: ConstructorInfoHost, model: DataModel, *, early: bool = False
+    host: ConstructorInfoHost, model: DataModel, *, early: bool = False, places: ConstructorPlaces = "collected"
 ) -> _InheritedConstructorInfo | None:
-    """Return inherited value leaks and exact positional ordering conflicts.
+    """Return inherited value leaks and exact positional ordering conflicts, at the places ``places`` names.
 
     A required field that redeclares an inherited default is assigned ``Field(...)`` unless that default takes no
     place in the constructor (``AssignmentFacts.place_assigned``): a ``None`` that ``--strip-default-none`` strips but
@@ -2302,13 +2356,20 @@ def get_inherited_constructor_info(
                         inherited_stripped_none_names.discard(field_name)
                     else:
                         inherited_stripped_none_names.add(field_name)
+    stand_ins = _stand_ins_of(host, bases)
     effective_fields = {
         name: (field, owner, None if owner is model else inherited_defaults.get(id(field)))
-        for name, (owner, field) in _effective_field_owners(
-            model, inherited_models, stand_ins=_stand_ins_of(host, bases)
-        ).items()
+        for name, (owner, field) in _effective_field_owners(model, inherited_models, stand_ins=stand_ins).items()
     }
-    conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names, facts_of)
+    conflicts = get_constructor_conflicts(
+        model,
+        inherited_models,
+        effective_fields,
+        required_assignment_names,
+        facts_of,
+        stand_ins=stand_ins,
+        places=places,
+    )
     return _InheritedConstructorInfo(
         frozenset(required_assignment_names),
         frozenset(inherited_stripped_none_names),

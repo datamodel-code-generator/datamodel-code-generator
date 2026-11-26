@@ -341,12 +341,12 @@ def get_inherited_constructor_info(original: Callable[..., Any]) -> Callable[...
     """
 
     @wraps(original)
-    def get_inherited_constructor_info(host: Any, model: Any, *, early: bool = False) -> Any:
+    def get_inherited_constructor_info(host: Any, model: Any, *, early: bool = False, places: str = "collected") -> Any:
         if not early and (checks := PARSE_CHECKS.get()) is not None and checks.finality is not None:
             from datamodel_code_generator.parser._passes._shared import constructor_base_models
 
             if model.SUPPORTS_KW_ONLY and (bases := constructor_base_models(host, model)):
                 checks.finality.record_ordering(model, bases, host._base_stand_ins)
-        return original(host, model, early=early)
+        return original(host, model, early=early, places=places)
 
     return get_inherited_constructor_info

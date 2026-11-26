@@ -7,6 +7,7 @@ representation, and DataModel as the abstract base for all model types.
 from __future__ import annotations
 
 import ast as ast
+import operator
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -4194,6 +4195,31 @@ def _effective_field_owners(
         _model_key_of_model,
         rule=model._BASE_FIELDS,  # noqa: SLF001
     )
+
+
+def _keyword_only_last_places(
+    model: DataModel, ancestors: Sequence[DataModel], stand_ins: Mapping[int, Reference | None] | None = None
+) -> tuple[str, ...]:
+    """Return the names of the instance fields of ``model`` in the order msgspec gives them (``__struct_fields__``).
+
+    ``ancestors`` are the models ``model`` inherits from in its method resolution order, ``stand_ins`` the bases
+    overrides replaced. Each class takes the order of its bases, the last base first, then its own fields: a name it
+    declares again keeps its place, a new one goes last, and each name is keyword-only when the class that declares it
+    last is (`DataModel.has_keyword_only_definition`). The class then puts its positional fields before its
+    keyword-only ones. So with ``Base(a, b=UNSET)``, ``Mid(Base, kw_only=True)`` declaring ``a`` and ``c`` gives
+    ``(b, a, c)``, and ``Leaf(Mid)`` declaring ``a`` again takes ``a`` positional after the default of ``b``.
+    """
+    places: dict[int, dict[str, bool]] = {}
+    for owner in (*reversed(ancestors), model):
+        keyword_only: dict[str, bool] = {}
+        for base in reversed(direct_base_models(owner, stand_ins)):
+            keyword_only.update(places.get(id(base), {}))
+        declared_keyword_only = owner.has_keyword_only_definition()
+        keyword_only.update(
+            (name, declared_keyword_only) for field in owner.fields if (name := _named_instance_field(field))
+        )
+        places[id(owner)] = dict(sorted(keyword_only.items(), key=operator.itemgetter(1)))
+    return tuple(places[id(model)])
 
 
 def get_effective_fields(model: DataModel) -> tuple[DataModelFieldBase, ...]:

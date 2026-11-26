@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RootTyped",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/Leaf"
+    }
+  },
+  "$defs": {
+    "Name": {
+      "type": "string",
+      "maxLength": 9
+    },
+    "Base": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Name"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "b": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "a"
+      ]
+    },
+    "Mid": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "$ref": "#/$defs/Name"
+            },
+            "c": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "c"
+          ]
+        }
+      ]
+    },
+    "Leaf": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Mid"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "$ref": "#/$defs/Name"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

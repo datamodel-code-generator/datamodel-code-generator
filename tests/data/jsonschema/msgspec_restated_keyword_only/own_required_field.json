@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OwnRequiredField",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/Leaf"
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "b": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "a"
+      ]
+    },
+    "Mid": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "c": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "c"
+          ]
+        }
+      ]
+    },
+    "Mid2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Mid"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "e": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "Leaf": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Mid2"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "f": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "f"
+          ]
+        }
+      ]
+    }
+  }
+}

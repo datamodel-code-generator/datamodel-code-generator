@@ -1420,7 +1420,15 @@ FIX_TAG_OPT_OUT_FIELD_ORDERING = PassDecl(
     Phase.RENDER_PREPARATION,
     Scope.GLOBAL,
     PassKind.REPAIR,
-    reads=_facts(Fact.BASES, Fact.FIELD_SET, Fact.REQUIRED, Fact.DEFAULTS, RenderFact.KEYWORD_ONLY),
+    reads=_facts(
+        Fact.BASES,
+        Fact.FIELD_SET,
+        Fact.REQUIRED,
+        Fact.DEFAULTS,
+        RenderFact.FIELD_ORDER,
+        RenderFact.KEYWORD_ONLY,
+        RenderFact.BACKEND_CONFIG,
+    ),
     writes=_facts(RenderFact.KEYWORD_ONLY),
     after=(
         After(
