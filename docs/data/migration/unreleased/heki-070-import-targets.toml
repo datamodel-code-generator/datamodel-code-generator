@@ -3,7 +3,7 @@ id = "heki-070-import-targets"
 category = "docs-text"
 title = "Run heki 0.7.0, whose import reports name the imported name"
 summary = "heki 0.7.0 names m.n in an IMP201 report of from m import n; the package writes the same output"
-refs = ["#1"]
+refs = ["#7541"]
 covers = [
     "build_heki_contracts_script/heki_reports_every_import_of_the_package_root_and_main.txt",
     "build_heki_contracts_script/heki_reports_the_imports_that_cross_a_layer.txt",
