@@ -3151,6 +3151,34 @@ target = "datamodel_code_generator._python_syntax.normalize_newlines"
 count = 1
 
 [[entries]]
+path = "src/datamodel_code_generator/_paths.py"
+qualname = "_folded"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_paths.py"
+qualname = "absolute_form"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_paths.py"
+qualname = "expand_user"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
+count = 1
+
+[[entries]]
+path = "src/datamodel_code_generator/_paths.py"
+qualname = "relative_spelling"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
+count = 1
+
+[[entries]]
 path = "src/datamodel_code_generator/_project_config.py"
 qualname = "load_pyproject_config"
 rule_code = "MUT205"
@@ -3534,6 +3562,13 @@ qualname = "position"
 rule_code = "MUT204"
 target = "datamodel_code_generator._runtime.model_codecs.parameters.parameter_key"
 count = 2
+
+[[entries]]
+path = "src/datamodel_code_generator/_runtime/server/application.py"
+qualname = "_shown"
+rule_code = "EFF201"
+target = "no-environment-reads:reads-environment"
+count = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/_runtime/server/application.py"
