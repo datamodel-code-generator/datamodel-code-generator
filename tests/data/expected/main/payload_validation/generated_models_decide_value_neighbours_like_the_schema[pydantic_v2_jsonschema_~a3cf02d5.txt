@@ -1,0 +1,3 @@
+[
+  "/parrot/kind enum null: invalid, model accepts"
+]

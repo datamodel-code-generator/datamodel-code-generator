@@ -158,6 +158,7 @@ def test_restated_field_below_keyword_only_struct_options(output_dir: Path, opti
             id="inherited-copy",
         ),
         pytest.param("narrowed_same", ("--keyword-only",), id="keyword-only"),
+        pytest.param("tag_opt_out", ("--strip-default-none",), id="tag-opt-out"),
     ],
 )
 def test_restated_field_below_keyword_only_struct_keeps(
@@ -168,7 +169,9 @@ def test_restated_field_below_keyword_only_struct_keeps(
     ``L`` under ``--keep-defaults-of-inherited-required-fields`` stays ``kw_only=True`` as in every release since
     0.72.0, though msgspec would create it without (row ``legacy-struct-conflicts-at-collected-places``). ``Leaf``
     of ``inherited_copy`` declares the required ``c`` of ``Mid`` once as a keyword-only copy, which both placements
-    ask for.
+    ask for. ``Parrot`` of ``tag_opt_out`` opts out of the tag of ``Bird`` and stays ``kw_only=True`` as its tag field,
+    which ``--strip-default-none`` gives no default for its place, follows ``wings``: only the tag opt-out reads it
+    there, as ``Bird`` declares the tag field as a class variable.
     """
     run_main_and_assert(
         input_path=INPUTS / f"{stem}.json",
