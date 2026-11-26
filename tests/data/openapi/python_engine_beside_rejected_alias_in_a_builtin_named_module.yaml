@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: A type alias naming models in a module named like a builtin
+  version: '1'
+paths: {}
+components:
+  schemas:
+    str.Color:
+      type: object
+      properties:
+        hex:
+          type: string
+    str.Other:
+      type: object
+      properties:
+        count:
+          type: integer
+    str.Label:
+      anyOf:
+        - type: string
+          pattern: '^\p{L}+$'
+        - $ref: '#/components/schemas/str.Color'
+    str.Named:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: '^\p{L}+$'
+        label:
+          $ref: '#/components/schemas/str.Label'
+    b.Coded:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^(?!x)[a-z]+$'
+    c.Both:
+      allOf:
+        - $ref: '#/components/schemas/str.Named'
+        - $ref: '#/components/schemas/b.Coded'
+        - type: object
+          properties:
+            nick:
+              type: string
+              pattern: '^\p{L}+$'
+            own:
+              anyOf:
+                - $ref: '#/components/schemas/str.Label'
+                - $ref: '#/components/schemas/str.Other'

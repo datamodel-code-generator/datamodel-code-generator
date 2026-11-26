@@ -57,6 +57,7 @@ from datamodel_code_generator.model._render_plan import CallArguments as _FieldA
 from datamodel_code_generator.model.base import (
     _default_state,
     _field_render,
+    _hint_body_types,
     _model_of_reference,
     _nested_model_factory,
     _NestedModelFactory,
@@ -73,7 +74,7 @@ from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     from datamodel_code_generator.reference import Reference
 
@@ -438,17 +439,23 @@ class DataModelField(DataModelFieldBase):
         ]
 
     def _type_without_rejected_patterns(
-        self, data_type: DataType, visiting: frozenset[int], without: Callable[[DataType], DataType]
+        self,
+        data_type: DataType,
+        visiting: frozenset[int],
+        without: Callable[[DataType], DataType],
+        named: list[DataType] | None,
     ) -> DataType:
         """Return the type ``data_type`` writes without the patterns of ``_rejected_patterns_of``.
 
         A type writes itself without its pattern (``without``, the output's ``_TYPE_WITHOUT_PATTERN``). A type alias
-        is written as its body without them (``_written_type``), with the other constraint arguments the call of its
-        field writes (``_written_constraint_arguments``, as ``_CONSTRAINED_TYPE`` writes them).
+        is written as its body without them (``_written_type``), a body naming a model as the field's copy of it
+        (``_own_body_types``), with the other constraint arguments the call of its field writes
+        (``_written_constraint_arguments``, as ``_CONSTRAINED_TYPE`` writes them).
         """
         if (body := _unbuilt_alias_body(data_type, visiting)) is None:
             return without(data_type)
-        written = self._written_type(body.data_type, visiting | {id(body)}) or without(body.data_type)
+        if (written := self._written_type(body.data_type, visiting | {id(body)}, named)) is None:
+            written = self._own_body_types((body.data_type,), named).get(id(body.data_type)) or without(body.data_type)
         arguments = {
             name: value
             for name, value in DataModelField._written_constraint_arguments(body).items()
@@ -469,26 +476,53 @@ class DataModelField(DataModelFieldBase):
         ]
 
     def _written_type(
-        self, data_type: DataType | None = None, visiting: frozenset[int] = frozenset()
+        self,
+        data_type: DataType | None = None,
+        visiting: frozenset[int] = frozenset(),
+        named: list[DataType] | None = None,
     ) -> DataType | None:
         """Return the copy of a type, the field's own by default, its hint writes without the patterns it rejects.
 
         None when it writes the type as it is. The copy holds each type with a pattern of ``_rejected_patterns_of``
         written without them (``_type_without_rejected_patterns``) and shares the field's references, as msgspec's
-        copies do; ``visiting`` holds the type alias bodies it is in.
+        copies do; ``visiting`` holds the type alias bodies it is in. In a body, it holds each other type naming a
+        model as the field's copy of it (``_own_body_types``), which ``named`` collects.
         """
         if (without := self._TYPE_WITHOUT_PATTERN) is None or not self._python_engine_builds():
             return None
         written = self.data_type if data_type is None else data_type
         if not (
             replacements := {
-                id(nested): self._type_without_rejected_patterns(nested, visiting, without)
+                id(nested): self._type_without_rejected_patterns(nested, visiting, without, named)
                 for nested in written.all_data_types
                 if self._rejected_patterns_of(nested, visiting)
             }
         ):
             return None
+        if visiting:
+            kept = (nested for nested in written.all_data_types if id(nested) not in replacements)
+            replacements |= self._own_body_types(kept, named)
         return _copy_data_type(written, register_references=False, link_parents=False, replacements=replacements)
+
+    def _own_body_types(self, data_types: Iterable[DataType], named: list[DataType] | None) -> dict[int, DataType]:
+        """Return the field's copy of each of the types of a type alias body naming a model, by the ``id`` of the type.
+
+        The field keeps them once its hint is decided (``_hint_body_types``), so that every copy of its type names
+        those models as its own module does; ``named`` collects the types.
+        """
+        held = [data_type for data_type in data_types if data_type.reference is not None]
+        if named is not None:
+            named.extend(held)
+        own = _hint_body_types(self)
+        return {id(data_type): pair[1] for data_type in held if (pair := own.get(id(data_type))) is not None}
+
+    @property
+    @override
+    def _alias_body_named_types(self) -> list[DataType]:
+        """The types naming a model that the hint writes from the bodies of type aliases (``_written_type``)."""
+        named: list[DataType] = []
+        self._written_type(named=named)
+        return named
 
     @override
     def _hint_data_type(self) -> DataType:

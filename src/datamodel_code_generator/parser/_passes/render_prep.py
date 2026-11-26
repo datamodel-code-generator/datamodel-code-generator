@@ -32,11 +32,13 @@ from datamodel_code_generator.model._decisions.union_assembly import FLATTENED, 
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import (
     DataModel,
+    _class_body_fields,
     _default_state,
     _effective_field_owners,
+    _hint_body_named_types,
+    _hint_types_beyond_fields,
     _model_key_of_model,
     _model_of_reference,
-    _redeclared_fields,
     ordering_constructor_fields,
     set_item_models_keeping_builtin_hash,
 )
@@ -1405,22 +1407,33 @@ def collect_live_models(state: _PreparedModule[Any]) -> None:
 
 
 def finalize_type_alias_users(parser: RenderPrepHost, state: _FinalizeState[ModuleContextView]) -> None:
-    """Let the backend configure its models from their final patterns, then import what the copies it writes name.
+    """Let the backend configure its models from their final patterns, then import what the hints it writes name.
 
     The model hook (``DataModel.finalize_type_alias_users``) may make a model write copies of inherited fields
-    (``_redeclared_fields``), whose types name the models of the module of their base; the model names
-    them from its own module, importing those of others.
+    (``_redeclared_fields``), whose types name the models of the module of their base, and hints that write the body
+    of a type alias in its place, whose types name the models of the alias's module: each field keeps its own copy of
+    those (``GenerationStore.record_hint_body_types``). The model names them all from its own module
+    (``_hint_types_beyond_fields``), importing those of others.
     """
     parser.data_model_type.finalize_type_alias_users(state.all_models)
-    holders = [(ctx, model) for ctx in state.contexts for model in ctx.models if _redeclared_fields(model)]
+    record_hint_body_types = parser.generation_store.builder().record_hint_body_types
+    for field in (field for model in state.all_models for field in _class_body_fields(model)):
+        if named := _hint_body_named_types(field):
+            record_hint_body_types(field, named)
+    holders = [
+        (ctx, model, written)
+        for ctx in state.contexts
+        for model in ctx.models
+        if (written := list(_hint_types_beyond_fields(model)))
+    ]
     if not holders:
         return
-    for ctx, model in holders:
+    for ctx, model, written in holders:
         import_references(
             parser,
             ModuleImportTarget.of(parser.imports, ctx, state),
             model,
-            (data_type for field in _redeclared_fields(model) for data_type in field.data_type.all_data_types),
+            written,
             members=module_member_keys(parser, ctx.models, row="members"),
             producer=ImportProducer("redeclared-python-rejected-copies", model),
         )
@@ -1436,7 +1449,7 @@ def prepare_type_alias_fields(parser: RenderPrepHost, state: _FinalizeState[Any]
     prepare_field = cast("Callable[..., bool]", parser.data_model_field_type.PREPARE_TYPE_ALIAS_FIELD)
     prepared_patterns: dict[str, PythonRuntimeExpression] = {}
     unused = run_unused_models(parser, state)
-    replace_field_type = parser._graph_builder.replace_field_type
+    replace_field_type = parser.generation_store.builder().replace_field_type
     for ctx in state.contexts:
         for model in ctx.models:
             if not isinstance(model, TypeAliasBase) or model in unused or not model.fields:

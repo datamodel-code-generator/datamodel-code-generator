@@ -61,10 +61,10 @@ from datamodel_code_generator.model.base import (
     _effective_field_owners,
     _field_source_name,
     _find_base_classes,
+    _hint_types_beyond_fields,
     _inherited_field_owners,
     _keyword_only_last_places,
     _ModelKeys,
-    _redeclared_fields,
     _written_name,
     direct_base_models,
     linearize_data_models,
@@ -1241,15 +1241,14 @@ def _data_types_beside_fields(model: DataModel) -> Iterator[DataType]:
 
 
 def _named_data_types(model: DataModel) -> Iterator[DataType]:
-    """Yield the data types a model writes: those of its fields and bases, of the copies it writes, then the others.
+    """Yield the data types a model writes: those of its fields and bases, of the hints beyond them, then the others.
 
     The class writes the types of its rules and backend settings as it writes its field types, and so it writes those
-    of the inherited fields it redeclares (``_redeclared_fields``), so a model they name in another module is imported
-    the same way.
+    the hints of its class body write beyond its fields (``_hint_types_beyond_fields``), so a model they name in
+    another module is imported the same way.
     """
     yield from model.all_data_types
-    for field in _redeclared_fields(model):
-        yield from field.data_type.all_data_types
+    yield from _hint_types_beyond_fields(model)
     yield from _data_types_beside_fields(model)
 
 

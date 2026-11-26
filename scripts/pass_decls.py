@@ -1481,10 +1481,16 @@ FINALIZE_TYPE_ALIAS_USERS = PassDecl(
         RenderFact.CLASS_NAMES,
         RenderFact.MODULE_IMPORTS,
     ),
-    writes=_facts(RenderFact.BACKEND_CONFIG, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
+    writes=_facts(
+        RenderFact.BACKEND_CONFIG,
+        RenderFact.HINT_BODY_TYPES,
+        RenderFact.MODULE_IMPORTS,
+        RenderFact.IMPORT_ALIASES,
+    ),
     summary=(
         "Lets the backend configure the regex engine of its models from their final patterns, also through the type "
-        "aliases they use (model hook), then imports the models that the inherited fields a model redeclares name."
+        "aliases they use (model hook), gives each field its copies of the types naming a model that its hint writes "
+        "from type alias bodies, then imports the models that those and the inherited fields a model redeclares name."
     ),
     after=(After("prepare_type_alias_fields", "the alias bodies, whose patterns the copies leave out, are final"),),
 )
@@ -1569,6 +1575,7 @@ FREEZE_FIELD_RENDER_PLANS = PassDecl(
         RenderFact.DEFAULT_VALIDATION,
         RenderFact.DEFAULT_EXPRESSION,
         RenderFact.BACKEND_CONFIG,
+        RenderFact.HINT_BODY_TYPES,
     ),
     summary="Freezes one render plan per field of the built-in output models, which rendering reads; B2 follows.",
 )
@@ -1583,6 +1590,7 @@ SNAPSHOT_MODEL_IMPORTS = PassDecl(
         RenderFact.IMPORT_ALIASES,
         RenderFact.QUOTING,
         RenderFact.TYPE_ALIAS_BODY,
+        RenderFact.HINT_BODY_TYPES,
         RenderFact.DEFAULT_EXPRESSION,
         RenderFact.BACKEND_CONFIG,
     ),

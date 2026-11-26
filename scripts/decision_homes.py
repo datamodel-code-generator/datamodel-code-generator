@@ -2591,11 +2591,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the callers of the overridable `parser/base.py:Parser._copy_model_type` hook "
             "(`parser/_passes/modules.py:collapse_root_models_in_scope`, `parser/jsonschema.py`: "
             "`JsonSchemaParser._copy_schema_runtime_validation_for_variant`, "
-            "`JsonSchemaParser._get_inherited_field_type`), `model/msgspec.py:DataModelField._copy_data_type`"
+            "`JsonSchemaParser._get_inherited_field_type`), `model/msgspec.py:DataModelField._copy_data_type`, "
+            "`parser/generation.py:GenerationStore.record_hint_body_types` (the copies a field keeps of the types "
+            "naming a model that its hint writes from type alias bodies)"
         ),
         sites=(
             Home("types.py", "DataTypeManager.copy_data_type"),
             Home("parser/_passes/modules.py", "collapse_root_models_in_scope"),
+            Home("parser/generation.py", "GenerationStore.record_hint_body_types"),
             Home("parser/jsonschema.py", "JsonSchemaParser._copy_schema_runtime_validation_for_variant"),
             Home("parser/jsonschema.py", "JsonSchemaParser._get_inherited_field_type"),
         ),

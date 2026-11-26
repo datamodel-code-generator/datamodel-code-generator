@@ -2,12 +2,16 @@
 id = "dataclass-subclass-inherited-patterns-python-re-rejects"
 category = "crash-fix"
 title = "A pydantic dataclass that builds inherited patterns with python-re imports when the patterns sit in another module or a type alias"
-summary = "A pydantic_v2.dataclass that selects regex_engine python-re for a lookaround of a base redeclares each inherited field whose pattern Python's re rejects without that pattern, and warns. Fields of a base in another module, and fields whose type alias holds the pattern, were not redeclared, so the module failed at import with re.error: bad escape \\p; such a module now imports, naming the models of the copies from its own module. A dataclass that takes an alias_generator from the config of a base in another module now imports it instead of failing with NameError."
+summary = "A pydantic_v2.dataclass that selects regex_engine python-re for a lookaround of a base redeclares each inherited field whose pattern Python's re rejects without that pattern, and warns. Fields of a base in another module, and fields whose type alias holds the pattern, were not redeclared, so the module failed at import with re.error: bad escape \\p; such a module now imports, naming the models that the copies and the alias bodies they write name from its own module. A dataclass that takes an alias_generator from the config of a base in another module now imports it instead of failing with NameError."
 refs = ["#1", "#7487", "#7548"]
 kind = "default-output"
 action = "none"
 source = "release-note"
 covers = [
+    "main/jsonschema/pydantic_accepted_forms/inherited_alias_of_another_module_names_its_models_from_the_subclass[builtin_named_module].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_alias_of_another_module_names_its_models_from_the_subclass[builtin_named_module]/",
+    "main/jsonschema/pydantic_accepted_forms/inherited_alias_of_another_module_names_its_models_from_the_subclass[other_modules].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/inherited_alias_of_another_module_names_its_models_from_the_subclass[other_modules]/",
     "main/jsonschema/pydantic_accepted_forms/inherited_alias_pattern_python_re_rejects_is_left_out_of_the_subclass[base_model].outcomes.txt",
     "main/jsonschema/pydantic_accepted_forms/inherited_alias_pattern_python_re_rejects_is_left_out_of_the_subclass[base_model].py",
     "main/jsonschema/pydantic_accepted_forms/inherited_alias_pattern_python_re_rejects_is_left_out_of_the_subclass[dataclass].outcomes.txt",
@@ -23,17 +27,41 @@ covers = [
     "main/jsonschema/pydantic_accepted_forms/inherited_unicode_property_is_redeclared_in_another_module[plain].outcomes.txt",
     "main/jsonschema/pydantic_accepted_forms/inherited_unicode_property_is_redeclared_in_another_module[plain]/",
     "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[msgspec_openapi_python_~21102672.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[msgspec_openapi_python_~8350bae9.txt",
     "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_o~7137ca3d.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_dataclass_o~c640e89b.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_openapi_pyt~9cbf78c6.txt",
     "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_openapi_pyt~d8db5b28.txt",
+    "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~f1176cbd.txt",
     "main/payload_validation/generated_models_decide_value_neighbours_like_the_schema[pydantic_v2_schema_vali~fcf857b3.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~0958b22f.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~0b9f47dc.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~12449d33.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~3ac965a2.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~62a58713.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~993fcf69.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~99fb4aae.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~d5f40f70.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~dcfb0433.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~e3f0d8e0.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~f3f9cf85.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~f51b37f4.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_python_engin~fbc0be4f.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~1fbdac56.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~4373f862.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~4f055f91.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~502b93e1.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~5270a674.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~686a1348.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~7517206a.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~a837251f.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~a98d73cd.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~adfc4b3a.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~f3aee5f8.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~f48d3bcf.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_python_engine_be~f4f2dd69.errors.txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_python_engine_beside_rejected_alias_in_a_builtin_named_module.yaml].txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_python_engine_beside_rejected_alias_in_other_modules.yaml].txt",
     "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_python_engine_beside_rejected_in_other_modules.yaml].txt",
 ]
 
@@ -41,6 +69,8 @@ covers = [
 input = [
     "tests/data/jsonschema/python_engine_beside_rejected_in_an_alias.json",
     "tests/data/openapi/python_engine_beside_rejected_in_other_modules.yaml",
+    "tests/data/openapi/python_engine_beside_rejected_alias_in_other_modules.yaml",
+    "tests/data/openapi/python_engine_beside_rejected_alias_in_a_builtin_named_module.yaml",
 ]
 backends = ["pydantic_v2.dataclass"]
 options = "*"
@@ -53,6 +83,15 @@ input_file_type = "jsonschema"
 
 [[change.cells]]
 input = ["payload:openapi/python_engine_beside_rejected_in_other_modules.yaml*"]
+backends = "*"
+options = "*"
+input_file_type = "openapi"
+
+[[change.cells]]
+input = [
+    "payload:openapi/python_engine_beside_rejected_alias_in_other_modules.yaml*",
+    "payload:openapi/python_engine_beside_rejected_alias_in_a_builtin_named_module.yaml*",
+]
 backends = "*"
 options = "*"
 input_file_type = "openapi"

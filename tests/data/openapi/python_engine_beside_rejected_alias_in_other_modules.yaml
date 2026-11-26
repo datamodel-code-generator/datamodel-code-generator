@@ -1,0 +1,86 @@
+openapi: 3.0.3
+info:
+  title: Type aliases of other modules that name models
+  version: '1'
+paths: {}
+components:
+  schemas:
+    a.Color:
+      type: object
+      properties:
+        hex:
+          type: string
+    a.Label:
+      anyOf:
+        - type: string
+          pattern: '^\p{L}+$'
+        - $ref: '#/components/schemas/a.Color'
+    a.Tag:
+      anyOf:
+        - type: string
+          pattern: '^\p{L}+$'
+        - $ref: '#/components/schemas/d.Color'
+    a.Hex:
+      type: string
+      maxLength: 6
+    a.Short:
+      allOf:
+        - $ref: '#/components/schemas/a.Hex'
+      pattern: '^\p{L}+$'
+    a.Named:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: '^\p{L}+$'
+        label:
+          $ref: '#/components/schemas/a.Label'
+        labels:
+          type: array
+          items:
+            $ref: '#/components/schemas/a.Label'
+        by_key:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/a.Label'
+        either:
+          anyOf:
+            - $ref: '#/components/schemas/a.Label'
+            - type: integer
+        tag:
+          $ref: '#/components/schemas/a.Tag'
+        short:
+          $ref: '#/components/schemas/a.Short'
+    b.Coded:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^(?!x)[a-z]+$'
+    c.Color:
+      type: object
+      properties:
+        rgb:
+          type: integer
+    c.Hex:
+      type: integer
+    c.Both:
+      allOf:
+        - $ref: '#/components/schemas/a.Named'
+        - $ref: '#/components/schemas/b.Coded'
+        - type: object
+          properties:
+            nick:
+              type: string
+              pattern: '^\p{L}+$'
+            own:
+              $ref: '#/components/schemas/a.Label'
+            mine:
+              $ref: '#/components/schemas/c.Color'
+            count:
+              $ref: '#/components/schemas/c.Hex'
+    d.Color:
+      type: object
+      properties:
+        code:
+          type: integer

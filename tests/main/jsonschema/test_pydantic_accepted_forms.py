@@ -775,6 +775,68 @@ def test_inherited_unicode_property_is_redeclared_in_another_module(
 
 
 @pytest.mark.parametrize(
+    ("document", "payloads"),
+    [
+        pytest.param(
+            "python_engine_beside_rejected_alias_in_other_modules",
+            {
+                "valid": {
+                    "name": "12",
+                    "nick": "12",
+                    "label": {"hex": "1"},
+                    "labels": [{"hex": "2"}, "12"],
+                    "by_key": {"k": {"hex": "3"}},
+                    "either": {"hex": "4"},
+                    "tag": {"code": 5},
+                    "own": {"hex": "6"},
+                    "mine": {"rgb": 7},
+                    "short": "12",
+                    "count": 8,
+                    "code": "ab",
+                },
+                "long": {"short": "abcdefg"},
+                "lookahead": {"code": "xa"},
+            },
+            id="other_modules",
+        ),
+        pytest.param(
+            "python_engine_beside_rejected_alias_in_a_builtin_named_module",
+            {
+                "valid": {"name": "12", "nick": "12", "label": {"hex": "1"}, "own": {"count": 2}, "code": "ab"},
+                "lookahead": {"code": "xa"},
+            },
+            id="builtin_named_module",
+        ),
+    ],
+)
+def test_inherited_alias_of_another_module_names_its_models_from_the_subclass(
+    output_dir: Path, recwarn: pytest.WarningsRecorder, document: str, payloads: Mapping[str, object]
+) -> None:
+    r"""Import the models that a type alias of another module names where a subclass writes its body (#7487).
+
+    ``c.Both`` builds the lookahead of ``b.Coded`` with ``python-re``, so its fields write the bodies of the aliases of
+    ``a`` without their ``\p{L}``: in items, values and unions, in an inherited field and in its own. The bodies name
+    ``a.Color``, ``d.Color`` and the alias ``a.Hex``, which ``c`` did not import (``NameError``), and ``c`` has a
+    ``Color`` and a ``Hex`` of its own, which the bare names bound; ``c`` now imports ``a`` and ``d`` and names them
+    from there, so ``Hex`` keeps its ``maxLength``. A module named ``str`` is
+    imported under another name once the hints write the builtin, and the own field, whose plan is rebuilt then, takes
+    that name too. The parsed value shows the class each member is validated as.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{document}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.dataclass", "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    with _generated_package_module(output_dir, "c") as generated:
+        outcomes += _outcomes(generated.Both, payloads)
+        outcomes += f"value: {_model_json_validator(generated.Both)(json.dumps(payloads['valid']))!r}\n"
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
     "extra_args",
     [
         pytest.param([], id="constr"),
