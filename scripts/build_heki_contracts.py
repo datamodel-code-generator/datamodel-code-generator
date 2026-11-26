@@ -1388,12 +1388,13 @@ def architecture_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
     input model code selects none either; shared model code reads no module of the ``sys.modules`` registry (the
     functions of `MODULE_REGISTRY_READERS` read it, and the contract allows them); the functions of the configuration
     read no backend name, and its module body may read the backend of `CONFIG_DEFAULTS_BACKEND`; the entry point
-    reaches no private member of a parser, but in the functions of `ENTRYPOINT_PRIVATE_READERS`; no module but the
-    root and ``__main__`` reads a name through the package root. Each read counts in the scope that holds it, a class
+    reads and calls no private member of a parser, but in the functions of `ENTRYPOINT_PRIVATE_READERS`, and writes
+    none, on a parser it has just built too; no module but the root and ``__main__`` reads a name through the
+    package root, in a function, a class or a module body. Each read counts in the scope that holds it, a class
     body too, and a read heki cannot tie to a class is reported (``MUT206``, ``MUT207``). A contract names only what the
     package has: the owners' attributes where the class, a class it derives from or a subclass binds or stores them, and
-    their functions where the class or a subclass defines them, and the modules that define a function or a class (a
-    module of only a body reads no name through the root, and ``module:*`` names nothing there). A contract no class or
+    their functions where the class or a subclass defines them, and each module by ``module:*`` where it defines a
+    function or a class, else by its body (``module:<module>``) where that reads a name. A contract no class or
     module of the package is subject to raises, as in `import_boundary_contracts`, and so does a class or attribute of
     `SEMANTIC_OWNERS` and `SEMANTIC_ATTRIBUTES` no class has and an allowed function the package does not define;
     ``partial`` is for a seeded package that holds only some layers.
@@ -1414,6 +1415,11 @@ def architecture_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
         module
         for rel, module in _package_modules(repo).items()
         if any(scope.kind in {"function", "class"} for scope in repo.model(rel).scopes)
+    }
+    bodies = {
+        module
+        for rel, module in _package_modules(repo).items()
+        if any(reference.context == "load" for reference in repo.model(rel).references)
     }
     parser_private = [f"{PACKAGE}.parser.base.Parser._[!_]*"]
     entry = _everywhere(layers["entrypoint"])
@@ -1498,7 +1504,7 @@ def architecture_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
                 "entrypoint-parser-private-access",
                 parser_private,
                 entry,
-                {} if kind == "write-owners" else {f"allowed_{role}": entry_allowed},
+                {"fresh_objects": "report"} if kind == "write-owners" else {f"allowed_{role}": entry_allowed},
                 ENTRYPOINT_PRIVATE_MESSAGE,
             )
             for kind, role in (("read-owners", "readers"), ("call-owners", "callers"), ("write-owners", "writers"))
@@ -1507,7 +1513,11 @@ def architecture_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
             "call-owners",
             "root-import",
             [f"{PACKAGE}:*"],
-            _everywhere(sorted(m for m in every if m in scoped and m not in {PACKAGE, f"{PACKAGE}.__main__"})),
+            [
+                f"{module}:*" if module in scoped else f"{module}:<module>"
+                for module in sorted(every)
+                if module in scoped | bodies and module not in {PACKAGE, f"{PACKAGE}.__main__"}
+            ],
             reads,
             ROOT_IMPORT_MESSAGE,
         ),

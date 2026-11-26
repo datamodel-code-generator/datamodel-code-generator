@@ -8,6 +8,7 @@ _facade.py:6: MUT207 _dispose
 _facade.py:7: MUT205 _formatter_cwd
 _facade.py:8: MUT205 _formatter_cwd
 _facade.py:9: MUT206 _formatter_cwd
+_facade.py:16: MUT201 datamodel_code_generator.parser.base.Parser._[!_]*
 _regex_syntax.py:7: IMP201 datamodel_code_generator.parser.jsonschema.JsonSchemaObject
 _regex_syntax.py:8: IMP201 datamodel_code_generator.types.DataType
 _requirements.py:7: IMP201 pydantic

@@ -464,6 +464,7 @@ def test_heki_reports_the_imports_that_cross_a_layer(tmp_path: Path) -> None:
 ROOT_IMPORT_FIXTURES = {
     "__init__.py": "__init__.py",
     "__main__.py": "__main__.py",
+    "body.py": "body.py",
     "errors.py": "errors.py",
     "leaf.py": "_caches.py",
     "shadowed.py": "shadowed.py",
@@ -480,7 +481,8 @@ def test_heki_reports_every_import_of_the_package_root_and_main(tmp_path: Path) 
 
     The fixture is the package of the former checker rule: relative imports two levels up, a star import, a name the
     root binds to shadow a submodule, a name its ``__getattr__`` serves and by-name imports. Each import of a name of
-    the root or of ``__main__`` is ``IMP201`` or ``IMP202``; ``__main__`` and the root's own re-exports give none.
+    the root or of ``__main__`` is ``IMP201`` or ``IMP202``, and a read of a root name through a submodule import
+    ``MUT204``, in a module of only a body too; ``__main__`` and the root's own re-exports give none.
     """
     places = {
         f"root_import/datamodel_code_generator/{fixture}": place for fixture, place in ROOT_IMPORT_FIXTURES.items()
