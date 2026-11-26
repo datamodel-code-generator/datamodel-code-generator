@@ -1805,6 +1805,7 @@ no client is selected.
 | `parameter_names` | Argument names keyed by location and name, such as `{"query:limit": "page_size"}` |
 | `request_media_type`, `response_media_type` | The default media types of the body and of the result |
 | `description` | The method docstring, over the operation's route or, with `--use-schema-description`, its summary and description |
+| `tool` | `false` leaves the operation out of the tools of [`--client-tools`](#give-the-operations-to-an-agent-as-tools); it keeps its method |
 | `body_arguments` | `"body"` or `"both"`, over `--client-body-arguments` |
 | `body_field_names` | Keyword names of body fields, keyed by media type, then property, such as `{"application/json": {"petName": "pet_name"}}` |
 | `runtime` | `request_id_header`, `success_statuses`, `retry_safety`, `idempotency` (`{"header_name": "Idempotency-Key"}`), `retry_after_ms_header`, `should_retry_header`, `auth_challenge_less_401`, and `accepted_content_encodings` |

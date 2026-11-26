@@ -18,6 +18,7 @@ name = true
 request_media_type = []
 response_media_type = {}
 description = 5
+tool = "no"
 body_arguments = []
 
 [tool.datamodel-codegen.client-operations."/paths/~1pets/get".parameter_names]

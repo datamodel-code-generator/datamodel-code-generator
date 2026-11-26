@@ -300,6 +300,7 @@ class OperationSpec:
     request_id_header: str | None
     response_media_type: str | None
     description: str | None
+    tool: bool = True
     body_arguments: BodyArguments = "body"
     body_field_names: tuple[BodyFieldName, ...] = ()
     fields: tuple[FieldBranch, ...] = ()
@@ -480,6 +481,7 @@ class Planner:
             request_id_header=None if runtime is None else runtime.request_id_header,
             response_media_type=self.response_media(operation, responses, setting),
             description=None if setting is None else setting.description,
+            tool=True if setting is None else setting.tool,
             body_arguments=(None if setting is None else setting.body_arguments) or self.config.body_arguments,
             body_field_names=() if setting is None else setting.body_field_names,
             retry_safety="method_default" if runtime is None else runtime.retry_safety,

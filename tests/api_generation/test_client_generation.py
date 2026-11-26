@@ -300,6 +300,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "asyncapi-missing-messages-external",
         "tools",
         "tools-left-out",
+        "tools-not-tools",
         "tools-descriptions",
         "tools-untrusted",
         "tools-adversarial",

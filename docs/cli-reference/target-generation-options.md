@@ -1334,8 +1334,9 @@ JSON pointer of the path item method, such as `/paths/~1pets/get`, optionally af
 `pets.yaml#/paths/~1pets/get`. A relative document resolves against the JSON file that holds the reference, or
 without a file against the working directory, and against the pyproject.toml directory for a table. The settings are
 `resource`, `name`, `parameter_names` (keyed by location and name,
-such as `{"query:limit": "page_size"}`), `request_media_type`, `response_media_type`, `description`,
-`body_arguments`, which overrides `--client-body-arguments`, `body_field_names` (keyed by media type, then property,
+such as `{"query:limit": "page_size"}`), `request_media_type`, `response_media_type`, `description`, `tool`
+(`false` leaves the operation out of the tools of `--client-tools`), `body_arguments`, which overrides
+`--client-body-arguments`, `body_field_names` (keyed by media type, then property,
 such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `request_id_header`, `success_statuses`,
 `retry_safety`, `idempotency` (`{"header_name": "Idempotency-Key"}`), `retry_after_ms_header`,
 `should_retry_header`, `auth_challenge_less_401`, and `accepted_content_encodings`. In pyproject.toml,

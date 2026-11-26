@@ -619,6 +619,8 @@ tools-mcp-patterns	api_generation/client_generation/client_render[tools-mcp-patt
 tools-mcp-patterns	api_generation/client_generation/client_render[tools-mcp-patterns].txt
 tools-mcp-patterns-fields	api_generation/client_generation/client_render[tools-mcp-patterns-fields].pydantic_v2_BaseModel/
 tools-mcp-patterns-fields	api_generation/client_generation/client_render[tools-mcp-patterns-fields].txt
+tools-not-tools	api_generation/client_generation/client_render[tools-not-tools].pydantic_v2_BaseModel/
+tools-not-tools	api_generation/client_generation/client_render[tools-not-tools].txt
 tools-untrusted	api_generation/client_generation/client_render[tools-untrusted].pydantic_v2_BaseModel/
 tools-untrusted	api_generation/client_generation/client_render[tools-untrusted].txt
 type-checking-imports	api_generation/client_generation/client_render[type-checking-imports].msgspec_Struct/
