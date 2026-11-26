@@ -2376,27 +2376,31 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         decision=(
             "how the config of a Pydantic v2 model takes Python's regex engine once a pattern needs it: "
             '`regex_engine="python-re"` unless the config already names an engine, which the model keeps (row '
-            "`legacy-dataclass-overwrites-engine`: a dataclass writes it over the engine its config names); the config "
-            "is stored with the items its template writes, which the readers take from there inside a parse"
+            "`legacy-dataclass-overwrites-engine`: a dataclass writes it over the engine its config names); a config "
+            "the model takes from a base gives its items first, which only the engine the patterns of a dataclass's "
+            "bases select keeps (row `legacy-dataclass-own-engine-drops-taken-config`); the config is stored with the "
+            "items its template writes, which the readers take from there inside a parse"
         ),
         homes=(
             Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._select_python_regex_engine"),
             Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._store_config"),
             Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._rendered_config_items"),
             Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._own_patterns_select_python"),
+            Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._taken_config"),
         ),
         core=(
             "`model/pydantic_v2/base_model.py`: `_PydanticV2Model._select_python_regex_engine`, "
             "`_PydanticV2Model._store_config` (a model's config as a `ConfigDict`, a dataclass's as the mapping), "
             "`_PydanticV2Model._rendered_config_items`, `_PydanticV2Model._own_patterns_select_python` (whether a "
             "model's own patterns select the engine; a dataclass's are also those of the models its fields reach, "
-            "`_FOLLOWS_PATTERN_REFERENCES`)"
+            "`_FOLLOWS_PATTERN_REFERENCES`), `_PydanticV2Model._taken_config` (the config a model takes from a base)"
         ),
         adapters=(
             "`BaseModel.refresh_field_config` (called by `BaseModel.__init__`, the pass `refresh_field_config` and "
             "`type_dict_keys_by_root_types`), `_PydanticV2Model.finalize_type_alias_users` (again from the final "
             "patterns of every BaseModel), `model/pydantic_v2/dataclass.py`: "
-            "`DataClass._apply_lookaround_regex_engine` (lazily, from `imports` and `render`); the stores of "
+            "`DataClass._apply_lookaround_regex_engine` (lazily, from `imports` and `render`), "
+            "`DataClass._config_owner` (the first dataclass base whose config it applies); the stores of "
             "`BaseModel.__init__` and `DataClass.__init__`; the readers `_applied_config_items`, "
             "`_pydantic_constructs`, `DataClass._takes_config_of`, `DataClass._bases_without_inherited_config`; "
             "`model/pydantic_v2/root_model.py`: `RootModel._decide_config_items` stores a root model's items again "
@@ -2409,6 +2413,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("model/pydantic_v2/dataclass.py", "DataClass.__init__"),
             Home("model/pydantic_v2/dataclass.py", "DataClass._takes_config_of"),
             Home("model/pydantic_v2/dataclass.py", "DataClass._bases_without_inherited_config"),
+            Home("model/pydantic_v2/dataclass.py", "DataClass._config_owner"),
             Home("model/pydantic_v2/root_model.py", "RootModel._decide_config_items"),
         ),
     ),

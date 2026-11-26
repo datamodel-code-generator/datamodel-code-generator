@@ -2057,17 +2057,27 @@ class _PydanticV2Model(DataModel):
     def _keep_string_pattern_aliases_out_of_bases(self) -> None:
         """Keep the bases free of types Pydantic builds before the config applies; a model names none there."""
 
-    def _select_python_regex_engine(self, applied_config: object = None) -> None:
+    def _config_owner(self) -> DataModel:
+        """Return the model whose config the model applies: the model, as it merges the config of every base."""
+        return self
+
+    def _taken_config(self) -> object:
+        """Return the config of the base whose config the model applies, as it has none of its own, else None."""
+        return None if (owner := self._config_owner()) is self else owner.extra_template_data.get("config")
+
+    def _select_python_regex_engine(self, *, for_bases: bool = False) -> None:
         """Set ``regex_engine`` in the config the model renders, unless the config already names an engine.
 
         Row ``legacy-dataclass-overwrites-engine`` (``_OVERWRITES_REGEX_ENGINE``): a dataclass replaces an engine its
         config names (#5637). The model gets a config of its own: the one in the template data may be shared with
         every model of the same name (``--extra-template-data``). It reads the items of that config, so a config that
-        is no mapping adds none. A config the model took from a base (``applied_config``) gives its items first, as
-        Pydantic stops applying it once the model has a config of its own.
+        is no mapping adds none. A config the model takes from a base (``_taken_config``) gives its items first, as
+        Pydantic stops applying it once the model has a config of its own. Row
+        ``legacy-dataclass-own-engine-drops-taken-config``: only the engine the patterns of the bases select
+        (``for_bases``) keeps them (#7497).
         """
         config_parameters = {
-            **dict(_config_dict_items(applied_config)),
+            **dict(_config_dict_items(self._taken_config() if for_bases else None)),
             **dict(_config_dict_items(self.extra_template_data.get("config"))),
         }
         if "regex_engine" in config_parameters and not self._OVERWRITES_REGEX_ENGINE:

@@ -3568,6 +3568,25 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
+        "legacy-dataclass-own-engine-drops-taken-config",
+        (
+            "a `pydantic_v2.dataclass` without a config of its own that selects Python's `re` for its own patterns, "
+            "the type aliases it reaches or a lone surrogate writes a config with only `regex_engine`, so it stops "
+            "applying the config it took from its first dataclass base (`extra`, `--extra-template-data` items); the "
+            "engine the patterns of its bases select keeps those items (#7452)"
+        ),
+        fix=7497,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/root_alias_constraints/lookaround.json",
+            "--input-file-type",
+            "jsonschema",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+    ),
+    LegacyRow(
         "legacy-flat-bare-loads",
         (
             "the check of module imports named like a builtin counts every name node of a rendered model as a bare "
@@ -4344,6 +4363,7 @@ UNTESTED: Final[frozenset[str]] = frozenset({
     "legacy-cycle-walk-reads-values-whole",
     "legacy-dataclass-follows-every-reference",
     "legacy-dataclass-overwrites-engine",
+    "legacy-dataclass-own-engine-drops-taken-config",
     "legacy-decide-in-union-module",
     "legacy-dedup-before-strip",
     "legacy-dedup-keys-without-unique-items",
