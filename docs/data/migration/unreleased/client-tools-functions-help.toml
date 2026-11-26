@@ -1,8 +1,0 @@
-[[change]]
-id = "client-tools-functions-help"
-extends = "client-tools-functions"
-covers = [
-    "input_model/config_class.txt",
-    "main/main_general/show_help[False].txt",
-    "main/main_general/show_help[True].txt",
-]

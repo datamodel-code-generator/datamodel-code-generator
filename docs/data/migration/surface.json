@@ -4,6 +4,7 @@
   "behavior.batch-generation-jobs": "0.72.3",
   "behavior.naming-hint": "0.86.0",
   "behavior.remote-reference-lock": "0.72.3",
+  "cli-option.client-tools": "0.103.0",
   "cli-option.generate-client": "0.84.0",
   "cli-option.generate-schema-validators": "0.66.1",
   "cli-option.generate-server": "0.84.0",
@@ -62,6 +63,7 @@
   "client_resource_names",
   "client_server_base_url",
   "client_signature_style",
+  "client_tools",
   "collapse_constrained_root_models_as_annotated",
   "collapse_reuse_models",
   "collapse_root_models",
@@ -130,6 +132,7 @@
   "intersect_combined_schema_keywords",
   "intersect_merged_allof_members",
   "keep_bases_beside_generic_base_class",
+  "keep_bases_of_typed_dicts_listed_before_their_parents",
   "keep_constrained_root_models_in_every_container",
   "keep_content_parameter_refs",
   "keep_defaults_of_inherited_required_fields",
@@ -529,6 +532,13 @@
     "unpack"
    ]
   },
+  "--client-tools": {
+   "aliases": [],
+   "choices": [
+    "functions",
+    "mcp"
+   ]
+  },
   "--collapse-constrained-root-models-as-annotated": {
    "aliases": [
     "--no-collapse-constrained-root-models-as-annotated"
@@ -924,6 +934,12 @@
    ],
    "choices": null
   },
+  "--keep-bases-of-typed-dicts-listed-before-their-parents": {
+   "aliases": [
+    "--no-keep-bases-of-typed-dicts-listed-before-their-parents"
+   ],
+   "choices": null
+  },
   "--keep-constrained-root-models-in-every-container": {
    "aliases": [
     "--no-keep-constrained-root-models-in-every-container"
@@ -1265,6 +1281,7 @@
     "practical-py310-20261120",
     "practical-py310-20261123",
     "practical-py310-20261124",
+    "practical-py310-20261125",
     "practical-py311-20260619",
     "practical-py311-20260826",
     "practical-py311-20260909",
@@ -1280,6 +1297,7 @@
     "practical-py311-20261120",
     "practical-py311-20261123",
     "practical-py311-20261124",
+    "practical-py311-20261125",
     "practical-py312-20260619",
     "practical-py312-20260826",
     "practical-py312-20260909",
@@ -1295,6 +1313,7 @@
     "practical-py312-20261120",
     "practical-py312-20261123",
     "practical-py312-20261124",
+    "practical-py312-20261125",
     "practical-py313-20260619",
     "practical-py313-20260826",
     "practical-py313-20260909",
@@ -1310,6 +1329,7 @@
     "practical-py313-20261120",
     "practical-py313-20261123",
     "practical-py313-20261124",
+    "practical-py313-20261125",
     "practical-py314-20260619",
     "practical-py314-20260826",
     "practical-py314-20260909",
@@ -1325,6 +1345,7 @@
     "practical-py314-20261120",
     "practical-py314-20261123",
     "practical-py314-20261124",
+    "practical-py314-20261125",
     "practical-py315-20261015",
     "practical-py315-20261017",
     "practical-py315-20261027",
@@ -1337,6 +1358,7 @@
     "practical-py315-20261120",
     "practical-py315-20261123",
     "practical-py315-20261124",
+    "practical-py315-20261125",
     "standard-py310-20260619",
     "standard-py310-20260826",
     "standard-py310-20260909",
@@ -1352,6 +1374,7 @@
     "standard-py310-20261120",
     "standard-py310-20261123",
     "standard-py310-20261124",
+    "standard-py310-20261125",
     "standard-py311-20260619",
     "standard-py311-20260826",
     "standard-py311-20260909",
@@ -1367,6 +1390,7 @@
     "standard-py311-20261120",
     "standard-py311-20261123",
     "standard-py311-20261124",
+    "standard-py311-20261125",
     "standard-py312-20260619",
     "standard-py312-20260826",
     "standard-py312-20260909",
@@ -1382,6 +1406,7 @@
     "standard-py312-20261120",
     "standard-py312-20261123",
     "standard-py312-20261124",
+    "standard-py312-20261125",
     "standard-py313-20260619",
     "standard-py313-20260826",
     "standard-py313-20260909",
@@ -1397,6 +1422,7 @@
     "standard-py313-20261120",
     "standard-py313-20261123",
     "standard-py313-20261124",
+    "standard-py313-20261125",
     "standard-py314-20260619",
     "standard-py314-20260826",
     "standard-py314-20260909",
@@ -1412,6 +1438,7 @@
     "standard-py314-20261120",
     "standard-py314-20261123",
     "standard-py314-20261124",
+    "standard-py314-20261125",
     "standard-py315-20261015",
     "standard-py315-20261017",
     "standard-py315-20261027",
@@ -1423,7 +1450,8 @@
     "standard-py315-20261118",
     "standard-py315-20261120",
     "standard-py315-20261123",
-    "standard-py315-20261124"
+    "standard-py315-20261124",
+    "standard-py315-20261125"
    ]
   },
   "--profile": {
@@ -2470,6 +2498,20 @@
    "standard-py313-20261124": "5805ba44937d95fb",
    "standard-py314-20261124": "5805ba44937d95fb",
    "standard-py315-20261124": "5805ba44937d95fb"
+  },
+  "20261125": {
+   "practical-py310-20261125": "e53b91a45ca6d793",
+   "practical-py311-20261125": "0206e6bf6eb10576",
+   "practical-py312-20261125": "0206e6bf6eb10576",
+   "practical-py313-20261125": "0206e6bf6eb10576",
+   "practical-py314-20261125": "0206e6bf6eb10576",
+   "practical-py315-20261125": "0206e6bf6eb10576",
+   "standard-py310-20261125": "8e0897ddb4155edc",
+   "standard-py311-20261125": "7b2ef8b12d2c4c96",
+   "standard-py312-20261125": "7b2ef8b12d2c4c96",
+   "standard-py313-20261125": "7b2ef8b12d2c4c96",
+   "standard-py314-20261125": "7b2ef8b12d2c4c96",
+   "standard-py315-20261125": "7b2ef8b12d2c4c96"
   }
  },
  "python_api": [
@@ -2483,6 +2525,7 @@
   "ClientAsyncAPIPerspective",
   "ClientBodyArguments",
   "ClientSignatureStyle",
+  "ClientTools",
   "ClientType",
   "CollapseRootModelsNameStrategy",
   "ConstructorFieldOrder",
