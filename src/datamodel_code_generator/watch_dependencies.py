@@ -23,10 +23,12 @@ from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._paths import (
     concrete,
     existing_ancestor,
+    expand_user,
     lexical,
     names_directory,
     resolved,
     same_file,
+    working_directory,
 )
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
@@ -145,14 +147,12 @@ def _configured_path(config_values: Mapping[str, Any], field_name: str, fallback
 
 
 def _logical_working_directory() -> Path:
-    working_directory = Path.cwd()
-    logical_working_directory = Path(os.environ.get("PWD", working_directory)).expanduser()
+    physical = working_directory()
+    logical = expand_user(Path(os.environ.get("PWD", physical)))
     try:
-        return (
-            logical_working_directory if same_file(logical_working_directory, working_directory) else working_directory
-        )
+        return logical if same_file(logical, physical) else physical
     except OSError:
-        return working_directory
+        return physical
 
 
 def _nearest_existing_directory(path: Path) -> Path:

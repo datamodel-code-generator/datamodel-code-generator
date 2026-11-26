@@ -8,6 +8,8 @@ from shutil import copyfileobj, rmtree
 from tempfile import mkdtemp
 from typing import TYPE_CHECKING, Literal
 
+from datamodel_code_generator._paths import expand_user, working_directory
+
 if TYPE_CHECKING:
     from importlib.abc import Traversable
 
@@ -44,7 +46,7 @@ def _skill_destination(agent: AgentName, scope: SkillScope, cwd: Path) -> Path:
         case "project":
             root = cwd
         case "user":
-            root = Path.home()
+            root = expand_user(Path("~"))
         case _:
             msg = f"Unsupported skill scope: {scope}"
             raise AgentSkillError(msg)
@@ -71,7 +73,7 @@ def install_agent_skill(
     cwd: Path | None = None,
 ) -> Path:
     """Install the bundled skill, replacing an existing regular directory only on request."""
-    destination = _skill_destination(agent, scope, Path.cwd() if cwd is None else cwd)
+    destination = _skill_destination(agent, scope, working_directory() if cwd is None else cwd)
     destination_exists = destination.exists() or destination.is_symlink()
     if destination_exists and not overwrite:
         msg = f"Agent skill already exists at {destination}. Re-run with --overwrite-skill to replace it."

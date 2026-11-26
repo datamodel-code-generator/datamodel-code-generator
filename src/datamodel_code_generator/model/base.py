@@ -61,6 +61,7 @@ from datamodel_code_generator._parse_memo import (
     memoized,
     note_reads,
 )
+from datamodel_code_generator._paths import absolute_form
 from datamodel_code_generator._python_syntax import (
     _normalize_string,
     _single_line_docstring,
@@ -3285,7 +3286,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         template_adapter = self.CUSTOM_TEMPLATE_ADAPTER if self._custom_template_dir is not None else None
         if self._uses_custom_root_template:
             return _get_template_with_absolute_path(
-                resolved_path.absolute(),
+                absolute_form(resolved_path),
                 Path(self.TEMPLATE_FILE_PATH).parent,
                 template_adapter,
                 self._custom_template_dir,

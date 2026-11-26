@@ -137,6 +137,13 @@ paths = ["src/datamodel_code_generator/parser/*"]
 tests = ["tests/parser/test_generation_store_usage.py"]
 
 [[rule]]
+id = "hook-pins"
+prs = [7541]
+incident = "a heki pin change in .pre-commit-config.yaml left the stored hook pins stale; no related test ran for it"
+paths = [".pre-commit-config.yaml"]
+tests = ["tests/test_pre_commit_hooks.py"]
+
+[[rule]]
 id = "check-runners"
 prs = [7190]
 incident = "a new pre-commit hook changed the stored list of where each check runs; no related test ran for .pre-commit-config.yaml"

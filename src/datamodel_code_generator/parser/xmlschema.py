@@ -24,6 +24,7 @@ from datamodel_code_generator._caches import BoundedLru, SeenKeys
 from datamodel_code_generator._format_types import DatetimeClassType
 from datamodel_code_generator._json_schema import definition_ref, json_nodes
 from datamodel_code_generator._name_words import first_upper
+from datamodel_code_generator._paths import working_directory
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._xmlschema_detection import XML_SCHEMA_NAMESPACE, XML_SCHEMA_TAG
 from datamodel_code_generator._xmlschema_detection import is_xml_schema_text as _is_xml_schema_text
@@ -431,7 +432,7 @@ def _convert_xml_schema_data(
         msg = "XML Schema schemaFormat requires an XSD schema string"
         raise Error(msg)
     return _XMLSchemaConverter(
-        base_path=base_path or Path.cwd(),
+        base_path=base_path or working_directory(),
         encoding=encoding,
         xmlschema_version=xmlschema_version,
         schema_version_mode=schema_version_mode,

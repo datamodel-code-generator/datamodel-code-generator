@@ -15,7 +15,7 @@ from datamodel_code_generator._config_fields import (
 )
 from datamodel_code_generator._option_names import FIELD_ALIASES, GENERATE_FIELD_NAMES, field_name
 from datamodel_code_generator._option_stages import _run_option_stages
-from datamodel_code_generator._paths import resolved
+from datamodel_code_generator._paths import resolved, working_directory
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.util import _load_config_toml
@@ -190,7 +190,7 @@ def load_pyproject_config(
     paths; only explicitly set fields of a GenerateConfig override are merged.
     Without project settings, return the API defaults with any overrides applied.
     """
-    source = Path.cwd() if path is None else resolved(Path(path))
+    source = working_directory() if path is None else resolved(Path(path))
     if path is not None and source.is_file():
         source = source.parent
     options, pyproject_path = _get_pyproject_toml_config_with_path(source, profile)

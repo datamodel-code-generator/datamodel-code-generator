@@ -8,12 +8,13 @@ publishes to the resolved form of that, so a symlinked lockfile stays a symlink 
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple
 
-from datamodel_code_generator._paths import lexical, resolved
+from datamodel_code_generator._paths import lexical, resolved, working_directory
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from datamodel_code_generator.base_config import BaseGenerateConfig
 
 LOCKFILE_NAME: Final = "datamodel-codegen.lock"
@@ -47,7 +48,7 @@ def default_lock_parent(pyproject_path: Path | None, cwd: Path | None = None) ->
     """
     if pyproject_path is not None:
         return pyproject_path.parent
-    return Path.cwd() if cwd is None else cwd
+    return working_directory() if cwd is None else cwd
 
 
 def remote_lock_plan(

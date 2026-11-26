@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 import traceback
 from functools import partial
@@ -26,7 +25,7 @@ from datamodel_code_generator._output_comparison import (
     _compare_generated_outputs,
     _write_comparison_output,
 )
-from datamodel_code_generator._paths import names_directory
+from datamodel_code_generator._paths import names_directory, relative_spelling, working_directory
 from datamodel_code_generator._project_config import profile_table_keys
 from datamodel_code_generator._shared_types import Error, InvalidClassNameError
 from datamodel_code_generator._target_documents import shown
@@ -133,8 +132,8 @@ def _implied_notice(
         named = ("jobs", job) if job else profile_table_keys(namespace.profile)
         table = toml_table(config_table(*named), "legacy-ascii-table-keys")
         lines = (f"  {key} = {toml_text(data)}" for key, data in hyphenated(values).items())
-        where = os.path.relpath(pyproject, Path.cwd())
-        return "\n".join((f"{lead}, add to {table} of {Path(where).as_posix()}:", *lines))
+        where = relative_spelling(pyproject)
+        return "\n".join((f"{lead}, add to {table} of {where}:", *lines))
     from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
 
     flags = _values_arguments(values.items())
@@ -259,7 +258,7 @@ def publish_targets(files: Iterable[StagedFile], targets: Sequence[tuple[str, Pl
 
 def _shown(path: Path) -> str:
     """Return a path relative to the working directory when it lies inside it."""
-    return shown(path, Path.cwd()).as_posix()
+    return shown(path, working_directory()).as_posix()
 
 
 def _payload_base(project: GeneratedProject, models: Path) -> Path:
@@ -385,7 +384,7 @@ def _compare_target(
     nested = _nested(models, target)
     differences: list[ComparisonDifference] = []
     contents: list[str] = []
-    base, cwd = _payload_base(project, models), Path.cwd()
+    base, cwd = _payload_base(project, models), working_directory()
     with TemporaryDirectory(prefix="datamodel-codegen-check-") as directory:
         staging = Path(directory)
         baseline_root = None if baseline is None else staging / "baseline"
@@ -502,7 +501,7 @@ def _existing(path: Path, baseline_root: Path | None) -> Path:
 
     A baseline root mirrors the filesystem, so every output path, inside the working directory or not, has its place.
     """
-    return path if baseline_root is None else baseline_root.joinpath(*Path.cwd().joinpath(path).parts[1:])
+    return path if baseline_root is None else baseline_root.joinpath(*working_directory().joinpath(path).parts[1:])
 
 
 def _next_step(target: TargetConfig, project: GeneratedProject, implied: str | None) -> str:
@@ -574,7 +573,7 @@ def _base(config: Any, pyproject_path: Path | None, field: str) -> Path:
     """
     from datamodel_code_generator.json_config import document_base  # noqa: PLC0415
 
-    cwd = Path.cwd()
+    cwd = working_directory()
     record = config._run_options  # noqa: SLF001
     return document_base(
         record.given_value(field),

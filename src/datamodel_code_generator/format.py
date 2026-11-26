@@ -27,6 +27,7 @@ from typing_extensions import Sentinel
 from datamodel_code_generator import _format_types
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._module_paths import is_below_name, is_within_name
+from datamodel_code_generator._paths import working_directory
 from datamodel_code_generator._process import run_captured
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._shared_types import Error
@@ -98,7 +99,7 @@ def _local_package_modules(module: ModuleType, *, previous_modules: frozenset[st
 
 def _record_watch_module_candidates(module_name: str, watch_dependencies: Any) -> None:
     relative_module = Path(*module_name.split("."))
-    candidate_roots = [Path.cwd()]
+    candidate_roots = [working_directory()]
     if python_path := os.environ.get("PYTHONPATH"):
         candidate_roots.extend(Path(path) for path in python_path.split(os.pathsep) if path)
     for root in dict.fromkeys(candidate_roots):
@@ -503,7 +504,7 @@ class CodeFormatter:
             warn_deprecated("dependency.external-formatters-optional")
 
         if not settings_path:
-            settings_path = Path.cwd()
+            settings_path = working_directory()
         elif settings_path.is_file():
             settings_path = settings_path.parent
         elif not settings_path.exists():
@@ -512,7 +513,9 @@ class CodeFormatter:
                     settings_path = parent
                     break
             else:
-                settings_path = Path.cwd()  # pragma: no cover - the parents of a missing path end at one that exists
+                settings_path = (
+                    working_directory()
+                )  # pragma: no cover - the parents of a missing path end at one that exists
 
         self.settings_path: str = str(settings_path)
         self.defer_formatting = defer_formatting

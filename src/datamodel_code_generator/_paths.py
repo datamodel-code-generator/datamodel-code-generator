@@ -5,6 +5,11 @@ folds ``.`` and ``..`` as written, keeping symlinks; the resolved form expands `
 relative spelling to the caller's directory when one is given, else to the working directory. The checks that two
 paths are one, overlap or hold one another compare these forms.
 
+The package reads the working directory and the home directory only here, each through one function: the absolute
+form of a path as written (``absolute_form``, which ``working_directory`` calls), the folded join of the lexical and
+resolved forms, the expansion of ``~`` (``expand_user``) and the spelling of a path relative to the working directory
+(``relative_spelling``). Every other module calls them, so a new read of either directory is a new function here.
+
 The publication journal anchors, stages and creates parents from the deepest existing ancestor, the remote lock writes
 its temporary file there and the watcher watches there. The callers differ in what counts as existing and in what
 happens at a root that fails, and each difference is a named row of ``existing_ancestor``.
@@ -55,10 +60,45 @@ MODULAR_OUTPUT_FILE_ERROR: Final = "Modular references require an output directo
 _BINARY_HEAD_SIZE: Final = 8192
 
 
+def absolute_form(path: Path) -> Path:
+    """Return the absolute form: ``path`` joined to the working directory when it is relative, as written.
+
+    It is the package's one call of ``Path.absolute``: ``working_directory`` and every caller that joins a path to the
+    working directory as written call this function.
+    """
+    return path.absolute()
+
+
+def working_directory() -> Path:
+    """Return the working directory (``Path.cwd``): the package's one read of it alone, through ``absolute_form``."""
+    return absolute_form(Path())
+
+
+def expand_user(path: Path) -> Path:
+    """Return ``path`` with a leading ``~`` or ``~user`` replaced by that home directory (``Path.expanduser``).
+
+    It is the package's one read of the home directory: ``Path.home()`` is ``expand_user(Path("~"))``.
+    """
+    return path.expanduser()
+
+
+def relative_spelling(path: Path) -> str:
+    """Spell ``path`` relative to the working directory, with ``..`` where it lies outside it, in POSIX form.
+
+    It is the package's one call of ``os.path.relpath``, which reads the working directory.
+    """
+    return Path(os.path.relpath(path)).as_posix()
+
+
+def _folded(path: Path) -> Path:
+    """Return ``path`` joined to the working directory, dot components folded: the one call of ``os.path.abspath``."""
+    return Path(os.path.abspath(path))  # noqa: PTH100
+
+
 def lexical(path: Path, base: Path | None = None) -> Path:
     """Return the lexical form: ``~`` expanded, joined to ``base`` (or the working directory), dot components folded."""
-    expanded = path.expanduser()
-    return Path(os.path.abspath(expanded if base is None else base / expanded))  # noqa: PTH100
+    expanded = expand_user(path)
+    return _folded(expanded if base is None else base / expanded)
 
 
 def resolved(path: Path, base: Path | None = None) -> Path:
@@ -68,11 +108,11 @@ def resolved(path: Path, base: Path | None = None) -> Path:
     ``Path.resolve`` raises ``RuntimeError`` there before Python 3.13). An existing path whose links name nothing that
     exists, such as ``/dev/stdin`` reading a pipe (``pipe:[...]``), keeps its lexical form, which opens it.
     """
-    expanded = path.expanduser()
+    expanded = expand_user(path)
     joined = expanded if base is None else base / expanded
     if (real := Path(os.path.realpath(joined))).exists() or not joined.exists():
         return real
-    return Path(os.path.abspath(joined))  # noqa: PTH100
+    return _folded(joined)
 
 
 def existing_ancestor(
@@ -118,7 +158,7 @@ def creation_root(path: Path) -> Path:
 
 def concrete_parent(path: Path) -> Path:
     """Return the directory ``path`` is published into: its parent, with ``~`` expanded and symlinks resolved."""
-    return resolved(path.expanduser().parent)
+    return resolved(expand_user(path).parent)
 
 
 def concrete(path: Path) -> Path:

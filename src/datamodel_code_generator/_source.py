@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Final, Literal, TextIO, TypeAlias, cast
 from datamodel_code_generator._caches import BoundedLru, SeenKeys
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._module_paths import is_package_init
+from datamodel_code_generator._paths import absolute_form
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping
@@ -254,7 +255,7 @@ def load_yaml_dict_from_path(path: Path, encoding: str) -> dict[str, YamlValue]:
     from datamodel_code_generator.util import record_watch_dependency, yaml_number_reading_key  # noqa: PLC0415
 
     record_watch_dependency(path)
-    cache_path = path if path.is_absolute() else path.absolute()
+    cache_path = path if path.is_absolute() else absolute_form(path)
     return _load_yaml_dict_from_path_cached(cache_path, cache_path.stat().st_mtime, encoding, yaml_number_reading_key())
 
 

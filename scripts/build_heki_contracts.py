@@ -94,6 +94,9 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   (the interpreter's version, the platform, a variable, an installed package), guarded imports included: output that
   depends on the environment cost review rounds.
 
+Tables of one kind and family that differ only in their ``targets`` are written as one table (`group_contracts`): the
+file holds one table per distinct setting, not one per target.
+
 Each effect boundary's report carries the help of its kind, ``BOUNDARY_ADVICE`` of ``scripts/check_ratchets.py``
 (``ENVIRONMENT_ADVICE``, ``PASS_ADVICE``, ``GLUE_ADVICE``, ``DECISION_READ_ADVICE``): the ratchet key that counts
 the baseline sites of these boundaries, one key per kind (``allowlist:heki-baseline:EFF201:<kind>``), prints the same
@@ -221,6 +224,44 @@ def _value(value: object) -> str:
 def _table(kind: str, **keys: object) -> str:
     """Return one contract: an array-of-tables entry with its keys in the order given."""
     return "\n".join([f"[[{kind}]]", *(f"{key.replace('_', '-')} = {_value(v)}" for key, v in keys.items())]) + "\n"
+
+
+_IDENTITY = frozenset({"name", "targets"})
+"""The keys of a table that name it and say what it judges: tables equal in every other key can share them."""
+
+
+def group_contracts(contracts: Iterable[str]) -> list[str]:
+    """Return the contracts with the tables that differ only in their targets written as one table.
+
+    A table with ``targets`` joins the tables of its kind and family (the name up to the first colon) that hold every
+    other key but ``name`` equal, in any key order, and so allows and forbids exactly what they did: heki checks each
+    target of a table by itself, and a group of ``call-owners`` tables sets ``targets-call-each-other = "report"``, so
+    a call of one of its targets by another is judged as the separate tables judged it. The group stands where its
+    first table stood and lists the targets of its tables in the order they were given, each once; its name is the
+    name of its first table and ``+<n>`` for the n tables that joined it, so the name stays unique and its family
+    stays the prefix a reader searches for. A table without ``targets`` and a table no other joins is written as it
+    was given.
+    """
+    groups: dict[object, list[tuple[str, str, Mapping[str, object], list[str]]]] = {}
+    for text in contracts:
+        ((kind, (table,)),) = tomllib.loads(text).items()
+        settings = tuple(
+            sorted((k, tuple(v) if isinstance(v, list) else v) for k, v in table.items() if k not in _IDENTITY)
+        )
+        key = (kind, table["name"].partition(":")[0], settings) if "targets" in table else object()
+        groups.setdefault(key, []).append((text, kind, table, table.get("targets", [])))
+    return [
+        members[0][0]
+        if len(members) == 1
+        else _table(
+            members[0][1],
+            name=f"{members[0][2]['name']} +{len(members) - 1}",
+            targets=list(dict.fromkeys(target for *_, targets in members for target in targets)),
+            **{key: value for key, value in members[0][2].items() if key not in _IDENTITY},
+            **({"targets_call_each_other": "report"} if members[0][1] == "call-owners" else {}),
+        )
+        for members in groups.values()
+    ]
 
 
 def _module(path: str) -> str:
@@ -1395,7 +1436,7 @@ def required_version() -> str:
 def generate() -> str:
     """Return the contents of scripts/heki.toml."""
     repo = Repo(ROOT, Page([], [], [], []))
-    contracts = [
+    contracts = group_contracts([
         *write_owner_contracts(repo),
         *store_member_contracts(repo),
         *store_operation_contracts(repo),
@@ -1410,7 +1451,7 @@ def generate() -> str:
         *shared_object_contracts(repo),
         *environment_contracts(),
         *finality_contracts(repo),
-    ]
+    ])
     head = "\n".join([
         HEADER,
         f"required-version = {_quote(required_version())}",
