@@ -255,6 +255,7 @@ HEKI_RULES = {
     "recursion-error-as-value": "EFF114",
     "async-def-as-sync-callback": "EFF115",
     "generator-never-iterated": "EFF116",
+    "unlocked-write-of-guarded-state": "EFF117",
     "unretained-async-task": "EFF107",
     "effect-boundary-violation": "EFF201",
     "import-cycle": "IMP101",
