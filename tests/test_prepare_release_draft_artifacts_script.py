@@ -125,11 +125,15 @@ CASES = {
             "src/module.py": b"value = 1\n",
             "tests/main.refs": b"old reference\n",
             "docs/llms-full.txt": b"removed\n",
+            "scripts/ci_shard_weights.json": b'{"weights": {"old": 1}}\n',
+            "scripts/heki_baseline.toml": b"version = 2\n",
         },
         {
             "src/module.py": b"value = 2\n",
             "tests/main.refs": b"new reference\n",
             "tests/data/expected/large.txt": b"".join(b"line %d\n" % index for index in range(12_001)),
+            "scripts/ci_shard_weights.json": b'{"weights": {"new": 2}}\n',
+            "scripts/heki_baseline.toml": b"version = 3\n",
         },
     ),
     "generated_documents": (
