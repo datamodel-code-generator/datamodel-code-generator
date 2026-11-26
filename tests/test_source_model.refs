@@ -23,9 +23,11 @@ decision-home-callers	source_model/every_rule_states_its_verdicts[decision-home-
 expected-access	source_model/every_rule_states_its_verdicts[expected-access].txt
 generated-import-closure	source_model/every_rule_states_its_verdicts[generated-import-closure].txt
 generation-store-usage	source_model/every_rule_states_its_verdicts[generation-store-usage].txt	= source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
+heki-contract-classes	source_model/every_rule_states_its_verdicts[heki-contract-classes].txt
 import-cycle	source_model/every_rule_states_its_verdicts[import-cycle].txt
 legacy-row-reads	source_model/every_rule_states_its_verdicts[legacy-row-reads].txt
 os-selection	source_model/every_rule_states_its_verdicts[os-selection].txt
+package-layer-reads	source_model/every_rule_states_its_verdicts[package-layer-reads].txt
 pass-pipeline	source_model/every_rule_states_its_verdicts[pass-pipeline].txt
 pre-commit-hook-runs	source_model/every_rule_states_its_verdicts[pre-commit-hook-runs].txt
 private-scope-walk	source_model/every_rule_states_its_verdicts[private-scope-walk].txt

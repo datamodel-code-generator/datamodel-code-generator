@@ -87,10 +87,12 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   ``MUT203``, ``MUT204``, ``MUT206``, ``MUT207``): what a layer reads of another one beyond its imports. Parser code
   reads no member only a backend reads, names no backend module and selects no output family; input model code
   selects none; shared model code reads no module of ``sys.modules``; configuration reads no backend name but the
-  defaults of ``ParserConfig``; the entry point reaches no private member of a parser; no module but the root and
-  ``__main__`` reads a name through the root. The functions whose read of ``__module__`` or ``sys.modules`` asks
-  something else, and the two private members the entry point reaches, are left out with their reasons
-  (`MODULE_NAME_READERS`, `MODULE_REGISTRY_READERS`, `ENTRYPOINT_PRIVATE_READERS`, `CONFIG_DEFAULTS_BACKEND`).
+  ``pydantic_v2`` ones of its module body (the defaults of ``ParserConfig``); the entry point reaches no private
+  member of a parser; no module but the root and ``__main__`` reads a name through the root. The functions whose read
+  of ``__module__`` or ``sys.modules`` asks something else, and the two private members the entry point reaches, are
+  left out with their reasons (`MODULE_NAME_READERS`, `MODULE_REGISTRY_READERS`, `ENTRYPOINT_PRIVATE_READERS`,
+  `CONFIG_DEFAULTS_BACKEND`). The checker's ``reference-backend-definition`` rule, a naming lint on the classes of
+  reference code, has no contract (owner 2026-11-26): a use of a backend there is held by the import contracts.
 - ``effect-boundaries`` (``EFF201``) of the passes, from ``scripts/pass_decls.py`` and the pipeline tables
   (``parser/_passes/_tables.py``): each pass after L1 and each decision, over the functions its step or its
   ``DecisionPass`` runs and those they call, writes only the fact and presentation rows its declaration lets it write
@@ -464,7 +466,7 @@ class _Classes:
 
     def __init__(self, repo: Repo) -> None:
         """Read the class scopes of the package's modules."""
-        index = PackageIndex()
+        index = PackageIndex(repo.root / PACKAGE_DIR)
         self.modules: dict[str, list[str]] = {}
         """The classes by the module that defines them, as ``module`` and ``qualname`` joined by a dot."""
         self.bases: dict[str, list[str]] = {}
@@ -1319,7 +1321,11 @@ CONFIG_DEFAULTS_BACKEND: Final = f"{PACKAGE}.model.pydantic_v2"
 """The backend whose names the module body of the configuration may read: the defaults of ``ParserConfig``
 (``data_model_type`` and the other three) are its classes, the public defaults of the parser. heki judges a class
 body as the module body, so the contract of the module body leaves out this backend and keeps the others; the
-functions of the configuration read none, and the module imports only this backend (``config-backend-import``)."""
+functions of the configuration read none, and the module imports only this backend (``config-backend-import``).
+
+The narrowing (owner 2026-11-26): the contract allows any module-body read of this backend, not exactly the four
+defaults the checker allowed, until heki attributes the body of a class to the class; the contract then names the
+defaults of ``ParserConfig`` alone (a heki request follows)."""
 ENTRYPOINT_PRIVATE_READERS: Final = (
     "_generation:_build_parser",
     "_generation:_parse_run",
@@ -1606,7 +1612,7 @@ class _TableSteps:
         """Read the tables module and the classes of the package."""
         self.repo = repo
         self.classes = _Classes(repo)
-        self.index = PackageIndex()
+        self.index = PackageIndex(repo.root / PACKAGE_DIR)
         self.model = repo.model(f"{PACKAGE_DIR}{TABLES}")
         self.modules = set(_package_modules(repo).values())
         self.lambdas = {id(scope.node): scope for scope in self.model.scopes if scope.kind == "lambda"}

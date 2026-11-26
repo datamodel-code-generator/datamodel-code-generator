@@ -24,8 +24,10 @@ from coverage.python import PythonParser
 from scripts import _behaviour_classify as behaviour_classify
 from scripts import _decision_home_reads as home_reads
 from scripts import _import_cycles as import_cycles
+from scripts import _package_layers as package_layers
 from scripts import _source_model as source_model
 from scripts import (
+    build_heki_contracts,
     check_generation_store_usage,
     check_pass_pipeline,
     check_ratchets,
@@ -1139,6 +1141,79 @@ def _decision_home_contracts(form: Path) -> list[Finding]:
         ]
 
 
+def _form_as_package(form: Path, root: Path) -> where.Repo:
+    """Place a form's modules as modules of the package under ``root`` and return the repository read over them."""
+    package = root / "src" / where.PACKAGE
+    package.mkdir(parents=True)
+    for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+        target = package / (form.name / path.relative_to(form) if form.is_dir() else path.name.removesuffix(".txt"))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    return where.Repo(root, where.Page([], [], [], []))
+
+
+def _package_layer_reads(form: Path) -> list[Finding]:
+    """Return the classes of a form with a Protocol base, and each import of it that `resolve` follows on.
+
+    The form's modules stand as modules of the package, so an import of one of them from another is followed on to
+    the module that defines the name.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        repo = _form_as_package(form, Path(folder))
+        index = package_layers.PackageIndex(repo.root / where.PACKAGE_DIR)
+        found = []
+        for rel in sorted(build_heki_contracts._package_modules(repo)):
+            place = rel.removeprefix(where.PACKAGE_DIR)
+            model = repo.model(rel)
+            found += [
+                Finding("protocol-base", _site(form, place, scope.line), f"{place}:{scope.line}: {scope.qualname}")
+                for scope in model.scopes
+                if scope.kind == "class" and package_layers.protocol_bases(model, scope)
+            ]
+            imports = [
+                binding
+                for bindings in model.module_scope.bindings.values()
+                for binding in bindings
+                if binding.kind == "import-from" and binding.origin
+            ]
+            found += [
+                Finding("resolved-import", _site(form, place, binding.line), f"{place}:{binding.line}: {resolved}")
+                for binding in imports
+                if (resolved := index.resolve(binding.origin or "")) != binding.origin
+            ]
+        return found
+
+
+def _heki_contract_classes(form: Path) -> list[Finding]:
+    """Return the classes of a form the heki contracts read: the bases of each by origin, the members of a Protocol.
+
+    The form's modules stand as modules of the package, as `_decision_home_contracts` places them under ``scripts/``.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        repo = _form_as_package(form, Path(folder))
+        classes = build_heki_contracts._Classes(repo)
+        protocols = build_heki_contracts._Protocols(repo)
+        found = []
+        for rel, module in sorted(build_heki_contracts._package_modules(repo).items()):
+            place = rel.removeprefix(where.PACKAGE_DIR)
+            for scope in repo.model(rel).scopes:
+                if scope.kind != "class" or "<locals>" in scope.qualname:
+                    continue
+                name = f"{module}.{scope.qualname}"
+                members = sorted(
+                    member
+                    for owners in protocols.members.values()
+                    for member in owners
+                    if member.startswith(f"{name}.")
+                )
+                found += [
+                    Finding(rule, _site(form, place, scope.line), f"{place}:{scope.line}: {listed}")
+                    for rule, listed in (("class-bases", classes.bases[name]), ("protocol-members", members))
+                    if listed
+                ]
+        return found
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -1200,6 +1275,12 @@ RULES: dict[str, RuleRun] = {
     ),
     "os-selection": RuleRun(
         "scripts.os_selection", frozenset({"bindings", "references", "extents"}), _os_selection_reads
+    ),
+    "package-layer-reads": RuleRun(
+        "scripts._package_layers", frozenset({"bindings", "references"}), _package_layer_reads
+    ),
+    "heki-contract-classes": RuleRun(
+        "scripts.build_heki_contracts", frozenset({"bindings", "references"}), _heki_contract_classes
     ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""

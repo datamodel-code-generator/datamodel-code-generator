@@ -115,16 +115,16 @@ _PROTOCOL_ORIGINS: Final = frozenset({"typing.Protocol", "typing_extensions.Prot
 class PackageIndex:
     """The models of the package's modules, read once, and the names a module takes from another one."""
 
-    def __init__(self) -> None:
-        """Start with no module read."""
+    def __init__(self, source_root: Path = SOURCE_ROOT) -> None:
+        """Start with no module read, in the package directory ``source_root``."""
+        self._source_root = source_root.resolve()
         self._models: dict[str, SourceModule | None] = {}
         self._resolved: dict[str, str] = {}
 
-    @staticmethod
-    def file(module: str) -> Path | None:
+    def file(self, module: str) -> Path | None:
         """Return the file of a module of the package, None for any other module."""
         package, *parts = module.split(".")
-        relative = SOURCE_ROOT.joinpath(*parts)
+        relative = self._source_root.joinpath(*parts)
         paths = (relative.with_name(f"{relative.name}.py"), relative / "__init__.py")
         return next((path for path in paths if package == ROOT_PACKAGE and path.is_file()), None)
 
@@ -133,7 +133,7 @@ class PackageIndex:
         if module not in self._models:
             self._models[module] = None
             if (path := self.file(module)) is not None:
-                display = path.resolve().relative_to(ROOT).as_posix()
+                display = path.resolve().relative_to(self._source_root.parents[1]).as_posix()
                 with contextlib.suppress(SourceModelError):
                     self._models[module] = SourceModule(path.read_text(encoding="utf-8"), display, module)
         return self._models[module]
