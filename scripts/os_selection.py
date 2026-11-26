@@ -231,7 +231,7 @@ def platform_functions(root: Path) -> dict[str, set[str]]:
     """Return the qualified names of the functions heki reports under the platform effect boundaries, per module."""
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
     command = [heki, "check", "--config", str(PLATFORM_EFFECTS), "--output-format", "json", "src"]
-    result = subprocess.run(command, cwd=root, capture_output=True, text=True, check=False)
+    result = subprocess.run(command, cwd=root, capture_output=True, text=True, encoding="utf-8", check=False)
     if result.returncode not in {0, 1}:
         msg = f"heki failed ({result.returncode}): {result.stderr.strip()}"
         raise SystemExit(msg)
@@ -306,7 +306,7 @@ def _collected(root: Path) -> list[str]:
         str(root),
         "tests",
     ]
-    result = subprocess.run(command, cwd=root, capture_output=True, text=True, check=False)
+    result = subprocess.run(command, cwd=root, capture_output=True, text=True, encoding="utf-8", check=False)
     if result.returncode:
         msg = f"collecting the suite failed:\n{result.stdout[-2000:]}{result.stderr[-2000:]}"
         raise SystemExit(msg)

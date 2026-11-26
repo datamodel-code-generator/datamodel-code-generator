@@ -18,7 +18,9 @@ SCRIPT = ROOT / "scripts" / "os_selection.py"
 
 
 def _run_script(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True, check=False)
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), *args], capture_output=True, text=True, encoding="utf-8", check=False
+    )
 
 
 @pytest.mark.allow_direct_assert("an entry naming a test that no longer exists must fail, not be stored as output")
