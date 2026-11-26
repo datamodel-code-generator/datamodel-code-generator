@@ -856,11 +856,16 @@ def _generation_store_usage(form: Path) -> list[Finding]:
     """Read the attributes a form's classes declare, as the fact table check reads the classes of the model graph.
 
     Each attribute a class deriving from a model-graph class declares is a finding of a table without rows, and a
-    module the model cannot read is a finding of its own.
+    module the model cannot read is a finding of its own. A one-file form is read as the module it stands for, so the
+    check, which reads ``.py`` files only, also reads a grammar-gated ``.py.txt`` form.
     """
-    paths = sorted(form.rglob("*.py")) if form.is_dir() else [form]
-    problems = check_generation_store_usage.table_problems(rows=(), declaration_paths=paths)
-    places = [problem.path.relative_to(form.parent).as_posix().removesuffix(".txt") for problem in problems]
+    with tempfile.TemporaryDirectory() as folder:
+        base = form.parent if form.is_dir() else Path(folder)
+        paths = sorted(form.rglob("*.py")) if form.is_dir() else [base / form.name.removesuffix(".txt")]
+        if not form.is_dir():
+            paths[0].write_text(form.read_text(encoding="utf-8"), encoding="utf-8")
+        problems = check_generation_store_usage.table_problems(rows=(), declaration_paths=paths)
+        places = [problem.path.relative_to(base).as_posix() for problem in problems]
     pairs = zip(problems, places, strict=True)
     return [Finding(_unquoted(p.target), _site(form, at, p.line), f"{at}:{p.line}: {p.message}") for p, at in pairs]
 
