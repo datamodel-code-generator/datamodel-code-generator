@@ -503,6 +503,21 @@ def test_the_import_boundaries_raise_where_the_layer_table_is_out_of_step(
         build_heki_contracts.import_boundary_contracts(repo, partial=True)
 
 
+@pytest.mark.parametrize("table", ["MODULE_NAME_READERS", "MODULE_REGISTRY_READERS", "ENTRYPOINT_PRIVATE_READERS"])
+@pytest.mark.allow_direct_assert("a stale allowance must stop the build, not be stored as an expected output")
+def test_the_architecture_allowances_name_a_function_the_package_defines(
+    table: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An entry of an allowance table names a function the package defines, or its contract allows nothing."""
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+    monkeypatch.setattr(build_heki_contracts, table, (*getattr(build_heki_contracts, table), "parser.base:gone"))
+
+    with pytest.raises(
+        ValueError, match=r"^architecture contracts allow functions the package does not define: parser\.base:gone$"
+    ):
+        build_heki_contracts.architecture_contracts(repo)
+
+
 def _layer_import_reports(tmp_path: Path, stubs: tuple[str, ...], places: dict[str, str]) -> str:
     """Place the fixtures at modules of their layers and return the findings of the layer contracts as stored text."""
     package = tmp_path / PACKAGE

@@ -1468,6 +1468,11 @@ def architecture_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
     ):
         msg = f"architecture contracts without a class or module of the package to judge: {', '.join(empty)}"
         raise ValueError(msg)
+    defined = _package_functions(repo)
+    allowed = (*MODULE_NAME_READERS, *MODULE_REGISTRY_READERS, *ENTRYPOINT_PRIVATE_READERS)
+    if not partial and (missing := [name for name in allowed if f"{PACKAGE}.{name.replace(':', '.')}" not in defined]):
+        msg = f"architecture contracts allow functions the package does not define: {', '.join(missing)}"
+        raise ValueError(msg)
     role = {"read-owners": "readers", "call-owners": "callers", "write-owners": "writers"}
     return [
         _table(
