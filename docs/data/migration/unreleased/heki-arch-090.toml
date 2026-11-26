@@ -21,6 +21,8 @@ covers = [
     "check_ratchets_script/check_ratchets_against_base[other-kinds].txt",
     "check_ratchets_script/check_ratchets_counts_one_tree.json.txt",
     "check_ratchets_script/check_ratchets_counts_one_tree.table.txt",
+    "pre_commit_hooks/a_pattern_without_an_imported_module_misses_it.txt",
+    "pre_commit_hooks/local_hooks_run_when_their_scripts_change.txt",
     "source_model/a_form_names_only_the_layers_the_guard_has.txt",
     "source_model/every_rule_states_its_verdicts[architecture-boundaries].txt",
 ]
