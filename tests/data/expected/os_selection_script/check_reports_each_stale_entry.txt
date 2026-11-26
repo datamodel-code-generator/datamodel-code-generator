@@ -1,0 +1,6 @@
+ubuntu-only: tests/test_gone_*.py matches no file
+select.modules: tests/old/**/test_*.py matches no file
+select.tests: tests/test_a.py::test_b names no test function
+select.cover: tests/test_tool_script.py::test_tool is in a module Windows and macOS never run (ubuntu-only)
+select.cover: tests/test_moved.py::test_a names no test function
+select.cover: tests/test_a.py names no test function

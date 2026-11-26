@@ -1,0 +1,7 @@
+[select]
+# kept
+tests = ["tests/test_a.py::test_a"]
+cover = [
+  "tests/test_b.py::test_b",
+  "tests/test_c.py::TestC::test_c",
+]

@@ -1,0 +1,51 @@
+# The effect boundaries whose reports name the platform functions of scripts/os_selection.py: the functions of the
+# package that make a platform effect directly (file system, processes, time, signals, standard streams, path
+# semantics). `os_selection.py cover` keeps a test of each of their arcs on Windows and macOS. heki 0.5 misses some of
+# these calls under its own kinds (blocking-fs, blocking-subprocess, reads-environment), so they are named here.
+required-version = ">=0.5"
+
+[lint]
+select = ["EFF201"]
+fail-on = "warning"
+
+[[effect-boundaries]]
+name = "fs-read"
+scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
+forbid = ["calls"]
+call-targets = ["pathlib.Path.read_text", "pathlib.Path.read_bytes", "pathlib.Path.exists", "pathlib.Path.is_file", "pathlib.Path.is_dir", "pathlib.Path.is_symlink", "pathlib.Path.is_mount", "pathlib.Path.iterdir", "pathlib.Path.glob", "pathlib.Path.rglob", "pathlib.Path.stat", "pathlib.Path.lstat", "pathlib.Path.resolve", "pathlib.Path.samefile", "pathlib.Path.absolute", "pathlib.Path.expanduser", "pathlib.Path.cwd", "pathlib.Path.home", "pathlib.Path.readlink", "pathlib.Path.walk", "pathlib.Path.owner", "pathlib.Path.group", "os.listdir", "os.scandir", "os.stat", "os.lstat", "os.getcwd", "os.access", "os.readlink", "os.walk", "os.path.exists", "os.path.lexists", "os.path.isfile", "os.path.isdir", "os.path.islink", "os.path.ismount", "os.path.getmtime", "os.path.getsize", "os.path.getctime", "os.path.getatime", "os.path.realpath", "os.path.abspath", "os.path.expanduser", "os.path.samefile", "glob.glob", "glob.iglob"]
+
+[[effect-boundaries]]
+name = "fs-mutate"
+scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
+forbid = ["calls"]
+call-targets = ["pathlib.Path.write_text", "pathlib.Path.write_bytes", "pathlib.Path.mkdir", "pathlib.Path.unlink", "pathlib.Path.rename", "pathlib.Path.replace", "pathlib.Path.rmdir", "pathlib.Path.touch", "pathlib.Path.chmod", "pathlib.Path.symlink_to", "pathlib.Path.hardlink_to", "pathlib.Path.open", "builtins.open", "io.open", "os.replace", "os.rename", "os.renames", "os.remove", "os.unlink", "os.makedirs", "os.mkdir", "os.rmdir", "os.removedirs", "os.open", "os.close", "os.fdopen", "os.fsync", "os.write", "os.read", "os.utime", "os.chmod", "os.link", "os.symlink", "os.chdir", "os.truncate", "os.ftruncate", "tempfile.*", "shutil.*"]
+
+[[effect-boundaries]]
+name = "fs-other"
+scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
+forbid = ["blocking-fs"]
+
+[[effect-boundaries]]
+name = "subprocess"
+scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
+forbid = ["blocking-subprocess", "calls"]
+call-targets = ["os.system", "os.popen", "os.kill", "os.killpg", "os.setsid", "os.fork", "asyncio.create_subprocess_exec", "asyncio.create_subprocess_shell", "webbrowser.open"]
+
+[[effect-boundaries]]
+name = "platform-reads"
+scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
+forbid = ["reads-environment", "reads-targets", "calls"]
+read-targets = ["os.sep", "os.altsep", "os.pathsep", "os.linesep", "os.curdir", "os.pardir", "os.devnull", "sys.stdout", "sys.stderr", "sys.stdin"]
+call-targets = ["locale.*", "sys.getfilesystemencoding", "sys.getdefaultencoding", "os.umask", "os.cpu_count", "os.get_terminal_size", "shutil.get_terminal_size", "builtins.print", "builtins.input"]
+
+[[effect-boundaries]]
+name = "pure-path"
+scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
+forbid = ["calls"]
+call-targets = ["pathlib.Path", "pathlib.PurePath", "pathlib.PurePosixPath", "pathlib.PureWindowsPath", "pathlib.Path.as_posix", "pathlib.Path.relative_to", "pathlib.Path.with_suffix", "pathlib.Path.with_name", "pathlib.Path.with_stem", "pathlib.Path.joinpath", "pathlib.Path.is_absolute", "pathlib.Path.as_uri", "pathlib.Path.is_relative_to", "pathlib.Path.match", "pathlib.PurePath.as_posix", "pathlib.PurePath.relative_to", "pathlib.PurePath.with_suffix", "pathlib.PurePath.joinpath", "pathlib.PurePosixPath.as_posix", "os.fspath", "os.fsencode", "os.fsdecode", "urllib.request.url2pathname", "urllib.request.pathname2url"]
+
+[[effect-boundaries]]
+name = "time-signal-proc"
+scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
+forbid = ["calls", "sleep"]
+call-targets = ["datetime.datetime.now", "datetime.datetime.today", "datetime.date.today", "datetime.datetime.fromtimestamp", "datetime.datetime.astimezone", "time.time", "time.localtime", "time.strftime", "time.mktime", "time.monotonic", "time.perf_counter", "zoneinfo.ZoneInfo", "signal.*", "multiprocessing.*", "concurrent.futures.*", "threading.Thread", "threading.Timer", "atexit.register", "watchfiles.*"]

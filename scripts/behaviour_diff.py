@@ -246,6 +246,7 @@ ORACLE_FILES = (
     "scripts/compile_builtin_templates.py",
     "scripts/declared_changes.py",
     "scripts/fact_tables.py",
+    "scripts/os_selection.py",
     "scripts/record_prs.py",
     "scripts/select_ci_test_shard.py",
 )

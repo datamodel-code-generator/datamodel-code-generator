@@ -34,6 +34,7 @@ from scripts import (
     check_source_rules,
     coverage_exclusions,
     legacy_row_reads,
+    os_selection,
     related_tests,
     where,
 )
@@ -960,6 +961,26 @@ def _test_units(form: Path) -> list[Finding]:
     ]
 
 
+def _os_selection_reads(form: Path) -> list[Finding]:
+    """Return what `scripts/os_selection.py` reads of a form's modules: its test functions and its body ranges.
+
+    The test functions are the module-level and class-level functions pytest may collect; a body range is the lines of
+    a function's or comprehension's body, which `cover` maps arcs of the platform functions to.
+    """
+    found = []
+    for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+        name = path.name.removesuffix(".txt")
+        found += [
+            Finding("test-function", _site(form, name, node), f"{name}::{node}")
+            for node in sorted(os_selection._defined_tests(path))
+        ]
+        found += [
+            Finding("body-range", _site(form, name, lines[0]), f"{name}:{lines[0]}-{lines[1]}: {qualname}")
+            for qualname, lines in os_selection._body_ranges(path).items()
+        ]
+    return found
+
+
 def _unbound_names(form: Path) -> list[Finding]:
     """Return the names each module of a form loads that nothing binds in time, as the import closure audit reads."""
     return [
@@ -1245,6 +1266,9 @@ RULES: dict[str, RuleRun] = {
     "changed-test-units": RuleRun("scripts.related_tests", frozenset({"references", "extents"}), _test_units),
     "shape-family-client-reads": RuleRun(
         "tests.main.shape_families.relations", frozenset({"references", "imports", "extents"}), _client_reads
+    ),
+    "os-selection": RuleRun(
+        "scripts.os_selection", frozenset({"bindings", "references", "extents"}), _os_selection_reads
     ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""
