@@ -1,0 +1,13 @@
+exit=0
+violation: family:fake/kind=raw | pydantic_v2.BaseModel | default
+summary: same=3, no-behaviour=1, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=6, base-skipped=0
+cell: family:fake/kind=deprecated | jsonschema | same
+cell: family:fake/kind=deprecated | openapi | opt-in
+cell: family:fake/kind=deprecated | openapi | opt-in
+cell: family:fake/kind=plain | jsonschema | same
+cell: family:fake/kind=plain | openapi | opt-in
+cell: family:fake/kind=plain | openapi | opt-in
+cell: family:fake/kind=raw | jsonschema | no-behaviour
+cell: family:fake/kind=raw | openapi | opt-in
+cell: family:fake/kind=raw | openapi | opt-in
+cell: tests/data/jsonschema/plain.json | jsonschema | same
