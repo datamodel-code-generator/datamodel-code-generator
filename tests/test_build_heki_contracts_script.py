@@ -310,7 +310,7 @@ def test_heki_reports_the_import_cycles_of_every_import(tmp_path: Path) -> None:
     for name, text in SEEDED_CYCLES.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
-    (tmp_path / BASELINE.name).write_text("version = 2\n", encoding="utf-8")
+    (tmp_path / BASELINE.name).write_text("version = 3\n", encoding="utf-8")
     (config := tmp_path / "module_level_cycles.toml").write_text(MODULE_LEVEL_CYCLES, encoding="utf-8")
 
     result = _heki("--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path)
@@ -507,7 +507,7 @@ def test_heki_reports_a_write_of_an_object_the_schema_graph_shares(tmp_path: Pat
     for name, text in SEEDED_SHARED.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
-    (tmp_path / BASELINE.name).write_text("version = 2\n", encoding="utf-8")
+    (tmp_path / BASELINE.name).write_text("version = 3\n", encoding="utf-8")
 
     result = _heki("--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path)
 
