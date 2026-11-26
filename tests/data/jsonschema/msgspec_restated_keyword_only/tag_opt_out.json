@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TagOptOut",
+  "type": "object",
+  "properties": {
+    "parrot": {
+      "$ref": "#/$defs/Parrot"
+    }
+  },
+  "$defs": {
+    "Dog": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "Cat": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "Bird": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "wings": {
+          "type": "integer",
+          "default": 2
+        }
+      }
+    },
+    "Parrot": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Bird"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "parrot",
+                "macaw"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Flock": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Dog"
+        },
+        {
+          "$ref": "#/$defs/Bird"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "kind",
+        "mapping": {
+          "dog": "#/$defs/Dog",
+          "bird": "#/$defs/Bird"
+        }
+      }
+    },
+    "Yard": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Cat"
+        },
+        {
+          "$ref": "#/$defs/Bird"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "kind",
+        "mapping": {
+          "cat": "#/$defs/Cat",
+          "bird": "#/$defs/Bird"
+        }
+      }
+    },
+    "Pen": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Dog"
+        },
+        {
+          "$ref": "#/$defs/Cat"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "kind",
+        "mapping": {
+          "dog": "#/$defs/Dog",
+          "cat": "#/$defs/Cat"
+        }
+      }
+    }
+  }
+}

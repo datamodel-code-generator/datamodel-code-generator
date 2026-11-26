@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PlainParent",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/Leaf"
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "b": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "a"
+      ]
+    },
+    "Mid": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "d": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "Leaf": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Mid"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

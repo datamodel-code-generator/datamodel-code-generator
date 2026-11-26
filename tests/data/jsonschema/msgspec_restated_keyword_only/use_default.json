@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UseDefault",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/L"
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "d": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "r": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "w": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "d",
+        "r"
+      ]
+    },
+    "K": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "d": {
+              "type": "string"
+            },
+            "z": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "z"
+          ]
+        }
+      ]
+    },
+    "L": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/K"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "d": {
+              "type": "string",
+              "default": "q"
+            },
+            "r": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

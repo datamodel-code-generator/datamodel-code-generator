@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TwoParentsOtherFirst",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/Leaf"
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "b": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "a"
+      ]
+    },
+    "Mid": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "c": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "c"
+          ]
+        }
+      ]
+    },
+    "Other": {
+      "type": "object",
+      "properties": {
+        "d": {
+          "type": "integer"
+        }
+      }
+    },
+    "Leaf": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Other"
+        },
+        {
+          "$ref": "#/$defs/Mid"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Restated keyword-only fields",
+    "version": "1.0.0"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "common.Name": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": "integer"
+          }
+        }
+      },
+      "common.Base": {
+        "type": "object",
+        "properties": {
+          "Name": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/common.Name"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "b": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "Name"
+        ]
+      },
+      "mid.Mid": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/common.Base"
+          },
+          {
+            "properties": {
+              "Name": {
+                "$ref": "#/components/schemas/common.Name"
+              }
+            }
+          }
+        ]
+      },
+      "leaf.Leaf": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/mid.Mid"
+          },
+          {
+            "properties": {
+              "Name": {
+                "$ref": "#/components/schemas/common.Name"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

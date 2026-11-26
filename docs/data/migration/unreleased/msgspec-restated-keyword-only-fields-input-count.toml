@@ -1,0 +1,9 @@
+[[change]]
+id = "msgspec-restated-keyword-only-fields-input-count"
+category = "docs-text"
+title = "The payload test lists the inputs of the restated keyword-only field tests"
+summary = "Eighteen JSON Schema inputs and two OpenAPI documents were added for the msgspec structs that declare again a field of a keyword-only parent, so the count of discovered schema files moves."
+refs = ["#7550"]
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]

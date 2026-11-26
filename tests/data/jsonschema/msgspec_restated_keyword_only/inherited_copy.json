@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "InheritedCopy",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/Leaf"
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "b": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "a",
+        "b"
+      ]
+    },
+    "Mid": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "c": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "c"
+          ]
+        }
+      ]
+    },
+    "Mid2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Mid"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "Leaf": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Mid2"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "b": {
+              "type": "string",
+              "default": "x"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
