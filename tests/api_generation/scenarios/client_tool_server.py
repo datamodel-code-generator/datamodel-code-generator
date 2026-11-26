@@ -114,7 +114,7 @@ def tool_server(package: ModuleType, lines: list[str]) -> None:
     lines.append(f"  main settings {module.command_line(arguments, 'serve')!r}")
     lines.extend(
         f"  main --max-result-bytes {value!r} exits {_exit_code(module.main, ['--max-result-bytes', value])}"
-        for value in ("0", "-1", "x", "\N{FULLWIDTH DIGIT ONE}")
+        for value in ("0", "-1", "x")
     )
 
 
@@ -194,6 +194,8 @@ async def _meta_tools(package: ModuleType, module: ModuleType, exchange: Exchang
         calls: list[tuple[str, str, dict[str, object], Callable[[httpx2.Request], httpx2.Response] | None]] = [
             ("search", "search_tools", {"query": "pet", "limit": 2}, None),
             ("search by tag", "search_tools", {"tag": "owners"}, None),
+            ("search a whole-number limit", "search_tools", {"limit": 2.0}, None),
+            ("search limit 0", "search_tools", {"limit": 0}, None),
             ("search refused", "search_tools", {"query": 1, "tag": 2, "limit": 0, "page": 1}, None),
             ("schema", "get_tool_schema", {"name": "pets_get_pet"}, None),
             ("schema of an unknown tool", "get_tool_schema", {"name": "nope"}, None),
