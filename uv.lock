@@ -918,7 +918,7 @@ dev = [
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
     { name = "fastapi", specifier = ">=0.141.1,<0.142" },
-    { name = "heki", specifier = "==0.7" },
+    { name = "heki", specifier = "==0.8" },
     { name = "httpx2", specifier = ">=2,<3" },
     { name = "httpx2", extras = ["http2", "ws"], specifier = ">=2.13,<3" },
     { name = "hypothesis", specifier = ">=6.136.6,<6.170.10" },
@@ -961,7 +961,7 @@ fastapi = [
     { name = "uvicorn", specifier = ">=0.54" },
 ]
 fix = [{ name = "prek", specifier = ">=0.2.22" }]
-heki = [{ name = "heki", specifier = "==0.7" }]
+heki = [{ name = "heki", specifier = "==0.8" }]
 isort6 = [{ name = "isort", specifier = ">=6,<7" }]
 isort7 = [{ name = "isort", specifier = ">=7,<8" }]
 pkg-meta = [
@@ -1295,16 +1295,16 @@ wheels = [
 
 [[package]]
 name = "heki"
-version = "0.7.0"
+version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6e/67/a1928b7573e54924de4a792e3cd9d6e721187ebf0ad64bdc7d782f72d1f0/heki-0.7.0.tar.gz", hash = "sha256:010251b1da52be3971a78b111ef2d745a3e51995f35c10aa52da59bb3eb29fd4", size = 3279971, upload-time = "2026-11-26T04:39:51.398Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/a6/d3861251763814d103747bb7c1d90b2ffc92a7a789a44ac40af83d35ae55/heki-0.8.0.tar.gz", hash = "sha256:96ff0225017a4f1fb7d78482fcbf4aba0957cd01ea29d2934ba73a4d52e4c39b", size = 3385961, upload-time = "2026-11-26T10:57:29.338Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/43/78/b6db9e293f00313f726e08b99a9f622978e9c879bd94d064c6081fbc8960/heki-0.7.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:c116e94b59bc558ec5bfd3b147d124ac87cb03d7be532e5dd924671cfa78958f", size = 12091495, upload-time = "2026-11-26T04:39:38.4Z" },
-    { url = "https://files.pythonhosted.org/packages/06/66/49c1bb737c3373c24d6e159ffeaebfa37fa331e63b1f7acf7049454877b3/heki-0.7.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:a67fc4f4e575cd7445dff5f1eda9e47dee1f75ac16249f9fdbd149a25c8220be", size = 11462794, upload-time = "2026-11-26T04:39:40.581Z" },
-    { url = "https://files.pythonhosted.org/packages/08/dc/d72641b34824563036b11dddd632fd2931bbe785b455355b3ee256b55015/heki-0.7.0-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:3f270decb7bf24aca41d799a5f94c4fc4aa79cadc0e2ff2d3e9caa288aaf6093", size = 12099904, upload-time = "2026-11-26T04:39:42.693Z" },
-    { url = "https://files.pythonhosted.org/packages/dd/93/bde9ec9779a40b16b58e8c80aabcf80794def1cd6df654f278688c15079a/heki-0.7.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:8912b0c1dc8dc6569c2dd622ad41650cb354566b8523c81a5b76426a0e622410", size = 12385597, upload-time = "2026-11-26T04:39:44.884Z" },
-    { url = "https://files.pythonhosted.org/packages/90/60/1adc06cabd3bac53199b18d63ae58781f2bf7c0e8d010c15f7583bff491c/heki-0.7.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:390ac6e661ba0165b6b825cb176aa4db6361cccb4ceda78084a8b0148d2a0923", size = 12912358, upload-time = "2026-11-26T04:39:46.925Z" },
-    { url = "https://files.pythonhosted.org/packages/bd/81/6c12dc6fd6941de9c47f64457b92752d652093c18cc1197371b3e22bc726/heki-0.7.0-py3-none-win_amd64.whl", hash = "sha256:3c3445e9f624d2741c897cfa8b9f1a7766340e27e7cb320866ace2f806eaed9e", size = 11427118, upload-time = "2026-11-26T04:39:49.421Z" },
+    { url = "https://files.pythonhosted.org/packages/42/b4/6be28996e77af952e111fa8db9d6fd9ce591187ff9fa10062b2f6b3dcaf3/heki-0.8.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:c348eb45f3c5e751047a32bf753290d0f112be0b5a1a5e75d045d1cdb6c691a3", size = 12500487, upload-time = "2026-11-26T10:57:14.275Z" },
+    { url = "https://files.pythonhosted.org/packages/11/f5/9f49c7352e5a55c88ffb247a5e00d83120fd8a1303ca64a884b7e03cb8f7/heki-0.8.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:3375ee222eedc62f1ad5258c337edbc41cb1f49d5b104d4585db8b9e2ede60e3", size = 11809821, upload-time = "2026-11-26T10:57:16.856Z" },
+    { url = "https://files.pythonhosted.org/packages/17/ba/6c99d930d53e2b84aced31a45a459ab82ad2ddf2e8afaec289a79505ab4e/heki-0.8.0-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:e1b5073f9604404d1cb3ad0b0e063302139520ab699bf8ae690a15ff5d3ae878", size = 12465015, upload-time = "2026-11-26T10:57:19.881Z" },
+    { url = "https://files.pythonhosted.org/packages/96/8c/9e74cf31690c0c311e169739b616ee3550c2fab5f9521e1d7330e42eb490/heki-0.8.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:00eccc7e7c32b28b53ca1bd3ea407c1615a9e22ef2188223c0538cf5fd613b08", size = 12823671, upload-time = "2026-11-26T10:57:22.358Z" },
+    { url = "https://files.pythonhosted.org/packages/af/79/73f89673f37d839686ef57b6a8c080e50aa42f6d51c516cc35013fa6e707/heki-0.8.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:c8916766792a0014c944009063f8b301fa8f68cfa2b7a07b437355f825abc10b", size = 13350886, upload-time = "2026-11-26T10:57:24.906Z" },
+    { url = "https://files.pythonhosted.org/packages/69/55/4328420cd150bfc80b7cb9695a5fe60273591c795e1ae5b33da0f773e139/heki-0.8.0-py3-none-win_amd64.whl", hash = "sha256:a4e7d358f63a7736ef3b6278ac1637ebc4871e17588d49fc82a20539b75ac772", size = 11813954, upload-time = "2026-11-26T10:57:27.229Z" },
 ]
 
 [[package]]
