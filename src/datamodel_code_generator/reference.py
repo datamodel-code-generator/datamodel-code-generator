@@ -2381,6 +2381,11 @@ class ModelResolver:  # noqa: PLR0904
             )
         return reference
 
+    @staticmethod
+    def mark_loaded(reference: Reference) -> None:
+        """Mark a reference loaded: its schema is parsed, or no schema is parsed for it."""
+        reference.loaded = True
+
     def get(self, path: Sequence[str] | str) -> Reference | None:
         """Get a reference by path, returning None if not found."""
         return self.references.get(self.resolve_ref(path))

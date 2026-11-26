@@ -1,2 +1,2 @@
-heki: heki==0.7.0
+heki: heki==0.8.0
 zizmor: zizmor==1.32.0

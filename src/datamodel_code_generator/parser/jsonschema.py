@@ -8453,7 +8453,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         # If the ref is mapped to an external package, mark as loaded and skip parsing
         if key.mapping is not None:
             reference = self._add_ref(object_ref)
-            reference.loaded = True
+            self.model_resolver.mark_loaded(reference)
             return reference
 
         ref = key.key
@@ -8484,7 +8484,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 reference_paths=reference_paths,
                 ref=ref,
             )
-        reference.loaded = True
+        self.model_resolver.mark_loaded(reference)
         return reference
 
     def _traverse_schema_objects(

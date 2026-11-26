@@ -2967,7 +2967,7 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
     for model in state.model_list:
         changed = False
         for field in model.fields:
-            pending: list[tuple[DataType, DataType, frozenset[ModelKey]]] = [
+            pending = [
                 (key, holder, frozenset[ModelKey]())
                 for holder in field.data_type.all_data_types
                 if (key := holder.dict_key) is not None

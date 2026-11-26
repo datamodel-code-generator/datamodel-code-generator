@@ -1,24 +1,23 @@
 # The effect boundaries whose reports name the platform functions of scripts/os_selection.py: the functions of the
 # package that make a platform effect directly (file system, processes, time, signals, standard streams, path
-# semantics). `os_selection.py cover` keeps a test of each of their arcs on Windows and macOS. heki 0.5 misses some of
-# these calls under its own kinds (blocking-fs, blocking-subprocess, reads-environment), so they are named here.
-required-version = ">=0.5"
+# semantics). `os_selection.py cover` keeps a test of each of their arcs on Windows and macOS. The calls heki 0.7 does
+# not tag under its own kinds (blocking-fs, blocking-subprocess, reads-environment) are named here.
+required-version = ">=0.8"
 
 [lint]
 select = ["EFF201"]
-fail-on = "warning"
 
 [[effect-boundaries]]
 name = "fs-read"
 scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
 forbid = ["calls"]
-call-targets = ["pathlib.Path.read_text", "pathlib.Path.read_bytes", "pathlib.Path.exists", "pathlib.Path.is_file", "pathlib.Path.is_dir", "pathlib.Path.is_symlink", "pathlib.Path.is_mount", "pathlib.Path.iterdir", "pathlib.Path.glob", "pathlib.Path.rglob", "pathlib.Path.stat", "pathlib.Path.lstat", "pathlib.Path.resolve", "pathlib.Path.samefile", "pathlib.Path.absolute", "pathlib.Path.expanduser", "pathlib.Path.cwd", "pathlib.Path.home", "pathlib.Path.readlink", "pathlib.Path.walk", "pathlib.Path.owner", "pathlib.Path.group", "os.listdir", "os.scandir", "os.stat", "os.lstat", "os.getcwd", "os.access", "os.readlink", "os.walk", "os.path.exists", "os.path.lexists", "os.path.isfile", "os.path.isdir", "os.path.islink", "os.path.ismount", "os.path.getmtime", "os.path.getsize", "os.path.getctime", "os.path.getatime", "os.path.realpath", "os.path.abspath", "os.path.expanduser", "os.path.samefile", "glob.glob", "glob.iglob"]
+call-targets = ["pathlib.Path.glob", "pathlib.Path.rglob", "pathlib.Path.walk", "os.walk", "glob.iglob"]
 
 [[effect-boundaries]]
 name = "fs-mutate"
 scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
 forbid = ["calls"]
-call-targets = ["pathlib.Path.write_text", "pathlib.Path.write_bytes", "pathlib.Path.mkdir", "pathlib.Path.unlink", "pathlib.Path.rename", "pathlib.Path.replace", "pathlib.Path.rmdir", "pathlib.Path.touch", "pathlib.Path.chmod", "pathlib.Path.symlink_to", "pathlib.Path.hardlink_to", "pathlib.Path.open", "builtins.open", "io.open", "os.replace", "os.rename", "os.renames", "os.remove", "os.unlink", "os.makedirs", "os.mkdir", "os.rmdir", "os.removedirs", "os.open", "os.close", "os.fdopen", "os.fsync", "os.write", "os.read", "os.utime", "os.chmod", "os.link", "os.symlink", "os.chdir", "os.truncate", "os.ftruncate", "tempfile.*", "shutil.*"]
+call-targets = ["os.close", "os.fdopen", "os.write", "os.read", "os.chdir", "os.ftruncate", "tempfile.*", "shutil.*"]
 
 [[effect-boundaries]]
 name = "fs-other"
@@ -29,7 +28,7 @@ forbid = ["blocking-fs"]
 name = "subprocess"
 scopes = ["datamodel_code_generator.*", "datamodel_code_generator:*"]
 forbid = ["blocking-subprocess", "calls"]
-call-targets = ["os.system", "os.popen", "os.kill", "os.killpg", "os.setsid", "os.fork", "asyncio.create_subprocess_exec", "asyncio.create_subprocess_shell", "webbrowser.open"]
+call-targets = ["os.popen", "os.kill", "os.killpg", "os.setsid", "os.fork", "asyncio.create_subprocess_exec", "asyncio.create_subprocess_shell", "webbrowser.open"]
 
 [[effect-boundaries]]
 name = "platform-reads"

@@ -174,7 +174,7 @@ fastapi = [
   "uvicorn>=0.54",
 ]
 fix = [ "prek>=0.2.22" ]
-heki = [ "heki==0.7" ]
+heki = [ "heki==0.8" ]
 isort6 = [ "isort>=6,<7" ]
 isort7 = [ "isort>=7,<8" ]
 pkg-meta = [ "check-wheel-contents>=0.6.1", "twine>=7", "uv>=0.13.4" ]
