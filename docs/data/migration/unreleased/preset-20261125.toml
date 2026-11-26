@@ -127,4 +127,5 @@ covers = [
     "recommender_calibrate_script/calibration_cases[partial_parallel].txt",
     "recommender_calibrate_script/calibration_cases[ratio_threshold].txt",
     "recommender_calibrate_script/calibration_run.txt",
+    "skills/datamodel-code-generator/skill_recipes/skill_recommend_options_recipe.txt",
 ]

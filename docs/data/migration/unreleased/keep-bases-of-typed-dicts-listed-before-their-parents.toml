@@ -3,7 +3,7 @@ id = "keep-bases-of-typed-dicts-listed-before-their-parents"
 category = "new-surface"
 title = "Keep the bases of TypedDicts listed before their parents under an option"
 summary = "--keep-bases-of-typed-dicts-listed-before-their-parents types a key that a TypedDict restates or requires and that its parent requires as the parent's bases declare it, also where the TypedDict is listed before its parent in a module written before the parent's (#7532), so the TypedDict keeps its generated bases as when the parent is listed first (class Child(Mid) with x: int, where it declared the keys of Mid itself as Child(TypedDict)), and a TypedDict that keeps its bases under a custom template or a base the output imports in place of a generated model types the key int instead of None; without it the TypedDict copies the parent's key before the key has a type, as in 0.102.0. Other output model types type such a key either way."
-refs = ["#1"]
+refs = ["#7538"]
 surface = ["--keep-bases-of-typed-dicts-listed-before-their-parents"]
 covers = [
     "main/openapi/inherited_placeholder_module_order/equal_subclasses_reuse_one_model[typeddict-kept-bases-reuse]/",
