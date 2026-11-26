@@ -38,6 +38,7 @@ from __future__ import annotations
 import argparse
 import heapq
 import json
+import os
 import re
 import shutil
 import sqlite3
@@ -306,7 +307,8 @@ def _collected(root: Path) -> list[str]:
         str(root),
         "tests",
     ]
-    result = subprocess.run(command, cwd=root, capture_output=True, text=True, encoding="utf-8", check=False)
+    env = {**os.environ, "PYTHONUTF8": "1"}  # the child writes what the parent decodes, whatever the locale
+    result = subprocess.run(command, cwd=root, capture_output=True, text=True, encoding="utf-8", env=env, check=False)
     if result.returncode:
         msg = f"collecting the suite failed:\n{result.stdout[-2000:]}{result.stderr[-2000:]}"
         raise SystemExit(msg)

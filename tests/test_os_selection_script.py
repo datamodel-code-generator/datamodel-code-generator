@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import textwrap
@@ -18,8 +19,9 @@ SCRIPT = ROOT / "scripts" / "os_selection.py"
 
 
 def _run_script(*args: str) -> subprocess.CompletedProcess[str]:
+    env = {**os.environ, "PYTHONUTF8": "1"}
     return subprocess.run(
-        [sys.executable, str(SCRIPT), *args], capture_output=True, text=True, encoding="utf-8", check=False
+        [sys.executable, str(SCRIPT), *args], capture_output=True, text=True, encoding="utf-8", env=env, check=False
     )
 
 
