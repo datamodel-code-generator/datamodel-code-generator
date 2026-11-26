@@ -2125,9 +2125,9 @@ the top-level package, and a call that may be `importlib.import_module` or `__im
 name bound to it on one path only. A private name imported from a parser module is an `IMP201` of the
 `private-parser-import` boundary. The architecture contracts of the same file (`architecture_contracts`) hold what an
 import boundary cannot name: parser code reads no member only a backend reads (`getattr` and `hasattr` included),
-asks the target version for no TypedDict construct, names no backend module by a `module=` argument or by a model's
-`__module__`, and selects no output family; input-model code selects none either; shared model code reads no module
-of `sys.modules`; configuration reads no backend name outside the defaults of `ParserConfig`; the entry point reaches
+asks the target version for no TypedDict construct, names no backend module by a `module=` argument or by the
+`__module__` of a class a backend derives from, and selects no output family; input-model code selects none either;
+shared model code reads no module of `sys.modules`; configuration reads no backend name outside the defaults of `ParserConfig`; the entry point reaches
 no private member of a parser; and no module reads a name through the bound root package. No module of the package imports the
 package root, and none but `__main__.py` imports `__main__` (rule `root-import`): every import form, relative ones,
 `TYPE_CHECKING` and function-local ones included, and a read of a root name through a bound root package fail; the root

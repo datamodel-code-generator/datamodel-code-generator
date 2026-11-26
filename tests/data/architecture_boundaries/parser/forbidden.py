@@ -85,3 +85,10 @@ def inspect_typed_dict_requirements(python_version):
         python_version._meets("python.typed_dict_read_only"),
         python_target_meets("python.strenum", python_version.version_key),
     )
+
+
+from datamodel_code_generator.types import DataTypeManager
+
+
+def inspect_manager_module(manager: DataTypeManager):
+    return manager.__module__, type(manager).__module__

@@ -125,6 +125,8 @@ parser/seeded.py:60: MUT204 datamodel_code_generator.enums.DataModelType
 parser/seeded.py:83: MUT204 datamodel_code_generator._requirements.python_target_meets(construct="python.typed_dict_*")
 parser/seeded.py:84: MUT204 datamodel_code_generator._requirements.python_target_meets(construct="python.typed_dict_*")
 parser/seeded.py:85: MUT207 _meets
+parser/seeded.py:94: MUT203 datamodel_code_generator.types.DataTypeManager.__module__
+parser/seeded.py:94: MUT203 datamodel_code_generator.types.DataTypeManager.__module__
 parser/unreadable.py:1: IMP202 *
 reference.py:3: IMP201 msgspec
 reference.py:4: IMP201 datamodel_code_generator.model.typed_dict

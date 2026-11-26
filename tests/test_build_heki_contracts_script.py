@@ -417,6 +417,13 @@ SEEDED_LAYER_DEFINITIONS = {
     ),
     "_requirements.py": "\n\ndef python_target_meets(construct, version_key):\n    return True\n",
     "enums.py": "class DataModelType:\n    MsgspecStruct = 'msgspec.Struct'\n",
+    "model/base.py": "\n\nclass DataModel:\n    pass\n\n\nclass DataModelFieldBase:\n    pass\n",
+    "model/pydantic_v2/base_model.py": (
+        "from datamodel_code_generator.model.base import DataModel\n"
+        "from datamodel_code_generator.types import DataTypeManager as NeutralDataTypeManager\n\n\n"
+        "class BaseModel(DataModel):\n    pass\n\n\nclass DataTypeManager(NeutralDataTypeManager):\n    pass\n"
+    ),
+    "types.py": "class DataTypeManager:\n    pass\n",
     "model/typed_dict.py": "class TypedDict:\n    pass\n",
     "parser/base.py": (
         "class Parser:\n    _diagnostic_source_path = None\n    _formatter_cwd = None\n\n"
@@ -486,7 +493,9 @@ def test_the_import_boundaries_raise_where_the_layer_table_is_out_of_step(
     ):
         build_heki_contracts.import_boundary_contracts(repo)
     build_heki_contracts.import_boundary_contracts(repo, partial=True)
-    with pytest.raises(ValueError, match=r"^architecture contracts without a module of the package to judge: "):
+    with pytest.raises(
+        ValueError, match=r"^architecture contracts without a class or module of the package to judge: "
+    ):
         build_heki_contracts.architecture_contracts(repo)
     build_heki_contracts.architecture_contracts(repo, partial=True)
     monkeypatch.setitem(build_heki_contracts._LEAF_IMPORTS, "no-such-layer", ((), "why"))

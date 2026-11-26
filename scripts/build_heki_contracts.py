@@ -490,6 +490,22 @@ class _Classes:
             todo += [parent for parent in self.bases.get(current, []) if parent not in seen]
         return False
 
+    def neutral_bases(self, backends: Iterable[str]) -> list[str]:
+        """Return the classes outside the modules ``backends`` and below them that a class inside derives from."""
+        roots = tuple(backends)
+        home = {f"{module}.{qualname}": module for module, qualnames in self.modules.items() for qualname in qualnames}
+        inside = {
+            name
+            for name, module in home.items()
+            if any(module.startswith(f"{root}.") or module == root for root in roots)
+        }
+        todo, seen = sorted(inside), set()
+        while todo:
+            if (current := todo.pop()) not in seen:
+                seen.add(current)
+                todo += self.bases.get(current, [])
+        return sorted(name for name in seen if name in home and name not in inside)
+
     def definers(self, root: str, name: str) -> list[str]:
         """Return the scopes of the methods ``name`` that ``root`` and the classes deriving from it define."""
         return sorted(
@@ -1340,13 +1356,13 @@ def architecture_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
 
     Parser code reads no member only a backend reads and asks the target version for no TypedDict construct
     (`SEMANTIC_ATTRIBUTES`, `REQUIREMENT_READERS`), names no backend module, by a ``module=`` argument or by the
-    ``__module__`` of a model, and selects no output family (``DataModelType``, ``ModelType.PYDANTIC`` and
-    ``ModelType.MSGSPEC``); input model code selects none either; shared model code reads no module of the
-    ``sys.modules`` registry; configuration reads no backend name but the defaults of ``ParserConfig``; the entry point
-    reaches no private member of a parser; no module but the root and ``__main__`` reads a name through the package
-    root. Each read counts in the scope that holds it, a class body too, and a read heki cannot tie to a class is
-    reported (``MUT206``, ``MUT207``). A contract no module of the package is subject to raises, as in
-    `import_boundary_contracts`; ``partial`` is for a seeded package that holds only some layers.
+    ``__module__`` of a class a backend derives from, and selects no output family (``DataModelType``,
+    ``ModelType.PYDANTIC`` and ``ModelType.MSGSPEC``); input model code selects none either; shared model code reads
+    no module of the ``sys.modules`` registry; configuration reads no backend name but the defaults of
+    ``ParserConfig``; the entry point reaches no private member of a parser; no module but the root and ``__main__``
+    reads a name through the package root. Each read counts in the scope that holds it, a class body too, and a read
+    heki cannot tie to a class is reported (``MUT206``, ``MUT207``). A contract no module of the package is subject
+    to raises, as in `import_boundary_contracts`; ``partial`` is for a seeded package that holds only some layers.
     """
     layers = import_layers(repo)
     parsers = _everywhere([*layers["parser"], *layers["parser-passes"]])
@@ -1380,7 +1396,7 @@ def architecture_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
         (
             "read-owners",
             "backend-module-identity",
-            [f"{PACKAGE}.model.base.{owner}.__module__" for owner in ("DataModel", "DataModelFieldBase")],
+            [f"{name}.__module__" for name in _Classes(repo).neutral_bases(backends)],
             parsers,
             {"allowed_readers": [f"{PACKAGE}.{scope}{{,.*}}" for scope in MODULE_NAME_READERS]},
             BACKEND_IDENTITY_MESSAGE,
@@ -1447,8 +1463,10 @@ def architecture_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
             ROOT_IMPORT_MESSAGE,
         ),
     ]
-    if not partial and (empty := [f"{kind}:{name}" for kind, name, _, scopes, _, _ in rows if not scopes]):
-        msg = f"architecture contracts without a module of the package to judge: {', '.join(empty)}"
+    if not partial and (
+        empty := [f"{kind}:{name}" for kind, name, targets, scopes, _, _ in rows if not (targets and scopes)]
+    ):
+        msg = f"architecture contracts without a class or module of the package to judge: {', '.join(empty)}"
         raise ValueError(msg)
     role = {"read-owners": "readers", "call-owners": "callers", "write-owners": "writers"}
     return [
@@ -1463,7 +1481,7 @@ def architecture_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
             message=message,
         )
         for kind, name, targets, scopes, keys, message in rows
-        if scopes
+        if targets and scopes
     ]
 
 
