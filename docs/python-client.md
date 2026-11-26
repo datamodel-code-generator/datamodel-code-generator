@@ -1415,8 +1415,9 @@ with the method.
 JSON text is longer, in UTF-8 bytes after the redaction below, returns
 `{"error": {"type": "result_too_large", "size": ..., "max_result_bytes": ..., "hint": ...}}` instead, so an agent
 narrows the call, with a filter or a smaller page, and no long result reaches the model. A result is never cut, since a
-cut one would no longer match its schema. Error values are not budgeted: the `body` they carry is already bounded. A table has no
-budget unless it is given one; the client's own bound on an error body, 64 KiB (`MAX_ERROR_BODY_BYTES` of the
+cut one would no longer match its schema. Error values are not budgeted: an API error's `body` is bounded already, and
+a refusal such as `invalid_arguments` lists one problem for each argument the call gave. A table has no budget unless
+it is given one; the client's own bound on an error body, 64 KiB (`MAX_ERROR_BODY_BYTES` of the
 runtime), is a reasonable value.
 
 A result or an error value shows no credential that the client's security schemes placed on the call's requests,
