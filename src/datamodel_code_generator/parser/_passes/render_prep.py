@@ -1404,7 +1404,7 @@ def collect_live_models(state: _PreparedModule[Any]) -> None:
     state.live_models = UnusedModels(unused_models).written(state.model_list)
 
 
-def finalize_type_alias_users(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:
+def finalize_type_alias_users(parser: RenderPrepHost, state: _FinalizeState[ModuleContextView]) -> None:
     """Let the backend configure its models from their final patterns, then import what the copies it writes name.
 
     The model hook (``DataModel.finalize_type_alias_users``) may make a model write copies of inherited fields

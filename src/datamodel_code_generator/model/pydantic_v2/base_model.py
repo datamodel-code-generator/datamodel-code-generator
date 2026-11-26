@@ -699,7 +699,7 @@ def _constrained_string(data_type: DataType, keywords: Mapping[str, object]) -> 
     """
     if data_type.type != "str" or data_type.import_ is not None or data_type.data_types:
         return data_type
-    values: dict[str, Any] = {
+    values: dict[str, object] = {
         **dict(data_type),
         "type": None,
         "parent": None,
@@ -707,7 +707,7 @@ def _constrained_string(data_type: DataType, keywords: Mapping[str, object]) -> 
         "kwargs": dict(keywords),
         "constrained_base": "str",
     }
-    written = AnnotatedConstraintDataType.model_construct(**values)
+    written = AnnotatedConstraintDataType.model_construct(None, **values)
     keep_node_records(written, data_type)
     return written
 
