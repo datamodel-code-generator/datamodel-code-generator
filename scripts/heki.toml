@@ -5,7 +5,7 @@ required-version = ">=0.9"
 
 [lint]
 select = ["EFF201", "IMP101", "IMP201", "IMP202", "MUT201", "MUT202", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207"]
-fail-on = "warning"
+fail = ["IMP101"]
 
 [imports]
 cycle-edges = ["body", "lazy", "function", "type-checking"]
@@ -14,23 +14,28 @@ cycle-edges = ["body", "lazy", "function", "type-checking"]
 unresolved = "report"
 fresh-objects = "report"
 attribution = "lexical"
+fail = true
 
 [call-owners-defaults]
 references = "reads"
 attribution = "lexical"
 targets-call-each-other = "report"
+fail = true
 subclasses = false
 
 [read-owners-defaults]
 attribution = "lexical"
+fail = true
 
 [effect-boundaries-defaults]
 message = "A pass writes only the facts its declaration in scripts/pass_decls.py lists, before they are final: declare the fact, or move the write to a pass that runs before its freeze point."
+fail = true
 write-universe = ["AnnotatedConstraintDataType.constrained_base", "BaseModel._validator_bindings", "DataModel._additional_imports", "DataModel._builtin_name_bindings", "DataModel._custom_template_dir", "DataModel._field_name_bindings", "DataModel._internal_template_data", "DataModel._nested_model_default_factory_order", "DataModel._nested_model_default_factory_recursive_keys", "DataModel._nullable", "DataModel._treat_dot_as_module", "DataModel.base_classes", "DataModel.class_name", "DataModel.custom_base_class", "DataModel.dataclass_arguments", "DataModel.decorators", "DataModel.default", "DataModel.description", "DataModel.discriminator_tag", "DataModel.extra_template_data", "DataModel.fields", "DataModel.file_path", "DataModel.frozen", "DataModel.has_forward_reference", "DataModel.keyword_only", "DataModel.methods", "DataModel.reused_reference", "DataModel.serialized_as_any", "DataModel.target_python_version", "DataModelFieldBase._alias_resolution_class_name", "DataModelFieldBase._forced_field_assignment", "DataModelFieldBase._member_untaken_constraints", "DataModelFieldBase._nullable_without_default", "DataModelFieldBase._overridden_constraints", "DataModelFieldBase._raw_schema_default", "DataModelFieldBase._raw_schema_explicit_field_extras", "DataModelFieldBase._runtime_expression_imports", "DataModelFieldBase._type_dependent_constraints", "DataModelFieldBase._unbound_field", "DataModelFieldBase._unconstrained_union_members", "DataModelFieldBase._union_sibling_constraints", "DataModelFieldBase._untaken_constraints", "DataModelFieldBase.alias", "DataModelFieldBase.const", "DataModelFieldBase.constraints", "DataModelFieldBase.data_type", "DataModelFieldBase.default", "DataModelFieldBase.extras", 'DataModelFieldBase.extras["_compiled_python_pattern"]', 'DataModelFieldBase.extras["default_factory"]', 'DataModelFieldBase.extras["discriminator"]', 'DataModelFieldBase.extras["init"]', 'DataModelFieldBase.extras["is_classvar"]', 'DataModelFieldBase.extras["kw_only"]', 'DataModelFieldBase.extras["validate_default"]', "DataModelFieldBase.has_default", "DataModelFieldBase.name", "DataModelFieldBase.nullable", "DataModelFieldBase.order_constructor_fields_by_written_defaults", "DataModelFieldBase.original_name", "DataModelFieldBase.read_only", "DataModelFieldBase.required", "DataModelFieldBase.serialization_alias", "DataModelFieldBase.strip_default_none", "DataModelFieldBase.target_python_version", "DataModelFieldBase.type_has_null", "DataModelFieldBase.use_annotated", "DataModelFieldBase.use_default_factory_for_optional_nested_models", "DataModelFieldBase.use_default_kwarg", "DataModelFieldBase.use_default_with_required", "DataModelFieldBase.use_field_description", "DataModelFieldBase.use_field_description_example", "DataModelFieldBase.use_frozen_field", "DataModelFieldBase.use_inline_field_description", "DataModelFieldBase.use_missing_sentinel", "DataModelFieldBase.use_one_literal_as_default", "DataModelFieldBase.use_serialization_alias", "DataModelFieldBase.use_serialize_as_any", "DataModelFieldBase.validation_aliases", "DataModelFieldBase.write_only", "DataType._enum_member_literal_reference", "DataType._is_forward_reference", "DataType._literal_import", "DataType._runtime_expression_imports", "DataType._site_constraints", "DataType._type_null", "DataType.alias", "DataType.data_types", "DataType.dict_key", "DataType.discriminator", "DataType.enum_member_literals", "DataType.enum_member_tag_values", "DataType.given_container", "DataType.import_", "DataType.is_custom_type", "DataType.is_dict", "DataType.is_frozen_set", "DataType.is_func", "DataType.is_list", "DataType.is_mapping", "DataType.is_optional", "DataType.is_sequence", "DataType.is_set", "DataType.is_tuple", "DataType.kwargs", "DataType.literals", "DataType.preserve_union_member_order", "DataType.python_type", "DataType.python_version", "DataType.reference", "DataType.strict", "DataType.treat_dot_as_module", "DataType.tuple_item_count", "DataType.type", "DataType.use_generic_container", "DataType.use_serialize_as_any", "DataType.use_standard_collections", "DataType.use_union_operator", "GenerationStore.phase", "Member.alias", "ModuleContext.imports", "ModuleContext.models", "Parser._naming_plan", "Parser._recursion_facts", "Parser._reuse_groups", "Parser._tag_plan", "Parser.results", "Reference.duplicate_name", "Reference.name", "Reference.original_name", "Reference.path", "RootModel._literal_values", "RootModel._requires_literal_validation", "TypedDict.use_total_false_for_typed_dict", "_MetaAnnotatedType.meta", "_MetaType.meta_keywords"]
 
 [import-boundaries-defaults]
 type-checking = "report"
 unresolved = "report"
+fail = true
 
 [[write-owners]]
 name = "cache:no store operation"
@@ -1836,6 +1841,7 @@ unresolved = "report"
 name = "schema-graph-shared-objects"
 producers = ["SchemaGraphBuilder.schema", "SchemaGraphBuilder.pointer_value", "datamodel_code_generator.parser._schema_documents.prepare_schema_resources", "ApiOpenAPIParser._site_facts"]
 deep = true
+fail = true
 
 [[effect-boundaries]]
 name = "no-environment-reads"
