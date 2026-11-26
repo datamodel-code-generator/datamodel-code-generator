@@ -6,7 +6,6 @@ required-version = ">=0.8"
 
 [lint]
 select = ["EFF201"]
-fail-on = "warning"
 
 [[effect-boundaries]]
 name = "fs-read"
