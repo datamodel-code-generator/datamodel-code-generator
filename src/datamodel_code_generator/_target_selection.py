@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
+from datamodel_code_generator._paths import expand_user, working_directory
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._target_documents import document_identity
@@ -184,7 +185,7 @@ def generate_selected_target(input_: _GenerationInput, config: GenerateConfig) -
     if (problem := _target_options_error(config, output=config.output is not None)) is not None:
         raise Error(problem)
     with PROCESS_STATE_LOCK:
-        cwd = Path.cwd()
+        cwd = working_directory()
     bases = config._target_document_bases or {}  # noqa: SLF001
     try:
         if config.output is not None:
@@ -218,8 +219,8 @@ def _render(input_: _GenerationInput, config: GenerateConfig, cwd: Path, bases: 
         models = root.joinpath(*target.model_package.split("."))
         updates: dict[str, Any] = {"output": models}
         for field in ("settings_path", "http_local_ref_path"):
-            if (path := getattr(config, field)) is not None and not path.expanduser().is_absolute():
-                updates[field] = cwd / path.expanduser()
+            if (path := getattr(config, field)) is not None and not expand_user(path).is_absolute():
+                updates[field] = cwd / expand_user(path)
         try:
             planned = plan_target(
                 input_,

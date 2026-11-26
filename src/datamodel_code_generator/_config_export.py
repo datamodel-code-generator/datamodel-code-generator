@@ -6,7 +6,6 @@ With `--write-pyproject-config`, the table is merged into the project's pyprojec
 from __future__ import annotations
 
 import codecs
-import os
 from collections.abc import Mapping
 from functools import partial
 from pathlib import Path
@@ -28,6 +27,7 @@ from datamodel_code_generator._option_names import (
     toml_text,
 )
 from datamodel_code_generator._option_table import COMMAND_DESTS
+from datamodel_code_generator._paths import relative_spelling, working_directory
 from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
@@ -255,12 +255,12 @@ def _write_pyproject_table(
     atomically. Nothing is written when there are no values, when relative paths of the command would name other
     files from the directory of a pyproject.toml outside the working directory, or when the edit is not proven.
     """
-    shown = Path(os.path.relpath(path)).as_posix()
+    shown = relative_spelling(path)
     original = path.read_bytes() if path.exists() else None
     written = partial(_WrittenConfig, shown, table, created=False)
     if values is None:
         return written(keys=[], refused="the recommendation has no pyproject.toml block to write")
-    if path.parent != Path.cwd() and PYPROJECT_PATH_FIELDS.intersection(map(field_name, values)):
+    if path.parent != working_directory() and PYPROJECT_PATH_FIELDS.intersection(map(field_name, values)):
         return written(
             keys=[], refused=f"the paths of the command are relative to the working directory, not to {shown}"
         )

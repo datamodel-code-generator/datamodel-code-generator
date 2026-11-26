@@ -69,7 +69,7 @@ from datamodel_code_generator._mro import c3_merge as c3_merge
 from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
-from datamodel_code_generator._paths import input_files_under
+from datamodel_code_generator._paths import absolute_form, input_files_under, working_directory
 from datamodel_code_generator._python_syntax import normalize_newlines as normalize_newlines
 from datamodel_code_generator._python_target_names import target_builtin_names
 from datamodel_code_generator._records import mutable_record, record
@@ -1264,9 +1264,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if self._source_context.base_path:
             self.base_path = self._source_context.base_path
         elif isinstance(source, Path):
-            self.base_path = source.absolute() if source.is_dir() else source.absolute().parent
+            self.base_path = absolute_form(source) if source.is_dir() else absolute_form(source).parent
         else:
-            self.base_path = Path.cwd()
+            self.base_path = working_directory()
 
         self.source: str | Path | list[Path] | ParseResult | dict[str, YamlValue] = source
         self._cache_local_sources = False

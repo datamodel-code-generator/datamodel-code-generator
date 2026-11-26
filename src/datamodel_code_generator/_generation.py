@@ -41,9 +41,11 @@ from urllib.parse import ParseResult
 from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._paths import (
     MODULAR_OUTPUT_FILE_ERROR,
+    absolute_form,
     concrete,
     creation_root,
     existing_ancestor,
+    expand_user,
     iter_input_files,
     layout_refusal,
     lexical,
@@ -52,6 +54,7 @@ from datamodel_code_generator._paths import (
     overlaps,
     resolved,
     same_file,
+    working_directory,
 )
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._shared_types import (
@@ -197,7 +200,7 @@ def chdir(path: Path | None) -> Generator[None]:
         yield
         return
     with PROCESS_STATE_LOCK:
-        prev_cwd = Path.cwd()
+        prev_cwd = working_directory()
         try:
             os.chdir(existing_ancestor(path if path.is_dir() else path.parent))
             yield
@@ -778,7 +781,7 @@ def _warn_if_input_string_points_to_existing_path(
         case _:
             return
     try:
-        path = Path(input_text).expanduser()
+        path = expand_user(Path(input_text))
         path_exists = path.exists()
     except (OSError, RuntimeError, ValueError):
         return
@@ -1348,7 +1351,7 @@ def _emit_results(
             raise
         raise Error(refusal) from e
     if defer_formatting:
-        absolute_output, absolute_files = output.absolute(), [file.absolute() for file in written]
+        absolute_output, absolute_files = absolute_form(output), [absolute_form(file) for file in written]
         with chdir(formatter_cwd):
             _format_deferred_output(absolute_output, config, data_model_types, settings_path, absolute_files)
 
@@ -2432,7 +2435,7 @@ def _collect_model_metadata(
         yaml_number_reading(as_text=config.read_yaml_1_1_numbers_as_text),
     ):
         with PROCESS_STATE_LOCK:
-            caller_cwd = Path.cwd()
+            caller_cwd = working_directory()
         run, parsed = _parse_run(
             input_,
             config,

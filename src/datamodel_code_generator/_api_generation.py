@@ -57,6 +57,7 @@ from datamodel_code_generator._paths import (
     output_layout,
     overlaps,
     resolved,
+    working_directory,
 )
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 from datamodel_code_generator._python_syntax import normalize_newlines
@@ -1138,9 +1139,11 @@ def _run_models(
 ) -> _Models:
     if _uses_legacy_process_state(effective):
         with PROCESS_STATE_LOCK:
-            return _generate_models(input_, effective, config, Path.cwd(), use_output_cwd=True, compares=compares)
+            return _generate_models(
+                input_, effective, config, working_directory(), use_output_cwd=True, compares=compares
+            )
     with PROCESS_STATE_LOCK:
-        cwd = Path.cwd()
+        cwd = working_directory()
     return _generate_models(input_, effective, config, cwd, use_output_cwd=False, compares=compares)
 
 

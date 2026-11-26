@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import urlsplit
 
 from datamodel_code_generator._api_types import OperationRef, SchemaRef
-from datamodel_code_generator._paths import file_uri, file_uri_path
+from datamodel_code_generator._paths import expand_user, file_uri, file_uri_path
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.python_literal import stable_repr
 
@@ -126,4 +126,4 @@ def portable(value: object, refer: Callable[[OperationRef | SchemaRef], JSONValu
 
 def shown(path: Path, cwd: Path) -> Path:
     """Spell an output path for a message: relative to the working directory when it lies inside it."""
-    return location.relative_to(cwd) if (location := cwd / path.expanduser()).is_relative_to(cwd) else location
+    return location.relative_to(cwd) if (location := cwd / expand_user(path)).is_relative_to(cwd) else location

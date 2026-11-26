@@ -23,7 +23,7 @@ from urllib.parse import SplitResult, parse_qsl, urlsplit, urlunsplit
 
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_output import write_streamed_json
-from datamodel_code_generator._paths import concrete, existing_ancestor
+from datamodel_code_generator._paths import concrete, existing_ancestor, working_directory
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.python_literal import stable_repr
 
@@ -366,7 +366,7 @@ class RemoteReferenceLock:
         anchor = None
         staging_directory = None
         try:
-            target = concrete(self.path if self.path.is_absolute() else Path.cwd() / self.path)
+            target = concrete(self.path if self.path.is_absolute() else working_directory() / self.path)
             anchor, staging_directory = _open_lock_staging(target.parent)
             publish_staged_files((_staged_lock(self, staging_directory, anchor, target),))
         except OSError as exc:

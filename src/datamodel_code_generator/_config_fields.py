@@ -15,6 +15,7 @@ from typing import Final, Literal, TypeAlias
 
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import option_flag
+from datamodel_code_generator._paths import expand_user
 from datamodel_code_generator._records import record
 from datamodel_code_generator._shared_types import Error
 
@@ -121,7 +122,7 @@ def option_path(name: str, value: str | Path) -> Path:
     A ``~user`` that names no user is an invalid option value: ``Error`` names the option and the value.
     """
     try:
-        return Path(value).expanduser()
+        return expand_user(Path(value))
     except RuntimeError as exc:
         msg = f"Invalid path for {option_flag(name)}: {value}: the user after '~' has no home directory"
         raise Error(msg) from exc
@@ -133,7 +134,7 @@ def json_file(value: str | Path) -> Path | None:
     A ``~user`` that names no user names no file, so the value is read as inline JSON and the JSON error reports it.
     """
     try:
-        path = Path(value).expanduser()
+        path = expand_user(Path(value))
     except RuntimeError:
         return None
     return path if _path_is_file(path) else None

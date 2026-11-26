@@ -21,7 +21,7 @@ from functools import partial
 from importlib import import_module
 from importlib.machinery import ModuleSpec
 from importlib.util import find_spec
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from pydantic import BaseModel
@@ -33,6 +33,7 @@ from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import dotted_module, is_package_init, module_parts
 from datamodel_code_generator._option_stages import _resolve_run_options
+from datamodel_code_generator._paths import working_directory
 from datamodel_code_generator._process_state import ABSENT, PROCESS_STATE_LOCK, restore_entry
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._source import is_asyncapi, is_openapi
@@ -525,7 +526,7 @@ def _generate_code(
         return generate(input_=input_, config=config), None, ()
     config = _prepare_generate_facade_config(config)
     with PROCESS_STATE_LOCK:
-        caller_cwd = Path.cwd()
+        caller_cwd = working_directory()
     return _run_generation_with_metadata(input_, config, caller_cwd, use_output_cwd=False, collect_model_metadata=True)
 
 

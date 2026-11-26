@@ -52,6 +52,7 @@ from datamodel_code_generator._json_schema import (
     _rewrite_schema_refs,
     definition_ref,
 )
+from datamodel_code_generator._paths import working_directory
 from datamodel_code_generator._process_state import ABSENT, PROCESS_STATE_LOCK, restore_entry
 from datamodel_code_generator._python_type_annotation import (
     PythonTypeEllipsis,
@@ -188,7 +189,7 @@ def _load_model_schema_isolated(
             _IMPORTED_TYPES: set() if reuse_every_reached_type else None,
         }),
     ):
-        cwd_entry = str(Path.cwd())
+        cwd_entry = str(working_directory())
         with nullcontext() if cwd_entry in sys.path else _cwd_import_scope(cwd_entry):
             return _load_model_schema(
                 input_models, input_file_type, ref_strategy, output_model_type, expression_collector

@@ -7,7 +7,6 @@ module.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -20,10 +19,12 @@ from datamodel_code_generator._generation import (
     _run_generation,
     _uses_legacy_process_state,
 )
+from datamodel_code_generator._paths import working_directory
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from pathlib import Path
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._shared_types import GeneratedModules
@@ -96,10 +97,10 @@ def generate(
     if config.output is not None and _uses_legacy_process_state(config):
         with PROCESS_STATE_LOCK:
             return (_generate_with_atomic_remote_update if atomic_remote_update else _run_generation)(
-                input_, config, Path.cwd(), use_output_cwd=atomic_remote_update or config.output is not None
+                input_, config, working_directory(), use_output_cwd=atomic_remote_update or config.output is not None
             )
     with PROCESS_STATE_LOCK:
-        caller_cwd = Path.cwd()
+        caller_cwd = working_directory()
     return (_generate_with_atomic_remote_update if atomic_remote_update else _run_generation)(
         input_, config, caller_cwd, use_output_cwd=False
     )

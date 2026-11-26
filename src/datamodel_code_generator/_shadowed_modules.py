@@ -9,6 +9,8 @@ import os
 import warnings
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._paths import absolute_form
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
     from pathlib import Path
@@ -37,7 +39,7 @@ def warn_shadowed_modules(modules: Iterable[Path]) -> None:
             os.path.isfile(os.path.join(os.fspath(module)[:-3], "__init__.py"))  # noqa: PTH113, PTH118
             and name[:-3] in _entries(module.parent)
         ):
-            location = module.absolute()
+            location = absolute_form(module)
             warnings.warn(
                 f"{location.as_posix()}: The generated module is shadowed by the existing package directory "
                 f"{location.with_suffix('').as_posix()}, which Python imports instead. "

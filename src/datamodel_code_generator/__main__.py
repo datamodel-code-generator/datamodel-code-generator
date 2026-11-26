@@ -178,6 +178,7 @@ from datamodel_code_generator._paths import (
     overlaps,
     resolved,
     same_file,
+    working_directory,
 )
 from datamodel_code_generator._project_config import (
     _find_datamodel_codegen_project_config_with_path,
@@ -818,7 +819,7 @@ def _selected_jobs(args: Namespace, jobs: Mapping[Any, Any]) -> frozenset[Any]:
 def _record_raw_batch_watch_dependencies(args: Namespace, dependencies: WatchDependencies) -> None:
     """Keep the latest invalid batch plan observable until it can be replanned."""
     try:
-        project_config = _find_datamodel_codegen_project_config_with_path(Path.cwd())
+        project_config = _find_datamodel_codegen_project_config_with_path(working_directory())
     except (Error, OSError):
         return
     if project_config is None:
@@ -914,7 +915,7 @@ def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
         msg = f"{options} cannot be used with --job or --all-jobs; define it in each job"
         raise Error(msg)
 
-    project_config = _find_datamodel_codegen_project_config_with_path(Path.cwd())
+    project_config = _find_datamodel_codegen_project_config_with_path(working_directory())
     if project_config is None:
         msg = "No [tool.datamodel-codegen] section found in pyproject.toml"
         raise Error(msg)
@@ -1083,7 +1084,7 @@ def _run_recommend_options(
         config = _imply_target_settings(config)
 
     record: RunOptions = config._run_options  # noqa: SLF001
-    project_file = None if args.ignore_pyproject else pyproject_path or Path.cwd() / "pyproject.toml"
+    project_file = None if args.ignore_pyproject else pyproject_path or working_directory() / "pyproject.toml"
     try:
         recommendation = recommend_options(
             RecommendRequest(
@@ -1833,7 +1834,7 @@ def _single_job_plan(config: Config, pyproject_path: Path | None) -> JobPlan:
     return JobPlan(
         "command",
         config,
-        pyproject_path or Path.cwd() / "pyproject.toml",
+        pyproject_path or working_directory() / "pyproject.toml",
         *artifact_roots(config.output, config.emit_model_metadata),
     )
 
@@ -2174,7 +2175,7 @@ def _print_pyproject_config(namespace: Namespace) -> Exit:
     if namespace.write_pyproject_config:
         shared, notes = _shareable_values(_cli_config_values(namespace))
         values = hyphenated(shared)
-        written = _write_pyproject_table(Path.cwd() / "pyproject.toml", CONFIG_TABLE, values)
+        written = _write_pyproject_table(working_directory() / "pyproject.toml", CONFIG_TABLE, values)
         if written.refused is None and namespace.output_format != "json":
             content = _written_text(written, values, notes, shell_command(()))
     _print_command_output(
@@ -2199,7 +2200,7 @@ def _command_pyproject(namespace: Namespace) -> Exit | tuple[Mapping[str, object
     else:
         try:
             pyproject_config, pyproject_path = _get_pyproject_toml_config_with_path(
-                Path.cwd(), profile=namespace.profile
+                working_directory(), profile=namespace.profile
             )
         except Error as e:
             print(e.message, file=sys.stderr)
