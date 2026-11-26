@@ -5243,6 +5243,8 @@ class ModelResolver
     def named_after(self, path: str, original_name: str) -> bool
     def name_past_parent(self, path: Sequence[str]) -> None
     def add(self, path: Sequence[str], original_name: str, *, class_name: bool=False, singular_name: bool=False, unique: bool=True, singular_name_suffix: str | None=None, loaded: bool=False, model_type: str='model', preserve_class_name: bool=False, yields: bool | None=None) -> Reference
+    @staticmethod
+    def mark_loaded(reference: Reference) -> None
     def get(self, path: Sequence[str] | str) -> Reference | None
     def delete(self, path: Sequence[str] | str) -> None
     def delete_names(self, names: AbstractSet[str]) -> None
