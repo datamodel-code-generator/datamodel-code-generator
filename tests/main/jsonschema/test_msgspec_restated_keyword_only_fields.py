@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from tests.capabilities import needs
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH, run_main_and_assert
 
 if TYPE_CHECKING:
@@ -57,7 +58,18 @@ CASES = (
 STRUCT_OPTIONS = ("--extra-template-data", json.dumps({"mid.Mid": {"base_class_kwargs": {"kw_only": True}}}))
 
 
-@pytest.mark.parametrize(("shape", "option_set"), CASES, ids=[f"{shape}-{option_set}" for shape, option_set in CASES])
+@pytest.mark.parametrize(
+    ("shape", "option_set"),
+    [
+        pytest.param(
+            shape,
+            option_set,
+            id=f"{shape}-{option_set}",
+            marks=[needs("type-statements")] if option_set == "preset" else [],
+        )
+        for shape, option_set in CASES
+    ],
+)
 def test_restated_field_below_keyword_only_struct(output_file: Path, shape: str, option_set: str) -> None:
     """Write ``kw_only=True`` on the struct that declares again a field its keyword-only parent moved last.
 
