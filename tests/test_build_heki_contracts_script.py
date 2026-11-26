@@ -417,11 +417,18 @@ SEEDED_LAYER_DEFINITIONS = {
     ),
     "_requirements.py": "\n\ndef python_target_meets(construct, version_key):\n    return True\n",
     "enums.py": "class DataModelType:\n    MsgspecStruct = 'msgspec.Struct'\n",
-    "model/base.py": "\n\nclass DataModel:\n    pass\n\n\nclass DataModelFieldBase:\n    pass\n",
+    "model/base.py": (
+        "\n\nclass DataModel:\n    PLAIN_PATTERN_ROOT_TYPES = ()\n\n"
+        "    def __init__(self):\n        self._internal_template_data = {}\n\n"
+        "    def _append_internal_template_data(self, key, value):\n        pass\n\n\n"
+        "class DataModelFieldBase:\n    pass\n"
+    ),
     "model/pydantic_v2/base_model.py": (
-        "from datamodel_code_generator.model.base import DataModel\n"
+        "from datamodel_code_generator.model.base import DataModel, DataModelFieldBase\n"
         "from datamodel_code_generator.types import DataTypeManager as NeutralDataTypeManager\n\n\n"
-        "class BaseModel(DataModel):\n    pass\n\n\nclass DataTypeManager(NeutralDataTypeManager):\n    pass\n"
+        "class BaseModel(DataModel):\n    SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH = ''\n\n\n"
+        "class DataModelField(DataModelFieldBase):\n    def is_pydantic_extra_field(self):\n        return False\n\n\n"
+        "class DataTypeManager(NeutralDataTypeManager):\n    pass\n"
     ),
     "types.py": "class DataTypeManager:\n    pass\n",
     "model/typed_dict.py": "class TypedDict:\n    pass\n",
@@ -430,7 +437,10 @@ SEEDED_LAYER_DEFINITIONS = {
         "    def _dispose(self):\n        pass\n"
     ),
 }
-"""The definitions the architecture contracts name, appended to the modules of the seeded package that hold them."""
+"""The definitions the architecture contracts name, appended to the modules of the seeded package that hold them.
+
+A target names only what a class has, so the classes define each name the contracts list for them.
+"""
 
 
 @needs("heki")
@@ -514,6 +524,24 @@ def test_the_architecture_allowances_name_a_function_the_package_defines(
 
     with pytest.raises(
         ValueError, match=r"^architecture contracts allow functions the package does not define: parser\.base:gone$"
+    ):
+        build_heki_contracts.architecture_contracts(repo)
+
+
+@pytest.mark.parametrize(
+    ("table", "entry"), [("SEMANTIC_OWNERS", "model.base.Gone"), ("SEMANTIC_ATTRIBUTES", "gone_attribute")]
+)
+@pytest.mark.allow_direct_assert("a stale owner or attribute must stop the build, not be stored as an expected output")
+def test_the_architecture_contracts_name_only_what_a_class_has(
+    table: str, entry: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An owner class or an attribute that no class of the package has is an error, not an entry heki refuses."""
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+    monkeypatch.setattr(build_heki_contracts, table, (*getattr(build_heki_contracts, table), entry))
+
+    with pytest.raises(
+        ValueError,
+        match=rf"^architecture contracts name classes or attributes the package does not have: {re.escape(entry)}$",
     ):
         build_heki_contracts.architecture_contracts(repo)
 
