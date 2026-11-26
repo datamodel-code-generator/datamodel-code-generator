@@ -1570,7 +1570,7 @@ examples were checked with FastMCP 4.2.6 and Pydantic AI 2.75.0; both libraries 
 dependencies, and their experimental parts may change.
 
 FastMCP's `CodeMode` transform (`pip install "fastmcp[code-mode]"`) gives the model `search`, `get_schema`, and an
-`execute` tool whose code calls `call_tool(name, params)` in its own sandbox, over a proxy of the served tools:
+`execute` tool whose code calls `await call_tool(name, params)` in its own sandbox, over a proxy of the served tools:
 
 ```python
 from pathlib import Path
