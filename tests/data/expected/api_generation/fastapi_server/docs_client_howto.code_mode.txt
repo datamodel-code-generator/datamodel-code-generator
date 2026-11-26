@@ -1,0 +1,6 @@
+exit 0
+[('pets_list_pets', True), ('pets_get_pet', True), ('default_get_health', True)]
+> GET https://eu.shelter.example/v1/pets/1 authorization: Bearer s3cret
+['pets_get_pet', 'pets_list_pets'] ['pet_id'] Mimi
+> GET https://eu.shelter.example/v1/pets?limit=20 authorization: Bearer s3cret
+{'type': 'result_too_large', 'size': 70, 'max_result_bytes': 64, 'hint': 'Call the tool with arguments that select less, such as a filter or a smaller page'}

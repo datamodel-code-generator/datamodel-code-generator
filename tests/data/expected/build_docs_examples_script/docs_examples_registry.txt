@@ -65,6 +65,8 @@ python-client.howto.errors: python-client.md
 python-client.howto.errors-output: python-client.md
 python-client.howto.agent_tools: python-client.md
 python-client.howto.agent_tools-output: python-client.md
+python-client.howto.code_mode: python-client.md
+python-client.howto.code_mode-output: python-client.md
 python-client.howto.generate: python-client.md
 python-client.howto.shelter: python-client.md
 python-client.howto.test: python-client.md

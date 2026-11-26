@@ -14,20 +14,55 @@ from ._runtime.client.tool_server import command_line, serve_stdio, tool_server
 from .tools import AsyncToolset
 
 
-def server(client: AsyncClient, *, read_only: bool = False) -> Server[object]:
-    """Return an MCP server whose tools call the asyncio client's operations; `read_only` keeps only safe ones."""
-    return tool_server(AsyncToolset(client, read_only=read_only), 'client')
+def server(
+    client: AsyncClient,
+    *,
+    read_only: bool = False,
+    max_result_bytes: int | None = None,
+    meta_tools: bool = False,
+) -> Server[object]:
+    """Return an MCP server whose tools call the asyncio client's operations.
+
+    `read_only` keeps only safe ones, `max_result_bytes` sets a budget of a result's JSON text, and `meta_tools` lists
+    `search_tools`, `get_tool_schema`, and `call_tool` instead of one tool for each operation.
+    """
+    toolset = AsyncToolset(
+        client,
+        read_only=read_only,
+        max_result_bytes=max_result_bytes,
+    )
+    return tool_server(toolset, 'client', meta_tools=meta_tools)
 
 
-def serve(make_client: Callable[[], AsyncClient], *, read_only: bool = False) -> None:
+def serve(
+    make_client: Callable[[], AsyncClient],
+    *,
+    read_only: bool = False,
+    max_result_bytes: int | None = None,
+    meta_tools: bool = False,
+) -> None:
     """Serve the tools over stdin and stdout until stdin ends, through a client `make_client` builds, then closed."""
-    serve_stdio(make_client, lambda client: server(client, read_only=read_only))
+
+    def served(client: AsyncClient) -> Server[object]:
+        return server(
+            client,
+            read_only=read_only,
+            max_result_bytes=max_result_bytes,
+            meta_tools=meta_tools,
+        )
+
+    serve_stdio(make_client, served)
 
 
 def main(argv: Sequence[str] | None = None) -> None:
-    """Serve the tools from the command line: `--base-url` sets the API's base URL, `--read-only` keeps safe tools."""
+    """Serve the tools from the command line, with the client's default server unless `--base-url` sets the API's."""
     command = command_line(argv, 'python -m client.mcp_server')
-    serve(lambda: AsyncClient(base_url=command.base_url), read_only=command.read_only)
+    serve(
+        lambda: AsyncClient(base_url=command.base_url),
+        read_only=command.read_only,
+        max_result_bytes=command.max_result_bytes,
+        meta_tools=command.meta_tools,
+    )
 
 
 if __name__ == "__main__":

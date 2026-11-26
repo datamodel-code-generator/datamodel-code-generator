@@ -4,7 +4,10 @@ An MCP client lists each tool with the JSON schemas of the models and the annota
 it: a result is structured content that matches its output schema, a refused argument or a failed call is a result
 marked as an error, and an unknown tool is a protocol error. No message the server sends holds a credential the client
 placed, even where the API echoes one, a result whose model refuses the text that replaced one is a result marked as an
-error too, and document text reaches tool descriptions as the description options say.
+error too, and document text reaches tool descriptions as the description options say. In the meta-tool mode the
+server lists `search_tools`, `get_tool_schema`, and `call_tool`, which search, describe, and call the same tools
+through the same call: a tool name they do not know is a result marked as an error, and only a name that is none of
+the three is a protocol error.
 """
 
 from __future__ import annotations
@@ -90,6 +93,39 @@ def tool_server(package: ModuleType, lines: list[str]) -> None:
     ]
     sent = _stdio(lambda: module.main(["--base-url", "https://elsewhere.example/v2", "--read-only"]), read_only)
     lines.extend(f"  main {line}" for line in _summary(sent))
+    meta = [
+        messages[0],
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"name": "call_tool", "arguments": {"name": "pets_get_pet", "arguments": {"petId": 3}}},
+        },
+        {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {"name": "call_tool", "arguments": {"name": "pets_create_pet", "arguments": {}}},
+        },
+    ]
+    arguments = ["--meta-tools", "--read-only", "--max-result-bytes", "20"]
+    sent = _stdio(lambda: module.main(arguments), meta)
+    lines.extend(f"  main meta {line}" for line in _summary(sent))
+    lines.append(f"  main settings {module.command_line(arguments, 'serve')!r}")
+    lines.extend(
+        f"  main --max-result-bytes {value!r} exits {_exit_code(module.main, ['--max-result-bytes', value])}"
+        for value in ("0", "-1", "x")
+    )
+
+
+def _exit_code(main: Callable[[list[str]], None], argv: list[str]) -> object:
+    """Return the exit code a command line stops with, or None when it returns."""
+    code: object = None
+    try:
+        main(argv)
+    except SystemExit as error:
+        code = error.code
+    return code
 
 
 async def _listed_and_called(package: ModuleType, module: ModuleType, lines: list[str]) -> None:
@@ -138,6 +174,64 @@ async def _listed_and_called(package: ModuleType, module: ModuleType, lines: lis
         except MCPError as error:
             lines.append(f"  read-only create ! {error.code} {error.message}")
     await _redacted_results(package, module, exchange, lines)
+    await _meta_tools(package, module, exchange, lines)
+
+
+async def _meta_tools(package: ModuleType, module: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    """List and call the meta tools: a search, a tool's schemas, and calls of each outcome through `call_tool`.
+
+    A budget, read-only serving, and the redaction behave as they do for the tools themselves.
+    """
+    async with (
+        exchange.async_client() as http,
+        package.AsyncClient(http_client=http, api_key="secret-key", max_retries=0) as api,
+        MCPClient(module.server(api, meta_tools=True, max_result_bytes=200)) as session,
+    ):
+        lines.extend(
+            f"  meta tool {tool.name} {tool.annotations!r} {tool.description!r}\n"
+            f"    input {_shown(tool.input_schema)}\n    output {_shown(tool.output_schema)}"
+            for tool in (await session.list_tools()).tools
+        )
+        calls: list[tuple[str, str, dict[str, object], Callable[[httpx2.Request], httpx2.Response] | None]] = [
+            ("search", "search_tools", {"query": "pet", "limit": 2}, None),
+            ("search by tag", "search_tools", {"tag": "owners"}, None),
+            ("search a whole-number limit", "search_tools", {"limit": 2.0}, None),
+            ("search limit 0", "search_tools", {"limit": 0}, None),
+            ("search refused", "search_tools", {"query": 1, "tag": 2, "limit": 0, "page": 1}, None),
+            ("schema", "get_tool_schema", {"name": "pets_get_pet"}, None),
+            ("schema of an unknown tool", "get_tool_schema", {"name": "nope"}, None),
+            ("schema refused", "get_tool_schema", {}, None),
+            ("call", "call_tool", {"name": "pets_get_pet", "arguments": {"petId": 3}}, json_response(200, _PET)),
+            ("call over the budget", "call_tool", {"name": "pets_list_pets"}, json_response(200, [_PET] * 5)),
+            ("call refused", "call_tool", {"name": "pets_get_pet", "arguments": {"petId": "x"}}, None),
+            ("call failed", "call_tool", {"name": "pets_get_pet", "arguments": {"petId": 4}}, _echo),
+            ("call echoed", "call_tool", {"name": "pets_get_pet", "arguments": {"petId": 3}}, _echoed_pet),
+            ("call of an unknown tool", "call_tool", {"name": "nope", "arguments": {}}, None),
+            ("call refused arguments", "call_tool", {"name": 3, "arguments": []}, None),
+        ]
+        for label, name, arguments, responder in calls:
+            if responder is not None:
+                exchange.respond(responder)
+            result = await session.call_tool(name, arguments)
+            structured = _shown(result.structured_content)
+            lines.append(
+                f"  meta {label} error={result.is_error} {structured} {[item.text for item in result.content]}"
+            )
+        try:
+            await session.call_tool("pets_get_pet", {"petId": 3})
+        except MCPError as error:
+            lines.append(f"  meta unknown tool ! {error.code} {error.message}")
+    async with (
+        exchange.async_client() as http,
+        package.AsyncClient(http_client=http, api_key="secret-key", max_retries=0) as api,
+        MCPClient(module.server(api, meta_tools=True, read_only=True)) as session,
+    ):
+        tools = (await session.list_tools()).tools
+        lines.append(f"  meta read-only call_tool {tools[-1].annotations!r}")
+        found = await session.call_tool("search_tools", {})
+        lines.append(f"  meta read-only search {[entry['name'] for entry in found.structured_content['result']]}")
+        result = await session.call_tool("call_tool", {"name": "pets_create_pet", "arguments": {"body": {}}})
+        lines.append(f"  meta read-only create error={result.is_error} {[item.text for item in result.content]}")
 
 
 async def _redacted_results(package: ModuleType, module: ModuleType, exchange: Exchange, lines: list[str]) -> None:
@@ -271,16 +365,42 @@ def _summary(sent: list[str]) -> list[str]:
 def tool_descriptions(package: ModuleType, lines: list[str]) -> None:
     """List the tools of a document with hostile text: each description and schema as the server sends them.
 
-    Under --untrusted-input no schema the server sends has a description, title, or examples.
+    The meta tools search and describe the same tools, and the catalog lists them. Under --untrusted-input no schema
+    the server sends has a description, title, or examples, and no description holds the document's text.
     """
     module = import_generated(f"{package.__name__}.mcp_server", copied=True)
     messages: list[dict[str, object]] = [{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}]
     sent = _stdio(lambda: module.serve(_clients(package, Exchange(lines))), messages)
+    tools = json.loads(sent[1])["result"]["tools"]
     lines.extend(
         f"  tool {tool['name']} {tool['description']!r}\n    input {_shown(tool['inputSchema'])}\n"
         f"    output {_shown(tool['outputSchema'])}"
-        for tool in json.loads(sent[1])["result"]["tools"]
+        for tool in tools
     )
+    meta: list[dict[str, object]] = [
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+        {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "search_tools", "arguments": {}}},
+        *(
+            {
+                "jsonrpc": "2.0",
+                "id": index,
+                "method": "tools/call",
+                "params": {"name": "get_tool_schema", "arguments": {"name": tool["name"]}},
+            }
+            for index, tool in enumerate(tools, 4)
+        ),
+    ]
+    sent = _stdio(lambda: module.serve(_clients(package, Exchange(lines)), meta_tools=True), meta)
+    lines.extend(
+        f"  meta tool {tool['name']} {tool['description']!r}" for tool in json.loads(sent[1])["result"]["tools"]
+    )
+    lines.extend(
+        f"  meta {message['id']} {_shown(message['result']['structuredContent'])}"
+        for message in map(json.loads, sent[2:])
+    )
+    with package.Client() as api:
+        catalog = import_generated(f"{package.__name__}.tools", copied=True).Toolset(api).catalog()
+    lines.extend(f"  catalog {_shown(entry)}" for entry in catalog)
 
 
 def tool_patterns(package: ModuleType, lines: list[str]) -> None:

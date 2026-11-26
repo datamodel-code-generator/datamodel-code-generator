@@ -4,8 +4,9 @@ A call sends what the client's method sends: the tool takes the operation's para
 the API key's position or the request options, so the credential the client holds is the one sent. A refused argument,
 a failed call, and a tool the table has not each return or raise what the tool table documents. An error value shows no
 credential the client placed where the API echoes one, nor does a result that echoes one; such a result whose model
-refuses the text that replaced the credential is an error value. Strict models take the JSON values their schemas
-describe.
+refuses the text that replaced the credential is an error value. A result longer than the table's budget is an error
+value with its size, and the catalog lists each tool as a search does, with what its method promises. Strict models take
+the JSON values their schemas describe.
 """
 
 from __future__ import annotations
@@ -87,6 +88,13 @@ def tools(package: ModuleType, lines: list[str]) -> None:
         safe = module.Toolset(api, read_only=True)
         lines.append(f"  read-only search = {[entry['name'] for entry in safe.search(limit=10)]}")
         record(lines, "read-only create", lambda: safe.call("pets_create_pet", {"body": {"name": "a"}}))
+        catalog = table.catalog()
+        lines.extend((
+            f"  catalog entry = {_shown(catalog[0])}",
+            f"  catalog = {[(entry['name'], entry['safe'], entry['idempotent']) for entry in catalog]}",
+            f"  read-only catalog = {[entry['name'] for entry in safe.catalog()]}",
+        ))
+        _budgets(module, api, exchange, lines)
     for credentials in (
         {"api_key": "secret/key+1"},
         {"header_key": "header-key-1"},
@@ -102,6 +110,25 @@ def tools(package: ModuleType, lines: list[str]) -> None:
             lines.append(f"  {next(iter(credentials))} echoed result = {_shown(echoed)}")
     _spelled_credentials(package, module, exchange, lines)
     run(lambda: _async_tools(package, module, lines))
+
+
+def _budgets(module: ModuleType, api: object, exchange: Exchange, lines: list[str]) -> None:
+    """Call a tool under result budgets: a result as long as the budget is returned, a longer one is an error value.
+
+    The budget counts the UTF-8 bytes of the result's compact JSON text; a table has none unless it is given one.
+    """
+    pets = [{**_PET, "name": "Rex 猫"}] * 3
+    exchange.respond(json_response(200, pets))
+    value = module.Toolset(api, max_result_bytes=None).call("pets_list_pets", {})
+    size = len(json.dumps(value, separators=(",", ":"), ensure_ascii=False).encode())
+    for label, budget in (("at the budget", size), ("over the budget", size - 1)):
+        exchange.respond(json_response(200, pets))
+        result = module.Toolset(api, max_result_bytes=budget).call("pets_list_pets", {})
+        lines.append(f"  {label} {budget} = {_shown(result)}")
+    exchange.respond(json_response(200, [_PET] * 1500))
+    lines.append(f"  no budget by default = {len(module.Toolset(api).call('pets_list_pets', {}))} pets")
+    for budget in (0, True, 1.5, "1"):
+        record(lines, f"budget {budget!r}", lambda budget=budget: module.Toolset(api, max_result_bytes=budget))
 
 
 def _spelled_credentials(package: ModuleType, module: ModuleType, exchange: Exchange, lines: list[str]) -> None:
@@ -206,6 +233,10 @@ async def _async_tools(package: ModuleType, module: ModuleType, lines: list[str]
         await arecord(lines, "async get missing", lambda: table.call("pets_get_pet", {"petId": 4}))
         await arecord(lines, "async refused", lambda: table.call("pets_get_pet", {"petId": "x"}))
         await arecord(lines, "async unknown tool", lambda: table.call("nope", {}))
+        exchange.respond(json_response(200, _PET))
+        small = module.AsyncToolset(api, max_result_bytes=10)
+        await arecord(lines, "async over the budget", lambda: small.call("pets_get_pet", {"petId": 3}))
+        lines.append(f"  async catalog = {[entry['name'] for entry in small.catalog()]}")
     async with (
         exchange.async_client() as http,
         package.AsyncClient(http_client=http, api_key="dog", max_retries=0) as api,
@@ -260,7 +291,8 @@ def tool_strict(package: ModuleType, lines: list[str]) -> None:
 def tool_untrusted(package: ModuleType, lines: list[str]) -> None:
     """Read the schemas of a table generated from untrusted input: no schema has a description, title, or examples.
 
-    The property named `description` stays, and the models keep their descriptions, titles and examples.
+    The property named `description` stays, and the models keep their descriptions, titles and examples. No search or
+    catalog entry shows the operation's tags, though the `tag` filter still finds the tools that carry one.
     """
     module = import_generated(f"{package.__name__}.tools", copied=True)
     with package.Client(api_key="secret-key") as api:
@@ -268,6 +300,11 @@ def tool_untrusted(package: ModuleType, lines: list[str]) -> None:
         lines.extend(
             f"  schema {name} = {_shown(table.schema(name))}" for name in ("pets_create_pet", "owners_get_owner")
         )
+        lines.extend((
+            f"  search entry = {_shown(table.search('owner')[0])}",
+            f"  search by tag = {[entry['name'] for entry in table.search(tag='owners')]}",
+            f"  catalog entry = {_shown(table.catalog()[-1])}",
+        ))
     models = import_generated(f"{package.__name__}_models", copied=True)
     owner = models.Owner.model_json_schema()["properties"]["description"]
     lines.extend((
@@ -276,3 +313,15 @@ def tool_untrusted(package: ModuleType, lines: list[str]) -> None:
         f"  model Pet.born = {_shown(models.Pet.model_json_schema()['properties']['born'])}",
         f"  async schema = {_shown(module.AsyncToolset(object()).schema('pets_get_pet'))}",
     ))
+
+
+def tool_not_tools(package: ModuleType, lines: list[str]) -> None:
+    """Leave operations out of the tools by their `tool` setting: they have no tool and keep their client methods."""
+    module = import_generated(f"{package.__name__}.tools", copied=True)
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http, api_key="secret-key", max_retries=0) as api:
+        table = module.Toolset(api)
+        lines.append(f"  tools = {[entry['name'] for entry in table.catalog()]}")
+        record(lines, "tool of a left-out operation", lambda: table.call("pets_delete_pet", {"petId": 3}))
+        exchange.respond(raw_response(204))
+        record(lines, "method of a left-out operation", lambda: api.pets.delete_pet(petId=3))

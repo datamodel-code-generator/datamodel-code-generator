@@ -4,6 +4,7 @@
 	api_generation/fastapi_server/docs_client_howto.agent_tools.txt
 	api_generation/fastapi_server/docs_client_howto.auth.txt
 	api_generation/fastapi_server/docs_client_howto.calls.txt
+	api_generation/fastapi_server/docs_client_howto.code_mode.txt
 	api_generation/fastapi_server/docs_client_howto.errors.txt
 	api_generation/fastapi_server/docs_client_howto.generate.txt
 	api_generation/fastapi_server/docs_client_howto.notice.txt

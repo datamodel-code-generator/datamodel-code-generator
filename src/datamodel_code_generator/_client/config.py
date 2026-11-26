@@ -96,7 +96,7 @@ class RuntimeOperationMetadata:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ClientOperationConfig:
-    """Settings of one operation, selected by its root use-site reference."""
+    """Settings of one operation, selected by its root use-site reference; `tool` False leaves it out of the tools."""
 
     ref: OperationSelector
     resource: str | None = None
@@ -106,6 +106,7 @@ class ClientOperationConfig:
     response_media_type: str | None = None
     runtime: RuntimeOperationMetadata = field(default_factory=RuntimeOperationMetadata)
     description: str | None = None
+    tool: bool = True
     body_arguments: BodyArguments | None = None
     body_field_names: tuple[BodyFieldName, ...] = ()
 
@@ -251,6 +252,8 @@ def _operation_config_problems(
     yield from _runtime_problems(item.runtime, f"{at}.runtime")
     if item.description is not None and not _text(item.description):
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.description", "description must be a string")
+    if type(item.tool) is not bool:
+        yield _diagnostic("E_CONFIG_VALUE", f"{at}.tool", "tool must be a boolean")
 
 
 def _runtime_problems(runtime: RuntimeOperationMetadata, at: str) -> Iterator[Diagnostic]:

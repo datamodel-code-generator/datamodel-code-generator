@@ -121,7 +121,13 @@ from tests.api_generation.scenarios.client_streams import (
 )
 from tests.api_generation.scenarios.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.api_generation.scenarios.client_tool_server import tool_descriptions, tool_patterns, tool_server
-from tests.api_generation.scenarios.client_tools import tool_extras, tool_strict, tool_untrusted, tools
+from tests.api_generation.scenarios.client_tools import (
+    tool_extras,
+    tool_not_tools,
+    tool_strict,
+    tool_untrusted,
+    tools,
+)
 from tests.api_generation.scenarios.client_unions import copied_unions, enum_tag_bodies, split_unions, unions
 from tests.api_generation.scenarios.client_uploads import upload_compression, uploads, uploads_oauth
 from tests.api_generation.scenarios.client_webhook_adapters import (
@@ -1002,6 +1008,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "tools-extras": ("tools-extras", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), tool_extras),
     "tools-strict": ("tools-strict", ("pydantic_v2.dataclass",), tool_strict),
     "tools-untrusted": ("tools-untrusted", ("pydantic_v2.BaseModel",), tool_untrusted),
+    "tools-not-tools": ("tools-not-tools", ("pydantic_v2.BaseModel",), tool_not_tools),
     "tools-mcp": ("tools-mcp", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), tool_server),
     "tools-mcp-adversarial": ("tools-mcp-adversarial", ("pydantic_v2.BaseModel",), tool_descriptions),
     "tools-mcp-untrusted": ("tools-mcp-untrusted", ("pydantic_v2.BaseModel",), tool_descriptions),

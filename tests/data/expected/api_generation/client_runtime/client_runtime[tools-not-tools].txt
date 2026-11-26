@@ -1,0 +1,7 @@
+# tools-not-tools pydantic_v2.BaseModel
+  warning UserWarning: <root>/tools_not_tools_pydantic_v2_basemodel: Leaving GET /pets/{petId}/events (client.pets.watch_pet) out of the tools, since its 200 response is a text/event-stream stream
+  tools = ['pets_list_pets', 'pets_create_pet', 'pets_get_pet', 'pets_replace_pet', 'owners_get_owner']
+  tool of a left-out operation ! UnknownToolError: No tool is named 'pets_delete_pet' []
+  > DELETE https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  method of a left-out operation = None

@@ -164,6 +164,7 @@ tools-mcp	api_generation/client_runtime/client_runtime[tools-mcp].txt
 tools-mcp-adversarial	api_generation/client_runtime/client_runtime[tools-mcp-adversarial].txt
 tools-mcp-patterns	api_generation/client_runtime/client_runtime[tools-mcp-patterns].txt
 tools-mcp-untrusted	api_generation/client_runtime/client_runtime[tools-mcp-untrusted].txt
+tools-not-tools	api_generation/client_runtime/client_runtime[tools-not-tools].txt
 tools-strict	api_generation/client_runtime/client_runtime[tools-strict].txt
 tools-untrusted	api_generation/client_runtime/client_runtime[tools-untrusted].txt
 type-checking-imports	api_generation/client_runtime/client_runtime[type-checking-imports].txt

@@ -168,7 +168,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "tools of unsafe methods. An operation left out of the tools keeps its method, and generation warns why. "
             "Under `--untrusted-input` a tool's description leaves out the operation's summary and description, and "
             "`schema(name)` leaves out the `description`, `title`, and `examples` of every JSON schema, while the "
-            "models keep theirs. "
+            "models keep theirs, and the entries of `search`, `search_tools`, and `catalog()` leave out the tags. "
             "`--client-tools mcp` also adds `mcp_server.py`, which serves the tools of the asyncio client over MCP "
             "through the low-level server of the `mcp` SDK: `server(client)` returns the server, `serve(make_client)` "
             "and `python -m <package>.mcp_server` serve it on stdin and stdout. Each tool is listed with the JSON "
@@ -311,7 +311,9 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "API), dcg reads no file or URL but the input, refuses x-python-type, x-python-import, customTypePath "
             "and customBasePath, Protocol Buffers input, --validation and a schema nested more than 100 levels deep "
             "or holding more than 2,000,000 objects and arrays, and implies --no-allow-remote-refs. It does not "
-            "sandbox the generated code."
+            "sandbox the generated code. In the tools of a generated client (--client-tools), no tool description "
+            "holds the operation's summary or description, no JSON schema its descriptions, titles, or examples, and "
+            "no search or catalog entry its tags."
         ),
     ),
     "cli-option.use-missing-sentinel": ExperimentalFeature(
