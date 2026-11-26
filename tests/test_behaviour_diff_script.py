@@ -21,7 +21,7 @@ from dataclasses import asdict, dataclass, field, replace
 from io import StringIO
 from pathlib import Path
 from types import FunctionType, ModuleType, SimpleNamespace
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pytest
 import tomllib
@@ -3785,6 +3785,10 @@ def _files(tree: Path) -> dict[str, str]:
     }
 
 
+_Shared = TypeVar("_Shared")
+"""What a shared call returns: a JSON value, read back from the shared file in the same shape."""
+
+
 @dataclass
 class SharedRuns:
     """The gate's signature, stored-module, generation and option processes of the stand-in's runs, each run once.
@@ -3813,10 +3817,10 @@ class SharedRuns:
     def run(
         self,
         function: FunctionType,
-        call: Callable[[], Any],
+        call: Callable[[], _Shared],
         tree: Path,
         *inputs: object,
-    ) -> Any:
+    ) -> _Shared:
         """Return what `call` (a call of `function`) returns, from the first call of `function` with these inputs."""
         env = sorted(
             (name, value)
