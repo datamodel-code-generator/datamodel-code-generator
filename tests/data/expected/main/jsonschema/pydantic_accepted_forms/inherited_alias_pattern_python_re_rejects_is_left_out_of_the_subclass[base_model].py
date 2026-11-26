@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, RootModel, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
 
 
 class Name(RootModel[constr(pattern=r'^\p{L}+$')]):
@@ -14,10 +14,15 @@ class ShortName(RootModel[constr(pattern=r'^\p{L}+$', max_length=8)]):
     root: constr(pattern=r'^\p{L}+$', max_length=8)
 
 
+class Names(RootModel[list[Name]]):
+    root: list[Name] = Field(..., max_length=3, min_length=1)
+
+
 class Named(BaseModel):
     name: Name | None = None
     names: list[Name] | None = None
     short: ShortName | None = None
+    bounded: Names | None = None
 
 
 class Coded(BaseModel):

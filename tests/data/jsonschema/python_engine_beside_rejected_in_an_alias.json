@@ -3,12 +3,14 @@
   "$defs": {
     "Name": {"type": "string", "pattern": "^\\p{L}+$"},
     "ShortName": {"type": "string", "pattern": "^\\p{L}+$", "maxLength": 8},
+    "Names": {"type": "array", "items": {"$ref": "#/$defs/Name"}, "minItems": 1, "maxItems": 3},
     "Named": {
       "type": "object",
       "properties": {
         "name": {"$ref": "#/$defs/Name"},
         "names": {"type": "array", "items": {"$ref": "#/$defs/Name"}},
-        "short": {"$ref": "#/$defs/ShortName"}
+        "short": {"$ref": "#/$defs/ShortName"},
+        "bounded": {"$ref": "#/$defs/Names"}
       }
     },
     "Coded": {"type": "object", "properties": {"code": {"type": "string", "pattern": "^(?!x)[a-z]+$"}}},

@@ -681,9 +681,9 @@ def test_inherited_alias_pattern_python_re_rejects_is_left_out_of_the_subclass(
 
     ``Both`` selects ``python-re`` for the lookahead of ``Coded``, and builds the aliases its own field and the fields
     of ``Named`` name with it, which failed at import. Its fields write the alias body without the pattern Python's
-    ``re`` rejects, keeping ``maxLength``, and warn; ``Named`` and the aliases keep their output and still reject
-    what they rejected. A model merges the configs of its bases and marks every alias it builds, so it keeps its
-    output.
+    ``re`` rejects, keeping the other constraints of the alias (``maxLength``, and ``minItems`` and ``maxItems`` beside
+    a pattern of the items), and warn; ``Named`` and the aliases keep their output and still reject what they
+    rejected. A model merges the configs of its bases and marks every alias it builds, so it keeps its output.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "python_engine_beside_rejected_in_an_alias.json",
@@ -701,10 +701,17 @@ def test_inherited_alias_pattern_python_re_rejects_is_left_out_of_the_subclass(
     )
     outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
     payloads = {
-        "Named": {"valid": {"name": "Zo\u00eb"}, "digits": {"name": "12"}, "long": {"short": "abcdefghij"}},
-        "Both": {
-            "valid": {"name": "12", "names": ["12"], "nick": "12", "short": "ab", "code": "ab"},
+        "Named": {
+            "valid": {"name": "Zo\u00eb"},
+            "digits": {"name": "12"},
             "long": {"short": "abcdefghij"},
+            "no items": {"bounded": []},
+        },
+        "Both": {
+            "valid": {"name": "12", "names": ["12"], "nick": "12", "short": "ab", "bounded": ["12"], "code": "ab"},
+            "long": {"short": "abcdefghij"},
+            "no items": {"bounded": []},
+            "four items": {"bounded": ["a", "b", "c", "d"]},
             "lookahead": {"code": "xa"},
         },
     }

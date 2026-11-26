@@ -131,6 +131,7 @@ from datamodel_code_generator.model.pydantic_v2.types import (
     DataTypeManager,
     EncodedTextDataType,
     PydanticV2DataType,
+    _AnnotatedMemberConstraintDataType,
     constrained_base,
 )
 from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes, model_target_meets
@@ -692,22 +693,14 @@ def _type_without_pattern(data_type: DataType) -> DataType:
     return written
 
 
-def _constrained_string(data_type: DataType, keywords: Mapping[str, object]) -> DataType:
-    """Return a new type that writes the string ``data_type`` with ``keywords`` as ``Annotated`` constraints.
+def _constrained_type(data_type: DataType, keywords: Mapping[str, object]) -> DataType:
+    """Return a new type that writes ``data_type`` with the constraint arguments ``keywords`` as ``Annotated``.
 
-    Another type keeps no keyword: only a string takes the lengths of a string's constraints.
+    The ``Field()`` it writes sorts them by name, as the call of a field does.
     """
-    if data_type.type != "str" or data_type.import_ is not None or data_type.data_types:
-        return data_type
-    values: dict[str, object] = {
-        **dict(data_type),
-        "type": None,
-        "parent": None,
-        "children": [],
-        "kwargs": dict(keywords),
-        "constrained_base": "str",
-    }
-    written = AnnotatedConstraintDataType.model_construct(None, **values)
+    written = _AnnotatedMemberConstraintDataType.model_construct(
+        None, data_types=[data_type], kwargs=dict(sorted(keywords.items())), constrained_base=data_type.type or ""
+    )
     keep_node_records(written, data_type)
     return written
 
@@ -804,7 +797,7 @@ class DataModelField(_PydanticBaseDataModelField):
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
     PREPARE_TYPE_ALIAS_FIELD = staticmethod(_prepare_type_alias_field)
     _TYPE_WITHOUT_PATTERN = staticmethod(_type_without_pattern)
-    _CONSTRAINED_STRING = staticmethod(_constrained_string)
+    _CONSTRAINED_TYPE = staticmethod(_constrained_type)
     NEEDS_MODEL_REGEX_ENGINE = staticmethod(_needs_model_regex_engine)
     WRITES_NO_CALL_WITHOUT_PLAN = staticmethod(_writes_no_call_without_plan)
     PATTERN_NEEDS_HOLDER_ENGINE = staticmethod(_pattern_needs_holder_engine)

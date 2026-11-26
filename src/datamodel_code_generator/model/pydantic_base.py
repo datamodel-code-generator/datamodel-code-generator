@@ -89,17 +89,17 @@ def _python_engine_builds_patterns_of(model: object) -> bool:
     return bool(getattr(model, "_internal_template_data", {}).get(PYTHON_ENGINE_BUILDS_KEY))
 
 
-def _unbuilt_type_alias(data_type: DataType, visiting: frozenset[int]) -> DataModel | None:
-    """Return the type alias with a body that ``data_type`` names, unless a config selecting ``python-re`` builds it.
+def _unbuilt_alias_body(data_type: DataType, visiting: frozenset[int]) -> DataModelField | None:
+    """Return the body of the type alias that ``data_type`` names, unless a config selecting ``python-re`` builds it.
 
-    Such an alias keeps the patterns of its body as written (``PYTHON_ENGINE_BUILDS_KEY``); an alias of ``visiting``,
+    Such an alias keeps the patterns of its body as written (``PYTHON_ENGINE_BUILDS_KEY``); a body of ``visiting``,
     which a walk is in, is left out.
     """
     if (reference := data_type.reference) is None or not isinstance(alias := reference.source, DataModel):
         return None
-    if not alias.IS_ALIAS or not alias.fields or id(alias) in visiting:
+    if not alias.IS_ALIAS or not alias.fields or not isinstance(body := alias.fields[0], DataModelField):
         return None
-    return None if _python_engine_builds_patterns_of(alias) else alias
+    return None if id(body) in visiting or _python_engine_builds_patterns_of(alias) else body
 
 
 def _constraint_arguments(constraints: type[_ConstraintsBase]) -> dict[str, str]:
@@ -265,8 +265,8 @@ class DataModelField(DataModelFieldBase):
     """The type manager of the output model, whose tables give the keywords the value of an enum's base takes."""
     _TYPE_WITHOUT_PATTERN: ClassVar[Callable[[DataType], DataType] | None] = None
     """The type a type of the output writes without its pattern (``_written_type``), or None to keep every pattern."""
-    _CONSTRAINED_STRING: ClassVar[Callable[[DataType, Mapping[str, object]], DataType] | None] = None
-    """The string type of the output that writes the length constraints of a type alias's string body as keywords
+    _CONSTRAINED_TYPE: ClassVar[Callable[[DataType, Mapping[str, object]], DataType] | None] = None
+    """The type of the output that writes a type with the constraint arguments of a type alias's field
     (``_written_type``), or None to leave them to the alias."""
     constraints: Optional[Constraints] = None
 
@@ -406,7 +406,7 @@ class DataModelField(DataModelFieldBase):
         The rule that leaves such a pattern out of ``Field()`` (``_python_engine_rejects``) decides for the pattern of
         every type the field writes: a ``constr``, an annotated string, a type alias body, an ``EncodedStr``, nested in
         items, values, keys and union members. A type alias the config of the field's model builds, which keeps its
-        patterns as no config selecting ``python-re`` builds it (``_unbuilt_type_alias``), gives those of its body.
+        patterns as no config selecting ``python-re`` builds it (``_unbuilt_alias_body``), gives those of its body.
         """
         if not self._python_engine_builds():
             return []
@@ -420,13 +420,13 @@ class DataModelField(DataModelFieldBase):
         """Return the patterns of a type that ``python-re`` builds and Python's ``re`` rejects: its own, or its alias's.
 
         The body of a type alias holds them in its types and in the constraints of its field; ``visiting`` holds the
-        aliases the walk is in.
+        alias bodies the walk is in.
         """
         if data_type.kwargs and isinstance(pattern := data_type.kwargs.get("pattern"), str):
             return [pattern] if self._python_engine_rejects(pattern) else []
-        if (alias := _unbuilt_type_alias(data_type, visiting)) is None:
+        if (body := _unbuilt_alias_body(data_type, visiting)) is None:
             return []
-        body, inner = alias.fields[0], visiting | {id(alias)}
+        inner = visiting | {id(body)}
         own = getattr(body.constraints, "pattern", None)
         return [
             *([own] if isinstance(own, str) and self._python_engine_rejects(own) else []),
@@ -443,23 +443,19 @@ class DataModelField(DataModelFieldBase):
         """Return the type ``data_type`` writes without the patterns of ``_rejected_patterns_of``.
 
         A type writes itself without its pattern (``without``, the output's ``_TYPE_WITHOUT_PATTERN``). A type alias
-        is written as its body without them (``_written_type``), which keeps the lengths that the constraints of its
-        field set on a string (``_CONSTRAINED_STRING``).
+        is written as its body without them (``_written_type``), with the other constraint arguments the call of its
+        field writes (``_written_constraint_arguments``, as ``_CONSTRAINED_TYPE`` writes them).
         """
-        if (alias := _unbuilt_type_alias(data_type, visiting)) is None:
+        if (body := _unbuilt_alias_body(data_type, visiting)) is None:
             return without(data_type)
-        body = alias.fields[0]
-        written = self._written_type(body.data_type, visiting | {id(alias)}) or without(body.data_type)
-        lengths = {
-            key: value for key in ("min_length", "max_length") if (value := getattr(body.constraints, key, None))
+        written = self._written_type(body.data_type, visiting | {id(body)}) or without(body.data_type)
+        arguments = {
+            name: value
+            for name, value in DataModelField._written_constraint_arguments(body).items()
+            if not (name == "pattern" and self._python_engine_rejects(value))
         }
-        if (
-            self._python_engine_rejects(getattr(body.constraints, "pattern", None))
-            and lengths
-            and (constrained := self._CONSTRAINED_STRING) is not None
-        ):
-            return constrained(written, lengths)
-        return written
+        constrained = self._CONSTRAINED_TYPE
+        return written if not arguments or constrained is None else constrained(written, arguments)
 
     def _python_rejected_patterns(self) -> list[object]:
         """Return the patterns ``python-re`` builds and Python's ``re`` rejects that the field leaves out.
@@ -479,7 +475,7 @@ class DataModelField(DataModelFieldBase):
 
         None when it writes the type as it is. The copy holds each type with a pattern of ``_rejected_patterns_of``
         written without them (``_type_without_rejected_patterns``) and shares the field's references, as msgspec's
-        copies do; ``visiting`` holds the type aliases whose body it is.
+        copies do; ``visiting`` holds the type alias bodies it is in.
         """
         if (without := self._TYPE_WITHOUT_PATTERN) is None or not self._python_engine_builds():
             return None
@@ -739,6 +735,18 @@ class DataModelField(DataModelFieldBase):
             )
             return {}
         return self._normalized_constraint_arguments(omitted, beside_models=beside_models)
+
+    def _written_constraint_arguments(self) -> dict[str, object]:
+        """Return the constraint arguments the field's ``Field()`` call writes, by name, with the values it writes.
+
+        They leave out what the call cannot write (``_constraint_arguments``) and what ``Field()`` of the output model
+        cannot express (``_UNWRITTEN_CONSTRAINT_ARGUMENTS``).
+        """
+        return {
+            name: argument.value
+            for name, argument in self._constraint_arguments([], anyurl=self._drops_constraints_for_anyurl()).items()
+            if name not in self._UNWRITTEN_CONSTRAINT_ARGUMENTS and argument.value is not None
+        }
 
     @property
     @override

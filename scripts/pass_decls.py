@@ -1473,6 +1473,7 @@ FINALIZE_TYPE_ALIAS_USERS = PassDecl(
     Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(
+        Fact.BASES,
         Fact.MODEL_KIND,
         Fact.FIELD_TYPES,
         Fact.CONSTRAINTS,

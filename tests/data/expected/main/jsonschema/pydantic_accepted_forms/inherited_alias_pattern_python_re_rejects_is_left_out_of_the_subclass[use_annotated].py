@@ -17,11 +17,15 @@ ShortName = TypeAliasType(
 )
 
 
+Names = TypeAliasType("Names", Annotated[list[Name], Field(max_length=3, min_length=1)])
+
+
 @dataclass
 class Named:
     name: Name | None = None
     names: list[Name] | None = None
     short: ShortName | None = None
+    bounded: Names | None = None
 
 
 @dataclass(config=ConfigDict(regex_engine="python-re"))
@@ -34,6 +38,7 @@ class Both(Named, Coded):
     name: str | None = None
     names: list[str] | None = None
     short: Annotated[str, Field(max_length=8)] | None = None
+    bounded: Annotated[list[str], Field(max_length=3, min_length=1)] | None = None
     nick: str | None = None
 
 
