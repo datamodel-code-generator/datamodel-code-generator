@@ -36,7 +36,7 @@ in another Python file to a different output type.
 - 🎯 Generates **Pydantic v2**, **Pydantic v2 dataclass**, **dataclasses**, **TypedDict**, or **msgspec** output
 - 🌐 Generates a typed **HTTPX2 client** (`--generate-client httpx2`, from OpenAPI and AsyncAPI) or a **FastAPI server** (`--generate-server fastapi`, from OpenAPI) together with the models (experimental)
 - 🤖 Turns the generated client into tools an agent searches, reads the schemas of, and calls, with an MCP server over them (`--client-tools functions` or `mcp`, experimental)
-- 📝 Writes the recommended options into `pyproject.toml` (`--recommend-options --write-pyproject-config`)
+- 📝 Writes the recommended options into `pyproject.toml` (`--recommend-options --write-pyproject-config`, experimental)
 - 🔗 Handles complex schemas: `$ref`, `allOf`, `oneOf`, `anyOf`, enums, and nested types
 - ✅ Produces type-safe, validated code ready for your IDE and type checker
 
