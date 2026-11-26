@@ -1,8 +1,8 @@
 [[change]]
 id = "heki-040"
 category = "harness"
-title = "Pin heki 0.4.0"
-summary = "The heki dependency group, its pre-commit hook and the contracts move to heki 0.4.0; the package writes the same output."
+title = "Pin heki 0.7.0"
+summary = "The heki dependency group, its pre-commit hook and the contracts move to heki 0.7.0; the package writes the same output."
 refs = ["#7515"]
 covers = [
     "pre_commit_hooks/hook_dependency_pins_are_locked_versions.txt",
