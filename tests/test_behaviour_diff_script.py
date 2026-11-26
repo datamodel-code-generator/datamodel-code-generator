@@ -20,7 +20,7 @@ from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from dataclasses import asdict, dataclass, field, replace
 from io import StringIO
 from pathlib import Path
-from types import ModuleType, SimpleNamespace
+from types import FunctionType, ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -49,6 +49,7 @@ from tests.conftest import assert_output
 from tests.units import REFS_HEADER
 
 if TYPE_CHECKING:
+    import argparse
     from collections.abc import Callable, Generator
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1532,13 +1533,15 @@ def test_example_value(case: str) -> None:
     assert_output(json.dumps(example_value(EXAMPLE_CASES[case])) + "\n")
 
 
-def _git(*args: str, cwd: Path) -> str:
+def _git(*args: str, cwd: Path, dates: dict[str, str] | None = None) -> str:
+    """Run git in `cwd` as a fixed author; `dates` sets the dates of the commits it writes."""
     return subprocess.run(
         ["git", "-c", "user.name=t", "-c", "user.email=t@example.com", *args],
         cwd=cwd,
         capture_output=True,
         text=True,
         check=True,
+        env=os.environ | dates if dates else None,
     ).stdout.strip()
 
 
@@ -3714,10 +3717,15 @@ def _cells_write(repo: Path, files: dict[str, str | None]) -> None:
             path.write_text(text, encoding="utf-8")
 
 
+CELLS_DATES = {"GIT_AUTHOR_DATE": "2026-01-01T00:00:00+0000", "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+0000"}
+"""The dates of every commit of an oracle case's history: cases whose histories agree get the same commits, so their
+runs of one revision read the same version file and share their results (`SharedRuns`)."""
+
+
 def _cells_commit(repo: Path, files: dict[str, str | None], message: str) -> str:
     _cells_write(repo, files)
     _git("add", "-A", ".", cwd=repo)
-    _git("commit", "-q", "--allow-empty", "-m", message, cwd=repo)
+    _git("commit", "-q", "--allow-empty", "-m", message, cwd=repo, dates=CELLS_DATES)
     return _git("rev-parse", "HEAD", cwd=repo)
 
 
@@ -3740,7 +3748,7 @@ def _cells_project(case: CellsCase, repo: Path) -> dict[str, str]:
     _cells_commit(repo, case.head, "head")
     if case.pushed:
         _git("update-ref", "refs/remotes/origin/main", "HEAD", cwd=repo)
-    orphan = _git("commit-tree", "-m", "another history", f"{release}^{{tree}}", cwd=repo)
+    orphan = _git("commit-tree", "-m", "another history", f"{release}^{{tree}}", cwd=repo, dates=CELLS_DATES)
     return {"base": base, "main": main, "tag": f"refs/tags/{CELLS_TAG}", "unknown": "4" * 40, "orphan": orphan}
 
 
@@ -3754,8 +3762,8 @@ def _cells_exit(run: Callable[[], int], log: StringIO) -> int:
         return stopped.code if isinstance(stopped.code, int) else 1
 
 
-SHARED_SCRIPTS = ("__init__.py", "_behaviour_signature.py", "_stored_module.py")
-"""The files of scripts/ the signature and stored-module processes run or import."""
+SHARED_SCRIPTS = ("__init__.py", "_behaviour_signature.py", "_stored_module.py", "compare_release.py")
+"""The files of scripts/ the signature, stored-module and generation processes run or import."""
 
 
 def _read(value: object) -> str:
@@ -3765,93 +3773,161 @@ def _read(value: object) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest() if read else str(value)
 
 
+def _files(tree: Path) -> dict[str, str]:
+    """Return the files and directories below `tree` by their relative paths, a file with the digest of its bytes.
+
+    Bytecode caches are left out: an interpreter writes them from the sources beside them and reads them in their place.
+    """
+    return {
+        str(path.relative_to(tree)): hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else ""
+        for path in sorted(tree.rglob("*"))
+        if "__pycache__" not in path.relative_to(tree).parts
+    }
+
+
 @dataclass
 class SharedRuns:
-    """The gate's signature and stored-module processes of the stand-in's runs, each distinct one run once per process.
+    """The gate's signature, stored-module, generation and option processes of the stand-in's runs, each run once.
 
-    `signature` returns what `scripts/_behaviour_signature.py` prints and `stored_side` what `scripts/_stored_module.py`
-    writes (its draws are derandomised and use no database); each reads, in a fresh process, only the interpreter, the
-    files of scripts/ it runs, the files of `tree` (the directory holding the module, package or run it imports), its
-    other arguments (a file by its bytes) and the environment. Every oracle case signs the release's cells of `plain`
-    and `other` again, so calls of one function that agree on all of these share its result. A signature runs in
-    `tree` (`-I` on absolute paths), a stored module from the checkout whose scripts are keyed (`-E -m`), and the
-    environment differs between tests only in `PYTEST_CURRENT_TEST`, which only pytest reads. An empty result (a
-    stopped draw), a failed signature (a timeout, a crash) and a result that names the directory holding `tree` are
-    never shared. A shared stored-module result does not write its output file again: only `stored_side` reads it.
+    `signature` returns what `scripts/_behaviour_signature.py` prints, `stored_side` what `scripts/_stored_module.py`
+    writes (its draws are derandomised and use no database), `generate` what a worker of `scripts/compare_release.py`
+    generates and `option_inventory` what the generator's parser offers; each reads, in a fresh process, only the
+    interpreter, the files of scripts/ it runs, the files of `tree` (the directory holding the module, package or run
+    it imports, or the source tree it imports the generator from), its other arguments (a file by its bytes) and the
+    environment. Every oracle case signs and generates the release's cells of `plain` and `other` again, so calls of
+    one function that agree on all of these share its result, in `root`: one directory of the test session, which its
+    xdist workers share. A signature runs in `tree` (`-I` on absolute paths), a stored module from the checkout whose
+    scripts are keyed (`-E -m`), a generation in a fresh directory of its own, and the environment differs between
+    tests only in the variables of pytest and its xdist workers (`PYTEST_*`), which only they read. An empty result (a
+    stopped draw), a failed signature (a timeout, a crash), a run the gate's own cache would not keep (a stopped
+    generation: `Outcome.cacheable`), a result that names the directory holding `tree` or the session's directories
+    (a test's own paths) and a result of a function defined inside a test (a replacement that may close over the test's
+    values) are never shared. A shared stored-module result does not write its output file again: only `stored_side`
+    reads it; a shared generation writes no output directory: its callers read the outcome.
     """
 
-    results: dict[Callable[..., dict[str, object]], dict[str, str]] = field(default_factory=dict)
+    root: Path
     locks: dict[str, threading.Lock] = field(default_factory=dict)
     lock: threading.Lock = field(default_factory=threading.Lock)
 
     def run(
         self,
-        function: Callable[..., dict[str, object]],
-        call: Callable[[], dict[str, object]],
+        function: FunctionType,
+        call: Callable[[], Any],
         tree: Path,
         *inputs: object,
-    ) -> dict[str, object]:
+    ) -> Any:
         """Return what `call` (a call of `function`) returns, from the first call of `function` with these inputs."""
-        files = {
-            str(path.relative_to(tree)): hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else ""
-            for path in sorted(tree.rglob("*"))
-        }
         env = sorted(
             (name, value)
             for name, value in os.environ.items()
-            if not name.startswith("DATAMODEL_CODE_GENERATOR") and name != "PYTEST_CURRENT_TEST"
+            if not name.startswith(("DATAMODEL_CODE_GENERATOR", "PYTEST_"))
         )
         scripts = [_read(behaviour_diff.SIGNATURE_SCRIPT.with_name(name)) for name in SHARED_SCRIPTS]
-        key = hashlib.sha256(json.dumps([files, [str(value) for value in inputs], env, scripts]).encode()).hexdigest()
+        name = f"{function.__module__}.{function.__qualname__}"
+        key = hashlib.sha256(
+            json.dumps([name, _files(tree), [str(value) for value in inputs], env, scripts]).encode()
+        ).hexdigest()
+        path = self.root / f"{key}.json"
         with self.lock:
-            results = self.results.setdefault(function, {})
             lock = self.locks.setdefault(key, threading.Lock())
         with lock:
-            text = results.get(key) or json.dumps(call())
+            text = path.read_text(encoding="utf-8") if path.exists() else json.dumps(call())
             result = json.loads(text)
-            shared = bool(result) and not result.get(SIGNATURE_FAILED) and str(tree.parent) not in text
-            results.update({key: text} if shared else {})
+            shared = (
+                bool(result)
+                and not result.get(SIGNATURE_FAILED)
+                and result.get("cacheable", True)
+                and "<locals>" not in name
+                and not any(str(directory) in text for directory in (tree.parent, self.root.parent))
+            )
+            if shared and not path.exists():
+                written = path.with_suffix(f".{os.getpid()}.{threading.get_ident()}.tmp")
+                written.write_text(text, encoding="utf-8")
+                written.replace(path)
         return result
 
 
-SHARED_RUNS = SharedRuns()
+@pytest.fixture(scope="session")
+def shared_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Return the directory of the session's `SharedRuns`: beside the xdist workers' own directories, where they run."""
+    base = tmp_path_factory.getbasetemp()
+    root = (base.parent if os.environ.get("PYTEST_XDIST_WORKER") else base) / "shared-runs"
+    root.mkdir(exist_ok=True)
+    return root
 
 
 @contextmanager
-def shared_runs() -> Generator[None, None, None]:
-    """Let the gate runs inside take the signatures and stored-module draws they share from `SHARED_RUNS`.
+def shared_runs(root: Path) -> Generator[None, None, None]:
+    """Let the gate runs inside take the processes they share (`SharedRuns`) from `root`.
 
-    It wraps the functions installed when it starts, so a test that replaces one keeps its replacement.
+    It wraps the functions installed when it starts, so a test that replaces one keeps its replacement. The second run
+    of the head (`Gate.rerun`), which must show a head that generates other output each time, the runs that trace or
+    record what they run (`Runner.probes`, `Runner.lines`) and those of a side with no source tree of its own always
+    generate. Every option inventory of these runs reads a revision's tree on `PYTHONPATH` (`run_environment`), which
+    keys it.
     """
-    signature, stored = behaviour_diff.signature, behaviour_diff.stored_side
+    runs = SharedRuns(root)
+    signature, stored, inventory = behaviour_diff.signature, behaviour_diff.stored_side, behaviour_diff.option_inventory
+    build, generate = behaviour_diff.build_gate, behaviour_diff.compare_release.Runner.generate
+    reruns: list[behaviour_diff.compare_release.Runner] = []
 
     def shared_signature(
         gate: behaviour_diff.Gate, target: Path, backend: str, payloads: Path | None, *, targets: bool = False
     ) -> dict[str, object]:
         call = functools.partial(signature, gate, target, backend, payloads, targets=targets)
         given = (gate.signature_python, gate.candidate_python, gate.timeout, target.name, backend, _read(payloads))
-        return SHARED_RUNS.run(signature, call, target.parent, *given, targets)
+        return runs.run(signature, call, target.parent, *given, targets)
 
     def shared_stored(
         gate: behaviour_diff.Gate, target: Path, backend: str, values: Path | None
     ) -> behaviour_diff.StoredSide:
         call = functools.partial(stored, gate, target, backend, values)
         given = (gate.candidate_python, behaviour_diff.PAYLOAD_DRAW_TIMEOUT, target.name, backend, _read(values))
-        return SHARED_RUNS.run(stored, call, target.parent, *given)
+        return runs.run(stored, call, target.parent, *given)
+
+    def shared_inventory(python: Path, env: dict[str, str] | None = None) -> dict[str, list[str] | None]:
+        given = {**(env or {})}
+        tree = Path(given.pop("PYTHONPATH"))
+        code = behaviour_diff.OPTION_INVENTORY
+        return runs.run(inventory, lambda: inventory(python, env), tree, python, code, sorted(given.items()))
+
+    def shared_build(ns: argparse.Namespace) -> behaviour_diff.Gate:
+        gate = build(ns)
+        reruns.extend([gate.rerun] if gate.rerun is not None else [])
+        return gate
+
+    def shared_generate(
+        runner: behaviour_diff.compare_release.Runner, args: list[str], tmp: Path
+    ) -> behaviour_diff.compare_release.Outcome:
+        package = runner.side.package
+        if any(runner is rerun for rerun in reruns) or runner.probes is not None or runner.lines or package is None:
+            return generate(runner, args, tmp)
+        env = sorted((name, value.replace(str(package), "<package>")) for name, value in runner.env.items())
+        inputs = [
+            _files(path.parent) for path in behaviour_diff.compare_release._path_arguments(args) if path.is_file()
+        ]
+        side = (runner.side.name, runner.side.python, runner.import_check, runner.timeout, runner.memory_mb)
+        given = (*side, env, [*map(_read, args)], inputs)
+        outcome = runs.run(generate, lambda: vars(generate(runner, args, tmp)), package, *given)
+        return behaviour_diff.compare_release.Outcome(**outcome)
 
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(behaviour_diff, "signature", shared_signature)
         patch.setattr(behaviour_diff, "stored_side", shared_stored)
+        patch.setattr(behaviour_diff, "option_inventory", shared_inventory)
+        patch.setattr(behaviour_diff, "build_gate", shared_build)
+        patch.setattr(behaviour_diff.compare_release.Runner, "generate", shared_generate)
         yield
 
 
-def cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
+def cells_verdict(case: CellsCase, tmp_path: Path, shared: Path) -> tuple[str, str]:
     """Run the gate (and, for `records`, the records check) as CI runs it and return the verdict and the log.
 
-    The verdict is `split` where the records check and the gate disagree. The gate's signatures and stored-module
-    draws are shared with the other cases' runs (`SharedRuns`).
+    The verdict is `split` where the records check and the gate disagree. The gate's processes are shared with the
+    other cases' runs through `shared` (`SharedRuns`).
     """
-    with shared_runs():
+    with shared_runs(shared):
         return _cells_verdict(case, tmp_path)
 
 
@@ -3882,7 +3958,7 @@ def _cells_verdict(case: CellsCase, tmp_path: Path) -> tuple[str, str]:
 
 
 @needs("posix")
-def test_guide_runs_the_gate_of_the_release(tmp_path: Path) -> None:
+def test_guide_runs_the_gate_of_the_release(tmp_path: Path, shared_root: Path) -> None:
     """Without `--cells`, `guide` runs the gate of the release against the previous one and writes its page."""
     repo = tmp_path / "repo"
     _cells_project(CellsCase("pass", "release run", base=COMMENT_OTHER | OUTPUT_TEXT_OTHER), repo)
@@ -3894,7 +3970,7 @@ def test_guide_runs_the_gate_of_the_release(tmp_path: Path) -> None:
     argv = ["guide", release, "0.2.0", "--candidate", str(repo), "-j", "2"]
     argv += ["--candidate-python", sys.executable, "--cache-dir", str(tmp_path / "cache")]
     argv += ["--projects", str(projects), "--allowlist", str(allowlist)]
-    with shared_runs(), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+    with shared_runs(shared_root), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
         code = behaviour_diff.main([*argv, "--docs", str(page := tmp_path / "page.json")])
     assert_output(f"exit={code}\n{page.read_text(encoding='utf-8').replace(release, 'RELEASE')}")
 
@@ -3911,9 +3987,9 @@ def test_shipped_allowlist_accepts_nothing() -> None:
 )
 @needs("posix")
 @pytest.mark.parametrize("case", sorted(CELLS_CASES))
-def test_cells_oracle(case: str, tmp_path: Path) -> None:
+def test_cells_oracle(case: str, tmp_path: Path, shared_root: Path) -> None:
     """The gate gives each oracle case the verdict of the cell gate: a case that fails, fails on that verdict."""
-    verdict, log = cells_verdict(CELLS_CASES[case], tmp_path)
+    verdict, log = cells_verdict(CELLS_CASES[case], tmp_path, shared_root)
     assert verdict == CELLS_CASES[case].verdict, log
 
 
@@ -3944,12 +4020,12 @@ REPORT_LINES = (
         "pass: output-text with a covered stored module that has no payloads",
     ],
 )
-def test_cells_report(case: str, tmp_path: Path) -> None:
+def test_cells_report(case: str, tmp_path: Path, shared_root: Path) -> None:
     """The gate reports each violation, the records that covered cells and a block for the cells none covers.
 
     The block is a starting `[[change.cells]]` table per input, with the aspects and a `match` of the change lines.
     """
-    _, log = cells_verdict(CELLS_CASES[case], tmp_path)
+    _, log = cells_verdict(CELLS_CASES[case], tmp_path, shared_root)
     lines = [line for line in log.splitlines() if line.startswith(REPORT_LINES)]
     assert_output("\n".join(sorted(set(lines), key=lines.index)) + "\n")
 
@@ -3958,7 +4034,9 @@ def test_cells_report(case: str, tmp_path: Path) -> None:
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
 @needs("posix")
-def test_cells_stored_side_that_draws_nothing_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cells_stored_side_that_draws_nothing_fails(
+    tmp_path: Path, shared_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A stored module whose head side wrote no draws (the timeout, a crash) fails its proof; it is no empty pass."""
     draw = behaviour_diff.stored_side
 
@@ -3968,7 +4046,7 @@ def test_cells_stored_side_that_draws_nothing_fails(tmp_path: Path, monkeypatch:
         return {} if values is None and target.parent.name == "head" else draw(gate, target, backend, values)
 
     monkeypatch.setattr(behaviour_diff, "stored_side", stopped)
-    verdict, log = cells_verdict(CELLS_CASES["pass: output-text with a covered stored module"], tmp_path)
+    verdict, log = cells_verdict(CELLS_CASES["pass: output-text with a covered stored module"], tmp_path, shared_root)
     assert verdict == "fail", log
     assert "wrote no draws" in log, log
 
@@ -3977,11 +4055,13 @@ def test_cells_stored_side_that_draws_nothing_fails(tmp_path: Path, monkeypatch:
     "an oracle case fails on its own verdict, never through a stored output a fix run accepts"
 )
 @needs("posix")
-def test_cells_selector_over_the_cell_limit_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cells_selector_over_the_cell_limit_is_refused(
+    tmp_path: Path, shared_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A selector that names more cells than the limit stops the gate with a message that names the record."""
     case = CELLS_CASES["pass: options * covers the preset cells"]
     monkeypatch.setattr(behaviour_diff, "SELECTOR_CELL_LIMIT", 10)
-    verdict, log = cells_verdict(case, tmp_path)
+    verdict, log = cells_verdict(case, tmp_path, shared_root)
     assert verdict == "fail", log
     assert "entry preset-note: cells 1 names" in log, log
     assert "narrow its input, backends or options" in log, log
