@@ -1,0 +1,10 @@
+[[change]]
+id = "release-draft-generated-data"
+category = "harness"
+title = "Summarise the shard weights and the heki baseline in the release draft diff"
+summary = "When the copy of a merged diff is over the reading budget, the release draft preparation also summarises the CI shard weights and the heki baseline, so the stored copies of its tests list them; the package writes the same output."
+refs = ["#7540"]
+covers = [
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[generated_documents].txt",
+    "prepare_release_draft_artifacts_script/prepare_release_draft_artifacts[over_budget].txt",
+]
