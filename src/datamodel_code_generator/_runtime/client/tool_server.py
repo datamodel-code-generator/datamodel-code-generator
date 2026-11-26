@@ -21,7 +21,7 @@ import argparse
 import asyncio
 from dataclasses import dataclass
 from functools import cache
-from typing import TYPE_CHECKING, Final, TypeVar, cast
+from typing import TYPE_CHECKING, Final, TypeVar
 
 from mcp import MCPError
 from mcp.server import Server
@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 
     from mcp.server import ServerRequestContext
     from mcp.types import CallToolRequestParams, PaginatedRequestParams
+    from typing_extensions import TypeIs
 
     from ..model_codecs.media import JSONValue
     from .tools import AsyncToolTable, ToolPlan
@@ -76,8 +77,20 @@ class _MetaArgument:
     required: bool = False
 
 
-def _text(value: object) -> bool:
+def _text(value: object) -> TypeIs[str]:
     return isinstance(value, str)
+
+
+def _text_or_none(value: object) -> TypeIs[str | None]:
+    return isinstance(value, (str, type(None)))
+
+
+def _limit(value: object) -> TypeIs[int]:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 1
+
+
+def _json_object(value: object) -> TypeIs[dict[str, object]]:
+    return isinstance(value, dict)
 
 
 _NAME_ARGUMENT: Final = _MetaArgument(
@@ -96,14 +109,14 @@ _META_ARGUMENTS: Final[dict[str, tuple[_MetaArgument, ...]]] = {
         _MetaArgument(
             "tag",
             {"anyOf": [{"type": "string"}, {"type": "null"}], "default": None},
-            lambda value: value is None or isinstance(value, str),
+            _text_or_none,
             "string_type",
             "Input should be a valid string or null",
         ),
         _MetaArgument(
             "limit",
             {"type": "integer", "minimum": 1, "default": 10},
-            lambda value: type(value) is int and value >= 1,
+            _limit,
             "int_type",
             "Input should be an integer of at least 1",
             default=10,
@@ -115,7 +128,7 @@ _META_ARGUMENTS: Final[dict[str, tuple[_MetaArgument, ...]]] = {
         _MetaArgument(
             "arguments",
             {"type": "object", "default": {}},
-            lambda value: isinstance(value, dict),
+            _json_object,
             "dict_type",
             "Input should be a valid object",
             default={},
@@ -313,17 +326,18 @@ async def _meta_called(table: AsyncToolTable[TableClientT], name: str, given: Ma
             values[argument.name] = value
         else:
             problems.append(problem(argument.name, argument.message, argument.kind))
-    if problems:
-        return ToolOutcome(refused(problems), error=True)
+    refusal = ToolOutcome(refused(problems), error=True)
     if name == _SEARCH:
-        found = table.search(
-            cast("str", values["query"]), tag=cast("str | None", values["tag"]), limit=cast("int", values["limit"])
-        )
-        return ToolOutcome([*found])
-    tool = cast("str", values["name"])
+        query, tag, limit = values.get("query"), values.get("tag"), values.get("limit")
+        if problems or not (_text(query) and _text_or_none(tag) and _limit(limit)):
+            return refusal
+        return ToolOutcome([*table.search(query, tag=tag, limit=limit)])
+    tool, given_arguments = values.get("name"), values.get("arguments")
     try:
         if name == _SCHEMA:
-            return ToolOutcome(table.schema(tool))
-        return await table.outcome(tool, cast("Mapping[str, object]", values["arguments"]))
+            return refusal if problems or not _text(tool) else ToolOutcome(table.schema(tool))
+        if problems or not (_text(tool) and _json_object(given_arguments)):
+            return refusal
+        return await table.outcome(tool, given_arguments)
     except UnknownToolError:
-        return ToolOutcome(unknown_tool(tool), error=True)
+        return ToolOutcome(unknown_tool(str(tool)), error=True)
