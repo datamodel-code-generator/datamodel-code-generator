@@ -486,6 +486,9 @@ def test_the_import_boundaries_raise_where_the_layer_table_is_out_of_step(
     ):
         build_heki_contracts.import_boundary_contracts(repo)
     build_heki_contracts.import_boundary_contracts(repo, partial=True)
+    with pytest.raises(ValueError, match=r"^architecture contracts without a module of the package to judge: "):
+        build_heki_contracts.architecture_contracts(repo)
+    build_heki_contracts.architecture_contracts(repo, partial=True)
     monkeypatch.setitem(build_heki_contracts._LEAF_IMPORTS, "no-such-layer", ((), "why"))
     with pytest.raises(ValueError, match=r"classify: no-such-layer$"):
         build_heki_contracts.import_boundary_contracts(repo, partial=True)
