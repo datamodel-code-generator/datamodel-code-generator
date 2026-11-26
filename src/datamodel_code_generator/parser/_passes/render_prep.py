@@ -795,12 +795,10 @@ def fix_tag_opt_out_field_ordering(
         }
         if get_constructor_conflicts(
             model,
-            ancestors,
             effective_fields,
             set(),
             assignment_facts_of(model),
-            stand_ins={},
-            places="legacy-struct-conflicts-at-collected-places",
+            placed_bases=(ancestors, {}),
         ).own:
             model.enable_model_keyword_only()
 

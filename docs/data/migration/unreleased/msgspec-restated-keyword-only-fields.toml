@@ -3,7 +3,7 @@ id = "msgspec-restated-keyword-only-fields"
 category = "crash-fix"
 title = "A msgspec struct that declares again a field its keyword-only parent declares again imports"
 summary = "A msgspec struct whose parent is written kw_only=True and declares again a required field of its own base, and which declares that field again itself, is now written kw_only=True too. msgspec puts the parent's keyword-only fields last, so the field followed the defaults the struct inherits, and the module failed at import with TypeError: Required field cannot follow optional fields."
-refs = ["#1"]
+refs = ["#7550", "#7478"]
 kind = "default-output"
 action = "none"
 source = "release-note"

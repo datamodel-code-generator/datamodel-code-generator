@@ -1002,24 +1002,24 @@ ConstructorPlaces: TypeAlias = Literal["collected", "legacy-struct-conflicts-at-
 
 def get_constructor_conflicts(
     model: DataModel,
-    ancestors: Sequence[DataModel],
     effective_fields: Mapping[str, tuple[DataModelFieldBase, DataModel, bool | None]],
     required_assignment_names: set[str],
     facts_of: Callable[[DataModelFieldBase], AssignmentFacts],
     *,
-    stand_ins: Mapping[int, Reference | None],
-    places: ConstructorPlaces = "collected",
+    placed_bases: tuple[Sequence[DataModel], Mapping[int, Reference | None]] | None = None,
 ) -> ConstructorConflicts:
-    """Return the constructor ordering conflicts of ``model`` at the places ``places`` names.
+    """Return the constructor ordering conflicts of ``model``, also at the places of its class with ``placed_bases``.
 
-    ``effective_fields`` are its fields at the collected places (`get_constructor_ordering_conflicts`), ``ancestors``
-    and ``stand_ins`` its bases as ``effective_fields`` reads them. At the places of its class a field conflicts only
-    after a default the class body writes, as msgspec rejects the class there; the conflicts of both readings count,
-    the collected ones first.
+    ``effective_fields`` are its fields at the collected places (`get_constructor_ordering_conflicts`).
+    ``placed_bases`` (the row ``legacy-struct-conflicts-at-collected-places``, `ConstructorPlaces`) are its ancestors
+    and their stand-ins as ``effective_fields`` reads them. At the places of its class a field conflicts only after a
+    default the class body writes, as msgspec rejects the class there; the conflicts of both readings count, the
+    collected ones first.
     """
     collected = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names, facts_of)
-    if places != "legacy-struct-conflicts-at-collected-places" or not model.REQUIRES_MODEL_LEVEL_KW_ONLY:
+    if placed_bases is None or not model.REQUIRES_MODEL_LEVEL_KW_ONLY:
         return collected
+    ancestors, stand_ins = placed_bases
     placed = get_constructor_ordering_conflicts(
         model,
         {
@@ -2363,12 +2363,10 @@ def get_inherited_constructor_info(
     }
     conflicts = get_constructor_conflicts(
         model,
-        inherited_models,
         effective_fields,
         required_assignment_names,
         facts_of,
-        stand_ins=stand_ins,
-        places=places,
+        placed_bases=(inherited_models, stand_ins) if places == "legacy-struct-conflicts-at-collected-places" else None,
     )
     return _InheritedConstructorInfo(
         frozenset(required_assignment_names),
