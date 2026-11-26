@@ -1332,6 +1332,11 @@ KNOWN_FINDINGS: Final = (
     ),
     *(KnownFinding(f"pass:override_required_field:{row}", _FRESH_COPY) for row in _COPIED_ROWS),
     KnownFinding("pass:apply_discriminator_type:DataModelFieldBase._alias_resolution_class_name", _FRESH_FIELD),
+    KnownFinding(
+        "pass:restore_inherited_field_names_for_unique_aliases:DataModel.fields",
+        "a heki that judges the names a helper handed model.fields writes on its entries (rename_field) as writes of "
+        "the fields, as it judges the same writes in a loop over model.fields",
+    ),
 )
 """The findings of the pass boundaries that the baseline keeps; the baseline holds exactly these.
 
@@ -1339,7 +1344,9 @@ Constructor ordering, after B1, gives a required field back the ``init`` entry (
 dataclass field plan will hold it. The import passes write the backend config of the template data and the order of
 the nested default factories after B2, where those facts are final. ``override_required_field`` writes the copy of an
 inherited field, which heki cannot tell from the field it copies, and ``apply_discriminator_type`` the tag field it
-builds, which heki cannot tell from a field of the input.
+builds, which heki cannot tell from a field of the input. heki 0.9 counts the renames that
+``restore_inherited_field_names_for_unique_aliases`` makes through a helper it hands ``model.fields`` as a write of
+the field list.
 """
 
 
