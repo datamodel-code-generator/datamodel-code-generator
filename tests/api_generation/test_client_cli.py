@@ -1664,7 +1664,8 @@ credentials stay in the client. `read_only=True` leaves out the tools of methods
 operation whose arguments or success results are no JSON value, such as a binary upload or an event stream, keeps its
 method and has no tool; generation warns why. Under `--untrusted-input` a tool's description leaves out the operation's
 summary and description, and `schema(name)` leaves out the `description`, `title`, and `examples` of every JSON
-schema, while the models keep theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the option.
+schema, while the models keep theirs; a search or the catalog lists no tags. The models must be Pydantic v2 ones, and
+AsyncAPI input refuses the option.
 
 `--client-tools mcp` also adds `mcp_server.py`, which serves the same tools of the asyncio client over MCP through
 the low-level server of the `mcp` SDK, whose release the printed requirements name. `server(client)` returns the

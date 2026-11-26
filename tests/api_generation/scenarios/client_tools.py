@@ -291,7 +291,8 @@ def tool_strict(package: ModuleType, lines: list[str]) -> None:
 def tool_untrusted(package: ModuleType, lines: list[str]) -> None:
     """Read the schemas of a table generated from untrusted input: no schema has a description, title, or examples.
 
-    The property named `description` stays, and the models keep their descriptions, titles and examples.
+    The property named `description` stays, and the models keep their descriptions, titles and examples. No search or
+    catalog entry shows the operation's tags, though the `tag` filter still finds the tools that carry one.
     """
     module = import_generated(f"{package.__name__}.tools", copied=True)
     with package.Client(api_key="secret-key") as api:
@@ -299,6 +300,11 @@ def tool_untrusted(package: ModuleType, lines: list[str]) -> None:
         lines.extend(
             f"  schema {name} = {_shown(table.schema(name))}" for name in ("pets_create_pet", "owners_get_owner")
         )
+        lines.extend((
+            f"  search entry = {_shown(table.search('owner')[0])}",
+            f"  search by tag = {[entry['name'] for entry in table.search(tag='owners')]}",
+            f"  catalog entry = {_shown(table.catalog()[-1])}",
+        ))
     models = import_generated(f"{package.__name__}_models", copied=True)
     owner = models.Owner.model_json_schema()["properties"]["description"]
     lines.extend((

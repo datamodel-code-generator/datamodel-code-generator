@@ -226,7 +226,7 @@ def _meta_tools(table: AsyncToolTable[TableClientT]) -> dict[str, tuple[Tool, bo
         _SCHEMA: (True, True),
         _CALL: (all(plan.safe for plan in available), all(plan.idempotent for plan in available)),
     }
-    descriptions = {**_META_DESCRIPTIONS, _SEARCH: _SEARCH_DESCRIPTION.format(shown="tags, ")}
+    descriptions = {**_META_DESCRIPTIONS, _SEARCH: _SEARCH_DESCRIPTION.format(shown="tags, " if table.prose else "")}
     tools: dict[str, tuple[Tool, bool]] = {}
     for name, arguments in _META_ARGUMENTS.items():
         schema = table.arguments_schema(arguments)

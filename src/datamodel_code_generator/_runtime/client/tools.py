@@ -397,7 +397,7 @@ class _Table(Generic[ClientT]):
             if found := (score(asked, texts) if asked else 1):
                 ranked.append((-found, index, plan))
         ranked.sort(key=itemgetter(0, 1))
-        return [_entry(plan, tags=True) for _, _, plan in ranked[:limit]]
+        return [_entry(plan, tags=self.prose) for _, _, plan in ranked[:limit]]
 
     def catalog(self) -> list[dict[str, JSONValue]]:
         """Return every tool the table holds, in table order, as a search lists it, with what its HTTP method promises.
@@ -406,7 +406,7 @@ class _Table(Generic[ClientT]):
         idempotent; a table without `prose` leaves the tags out.
         """
         return [
-            {**_entry(plan, tags=True), "safe": plan.safe, "idempotent": plan.idempotent}
+            {**_entry(plan, tags=self.prose), "safe": plan.safe, "idempotent": plan.idempotent}
             for plan in self._tools.values()
         ]
 

@@ -1447,8 +1447,10 @@ A tool's description is its method's docstring: the `description` of `--client-o
 document's summaries and descriptions reach no agent: a tool's description is the `description` of
 `--client-operations`, else its route, generation warns once, and `schema()` leaves out the `description`, `title`,
 and `examples` of every JSON schema, while the models keep their `Field(description=..., title=..., examples=...)` and
-docstrings. The tags and routes, the other keywords of the schemas (property and definition names, enum values,
-defaults, and patterns), and the `operation_id` of an error value still come from the document. The tools need Pydantic v2 models
+docstrings. The tags reach no agent either: the entries of `search`, `search_tools`, and `catalog()` leave them out,
+though a search still ranks by them and its `tag` filter still takes them. The routes, the other keywords of the
+schemas (property and definition names, enum values, defaults, and patterns), and the `operation_id` of an error value
+still come from the document. The tools need Pydantic v2 models
 (`--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`), whose library gives the schemas, and the
 option refuses AsyncAPI input.
 

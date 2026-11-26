@@ -2,7 +2,7 @@
 id = "client-tools-codemode"
 category = "experimental"
 title = "Result budgets, meta tools, a catalog and tool: false for --client-tools"
-summary = "The tool table gains catalog() and an opt-in max_result_bytes budget, the MCP server an opt-in meta-tool mode (search_tools, get_tool_schema, call_tool) and --max-result-bytes and --meta-tools, and --client-operations a tool member that leaves an operation out of the tools; calls without the new arguments behave as before."
+summary = "The tool table gains catalog() and an opt-in max_result_bytes budget, the MCP server an opt-in meta-tool mode (search_tools, get_tool_schema, call_tool) and --max-result-bytes and --meta-tools, and --client-operations a tool member that leaves an operation out of the tools; calls without the new arguments behave as before. Under --untrusted-input the entries of search, search_tools and catalog() no longer list the tags of the document, which changes the output of search from the first release of the tools; a search still ranks and filters by them, and nothing changes without that option."
 refs = ["#1"]
 decision = ["#1"]
 kind = "experimental"
@@ -20,9 +20,16 @@ covers = [
     "api_generation/client_runtime/client_runtime[tools-mcp-untrusted].txt",
     "api_generation/client_runtime/client_runtime[tools-mcp].txt",
     "api_generation/client_runtime/client_runtime[tools-not-tools].txt",
+    "api_generation/client_runtime/client_runtime[tools-untrusted].txt",
     "api_generation/client_runtime/client_runtime[tools].txt",
+    "api_generation/client_typing/package[tools-mcp].txt",
+    "api_generation/client_typing/package[tools].txt",
+    "api_generation/fastapi_cli/information.stdout.txt",
     "api_generation/fastapi_server/docs_client_howto.code_mode.txt",
     "api_generation/fastapi_server/generated_client[tools].txt",
     "build_docs_examples_script/docs_examples_registry.txt",
+    "main/main_general/list_experimental.stdout.txt",
+    "main/main_general/list_experimental_json.stdout.txt",
+    "main_kr/output_format_json_list_experimental.stdout.txt",
     "model/compiled_templates/target_templates_match_jinja_oracle[client].rendered.txt",
 ]
