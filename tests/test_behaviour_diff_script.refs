@@ -320,6 +320,10 @@ entries_sharing_a_cell	behaviour_diff_script/place[entries_sharing_a_cell].txt
 entry_of_one_backend	behaviour_diff_script/place[entry_of_one_backend].txt
 entry_of_two_inputs	behaviour_diff_script/place[entry_of_two_inputs].txt
 no_entries	behaviour_diff_script/place[no_entries].txt
+[test_pr_tier_signs_no_family_cell_it_reports_only]
+the PR tier signs it once the key judges the family cells	behaviour_diff_script/pr_tier_signs_no_family_cell_it_reports_only[the PR tier signs it once the key judges the family cells].txt
+the PR tier signs no family cell it reports only	behaviour_diff_script/pr_tier_signs_no_family_cell_it_reports_only[the PR tier signs no family cell it reports only].txt
+the nightly tier signs it	behaviour_diff_script/pr_tier_signs_no_family_cell_it_reports_only[the nightly tier signs it].txt
 [test_preset_option_sets]
 	behaviour_diff_script/preset_option_sets.txt
 [test_project_cell_problems_are_violations]

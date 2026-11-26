@@ -2216,6 +2216,41 @@ def test_identity_reports_family_cells_until_the_key_judges_them(case: str, tmp_
     assert_output("\n".join(lines).replace(str(tmp_path), "TMP").replace(commits[0][:9], "<sha>") + "\n")
 
 
+UNSIGNED_FAMILY_CASES = {
+    "the PR tier signs no family cell it reports only": ("pr", "report"),
+    "the nightly tier signs it": ("nightly", "report"),
+    "the PR tier signs it once the key judges the family cells": ("pr", "fail"),
+}
+"""The tier of each gate run of a candidate that changes a family cell, and the `families` key of its allowlist file."""
+
+
+@needs("posix")
+@needs("sys-monitoring")
+@pytest.mark.parametrize("case", sorted(UNSIGNED_FAMILY_CASES))
+def test_pr_tier_signs_no_family_cell_it_reports_only(case: str, tmp_path: Path) -> None:
+    """The PR tier reports a family cell whose sides both generated other bytes as `differs-unsigned`.
+
+    The candidate adds a comment to the output of the family cell that has a `bytes` field, so its signature is
+    `no-behaviour` where it is signed. The nightly tier signs that cell and prints its class. With `families = "fail"`
+    the cell is in the verdict, and the PR tier signs it and judges it like any other cell.
+    """
+    tier, mode = UNSIGNED_FAMILY_CASES[case]
+    repo = tmp_path / "repo"
+    commits = _fake_generator(repo, ["first"], "0.1.0")
+    (repo / "src" / "datamodel_code_generator" / "__main__.py").write_text(FAKE_RAW, encoding="utf-8")
+    _family_library(repo, FAKE_FAMILY_DOCUMENTS)
+    projects = tmp_path / "projects.json"
+    projects.write_text('{"projects": []}', encoding="utf-8")
+    allowlist = tmp_path / "allowlist.toml"
+    allowlist.write_text(f'base = "0.1.0"\nfamilies = "{mode}"\n', encoding="utf-8")
+    argv = ["gate", commits[0], str(repo), "--types", "pydantic_v2.BaseModel", "--candidate-python", sys.executable]
+    argv += ["--cache-dir", str(tmp_path / "cache"), "--allowlist", str(allowlist), "--tier", tier, "-j", "1"]
+    argv += ["--projects", str(projects), "--select", "tests/data/jsonschema/plain.json", "--select", "family:*"]
+    prefixes = ("family", "families", "violation:", "summary:")
+    lines = _family_lines([*argv, "--json", str(tmp_path / "cells.jsonl")], tmp_path / "cells.jsonl", prefixes)
+    assert_output("\n".join(lines).replace(str(tmp_path), "TMP").replace(commits[0][:9], "<sha>") + "\n")
+
+
 PICK_FAMILY_CASES = {
     "a judged family cell runs the change": ("fail", FAKE_FAMILY_DOCUMENTS, "complete"),
     "a family cell the run reports only adds no evidence": ("report", FAKE_FAMILY_DOCUMENTS, "incomplete"),

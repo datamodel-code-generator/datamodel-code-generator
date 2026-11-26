@@ -1,0 +1,5 @@
+exit=0
+family (report only) differs-unsigned: family:fake/kind=raw | pydantic_v2.BaseModel | default
+families (report only, the allowlist file's families key): 9 cells, same=2, opt-in=6, differs-unsigned=1
+summary: same=1, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0, base-skipped=0
+cell: tests/data/jsonschema/plain.json | jsonschema | same

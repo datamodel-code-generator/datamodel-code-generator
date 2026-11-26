@@ -1,0 +1,8 @@
+exit=0
+family (report only) no-behaviour: family:fake/kind=raw | pydantic_v2.BaseModel | default
+families (report only, the allowlist file's families key): 18 cells, same=2, no-behaviour=1, opt-in=15
+summary: same=1, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=3, base-skipped=0
+cell: tests/data/jsonschema/plain.json | jsonschema | opt-in
+cell: tests/data/jsonschema/plain.json | jsonschema | opt-in
+cell: tests/data/jsonschema/plain.json | jsonschema | opt-in
+cell: tests/data/jsonschema/plain.json | jsonschema | same

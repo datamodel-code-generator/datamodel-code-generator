@@ -52,7 +52,9 @@ and `--json`; `fail` judges them as every other cell. `guide` runs none.
 
 Cells whose bytes differ get a behaviour signature per side (scripts/_behaviour_signature.py, a fresh process per
 tree; each module of a package is also imported first in a process of its own) with a validation probe per name
-and, for payload cases, payload verdicts; scripts/_behaviour_classify.py puts each cell into one class. A cell
+and, for payload cases, payload verdicts; scripts/_behaviour_classify.py puts each cell into one class. The PR tier
+signs no family cell it reports only whose sides both generated other bytes: it reports that cell as
+`differs-unsigned` (`UNSIGNED_CLASS`); the nightly and release tiers sign and class every family cell. A cell
 that uses an option, value or input type BASE does not have is `opt-in` and is not generated.
 
 Without `--identity` the change records judge every cell whose facts (`compare_release.cell_facts`) differ. A PR run
@@ -312,6 +314,12 @@ TARGET_OPTIONS = ("--generate-client", "--generate-server")
 FAMILIES_KEY = "families"
 FAMILY_MODES = ("report", "fail")
 """The values of the allowlist file's `families` key: report the family cells only (the default), or judge them."""
+UNSIGNED_CLASS = "differs-unsigned"
+"""The class the PR tier reports a family cell under that it reports only and whose sides both generated other bytes.
+
+The PR tier signs no such cell: a target cell signs every module of its packages in a process of its own (about 5 s a
+cell on a runner), and the class would change nothing. The nightly tier signs and classes every family cell.
+"""
 VERDICTS_OPTION = "--verdicts"
 PICK_OPTION = "--pick"
 HEAD_ONLY_OPTIONS = (VERDICTS_OPTION, PICK_OPTION)
@@ -543,6 +551,7 @@ class Gate:
     candidate_info: Candidate
     family_root: Path = Path()
     families_judged: bool = False
+    tier: str = ""
     family_index: list[FamilyCase] | None = None
     family_problem: str = ""
     base_version: str = ""
@@ -1107,7 +1116,8 @@ def judge_outcomes(
 
     It adds the cell to the evidence, then gives the identity verdict, or the classification and, where the sides'
     facts differ, the verdict of the change records (`judge_cell`). A family cell the run reports only (`in_verdict`)
-    adds nothing to the evidence, and no change record judges it.
+    adds nothing to the evidence, and no change record judges it; the PR tier does not sign it where both sides
+    generated other bytes (`UNSIGNED_CLASS`).
     """
     base, candidate = outcomes
     if in_verdict(gate, cell):
@@ -1116,6 +1126,8 @@ def judge_outcomes(
     if gate.identity:
         return Result(cell, identity_verdict(base, candidate))
     same = base.ok and candidate.ok and base.tree == candidate.tree
+    if gate.tier == "pr" and base.ok and candidate.ok and not same and not in_verdict(gate, cell):
+        return Result(cell, Verdict(UNSIGNED_CLASS))
     sides = [Side(base.ok, base.error), Side(candidate.ok, candidate.error)]
     valid: frozenset[str] = frozenset()
     if base.ok and not same:
@@ -2321,7 +2333,7 @@ def report_families(results: list[Result]) -> None:
             print(f"family (report only) {verdict.cls}: {cell.label} | {cell.backend} | {cell.option_label}")
             print("".join(f"    {note[:240]}\n" for note in verdict.notes[:6]), end="")
     counts = Counter(result.verdict.cls for result in results)
-    classes = ", ".join(f"{name}={counts[name]}" for name in CLASSES if counts[name])
+    classes = ", ".join(f"{name}={counts[name]}" for name in (*CLASSES, UNSIGNED_CLASS) if counts[name])
     print(f"families (report only, the allowlist file's {FAMILIES_KEY} key): {len(results)} cells, {classes}")
 
 
@@ -2462,6 +2474,7 @@ def build_gate(ns: argparse.Namespace) -> Gate:
         candidate_info=candidate,
         family_root=cache_dir / "family-inputs" / _stable(str(candidate.root))[:12],
         families_judged=families_judged(ns.allowlist),
+        tier=ns.tier,
         base_version=ns.base,
         identity=ns.identity,
         evidence=compare_release.Evidence(units),
