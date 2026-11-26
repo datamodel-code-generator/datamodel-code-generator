@@ -21,4 +21,6 @@ covers = [
     "check_ratchets_script/check_ratchets_against_base[other-kinds].txt",
     "check_ratchets_script/check_ratchets_counts_one_tree.json.txt",
     "check_ratchets_script/check_ratchets_counts_one_tree.table.txt",
+    "source_model/a_form_names_only_the_layers_the_guard_has.txt",
+    "source_model/every_rule_states_its_verdicts[architecture-boundaries].txt",
 ]
