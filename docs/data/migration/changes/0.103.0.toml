@@ -1,0 +1,69 @@
+# The changes of 0.103.0, moved from docs/data/migration/unreleased/ when the release was stamped.
+
+[[change]]
+id = "bug-7532-inherited-placeholder-module-order-api"
+category = "api"
+title = "A model method that says whether a subclass keeps the types of inherited fields"
+summary = "DataModel.keeps_inherited_field_types() returns whether a subclass declares an inherited field as its bases declare it, as a TypedDict does; the parser reads it to decide how a subclass written before its parent takes a property the parent requires. Nothing is removed or changed."
+refs = ["#7535"]
+decision = ["#7535"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "bug-7532-inherited-placeholder-module-order"
+category = "default-fix"
+kind = "default-output"
+action = "review"
+source = "release-note"
+title = "A subclass listed before its parent, in a module written first, types a property the parent requires"
+summary = "Where a schema extends a parent through allOf and restates or requires a property that the parent requires and takes from its own base, and the subclass is listed before the parent in a module processed first (a deeper package such as com.example.pets.Child over com.example.Mid, or a module name that sorts later), Pydantic, dataclass and msgspec output now type the property as the parent's base declares it (x: int), as when the parent is listed first. Since 0.72.0 it was typed None, so the model rejected every valid value and accepted null. The copy also carries what the parent's base declares beside the type: a type override of the restated property keeps the inherited examples and constraints (a Pydantic Field takes examples=[4] and, under --field-constraints, ge=1, so it rejects values below the bound, as the schema does), and a subclass that now equals another one reuses it under --reuse-model and is collapsed into it under --collapse-reuse-models. TypedDict output is unchanged."
+refs = ["#7535", "#7532"]
+decision = ["#7532"]
+
+[[change]]
+id = "client-tools-functions-api"
+category = "api"
+title = "Public names for --client-tools"
+summary = "The option adds the ClientTools enum, its config field and the client_tools option of generate(); nothing is removed or changed."
+refs = ["#7517"]
+decision = ["#7517"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.ClientTools", "datamodel_code_generator.config.GenerateConfig"] }
+source = "release-note"
+
+[[change]]
+id = "client-tools-functions-runtime"
+category = "experimental"
+title = "The copied client runtime notes the credentials a call places"
+summary = "positions.py of every generated client package gains placed_credentials() and note_placed(), which the auth runtime calls for each credential it places on a request, so the tools of --client-tools can leave them out of error values. Requests, responses and errors of a client are unchanged."
+kind = "experimental"
+action = "none"
+source = "release-note"
+refs = ["#7517"]
+affects = { experimental = ["cli-option.generate-client"] }
+
+[[change]]
+id = "heki-040-alias-scope-api"
+category = "api"
+title = "A store operation that records the class scope of a field's aliases"
+summary = "GraphBuilder.record_alias_resolution_scope() (and GenerationStore.record_alias_resolution_scope()) records the class scope under which --aliases names a field, which the parser wrote into the field directly before; nothing is removed or changed."
+refs = ["#7515"]
+decision = ["#7515"]
+kind = "python-api"
+action = "review"
+source = "release-note"
+
+[[change]]
+id = "keep-bases-of-typed-dicts-listed-before-their-parents-api"
+category = "api"
+title = "Public names for --keep-bases-of-typed-dicts-listed-before-their-parents and the 20261125 presets"
+summary = "The option adds its config field and the 20261125 presets add their names; nothing is removed or changed."
+refs = ["#7538"]
+decision = ["#7538"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig", "datamodel_code_generator.preset.PresetName"] }
+source = "release-note"

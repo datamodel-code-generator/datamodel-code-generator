@@ -1,9 +1,0 @@
-[[change]]
-id = "bug-7532-inherited-placeholder-module-order-input-count"
-category = "docs-text"
-title = "The payload test lists the inputs of the inherited placeholder module order tests"
-summary = "Four OpenAPI inputs were added for the tests of subclasses listed before their parents, so the count of discovered schema files moves."
-refs = ["#7535"]
-covers = [
-    "main/payload_validation/cases_cover_discovered_schema_files.txt",
-]

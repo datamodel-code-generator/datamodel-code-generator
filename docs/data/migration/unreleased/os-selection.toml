@@ -1,8 +1,0 @@
-[[change]]
-id = "os-selection"
-extends = "main-nocov-312-313"
-refs = ["#7537"]
-covers = [
-    "ci_workflow/gate_rejects_every_unsuccessful_group.txt",
-    "ci_workflow/workflow_matrix_and_coverage_contract.txt",
-]

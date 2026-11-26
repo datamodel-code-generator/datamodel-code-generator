@@ -18,13 +18,16 @@
 "20261120" = "0.100.0"
 "20261123" = "0.101.0"
 "20261124" = "0.102.0"
+"20261125" = "0.103.0"
 
 [options]
 "--apply-default-values-to-true-properties" = "0.102.0"
+"--client-tools" = "0.103.0"
 "--distribute-allof-over-object-branches" = "0.102.0"
 "--infer-union-discriminators" = "0.97.0"
 "--intersect-merged-allof-members" = "0.101.0"
 "--keep-bases-beside-generic-base-class" = "0.101.0"
+"--keep-bases-of-typed-dicts-listed-before-their-parents" = "0.103.0"
 "--keep-null-of-nullable-items" = "0.101.0"
 "--keep-string-keywords-beside-formats" = "0.101.0"
 "--merge-msgspec-str-like-union-members" = "0.100.0"
