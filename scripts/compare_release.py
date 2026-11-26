@@ -69,6 +69,7 @@ import warnings
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -96,7 +97,7 @@ PROCESS_STATE_OPTIONS = frozenset({"--debug"})
 worker of such a run is closed after it, as after running out of memory, so later runs do not inherit it."""
 RECYCLE = 200
 """Jobs a worker runs before a new one takes its place, which bounds the memory and the state a worker gathers."""
-CACHE_FORMAT = 7
+CACHE_FORMAT = 8
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = "datamodel_code_generator"
 RELEASE = re.compile(r"\d+(?:\.\d+)+")
@@ -1720,6 +1721,20 @@ def _content_hash(path: Path) -> str | None:
     return digest.hexdigest()
 
 
+@functools.cache
+def _listing_order(path: Path) -> list[str]:
+    """Return the files of a directory input in the order a generation reads them, empty for a file.
+
+    The generator sorts the files by name and leaves files of one name in the order the file system lists them
+    (`datamodel_code_generator._paths.input_files_under`, a sorted `Path.rglob` before), and the names a run gives
+    colliding models follow that order.
+    """
+    if not path.is_dir():
+        return []
+    walk = sorted(path.rglob("*"), key=attrgetter("name"))
+    return [file.relative_to(path).as_posix() for file in walk if file.is_file()]
+
+
 LOCAL_REFERENCE = re.compile(r"""\$ref["']?\s*:\s*["']?([^"'#\s,}]+)""")
 
 
@@ -1755,7 +1770,9 @@ class OutputCache:
 
     The key covers every file under the input's directory, the local files the input references through `$ref`
     (transitively, also outside that directory), and every file or directory named by an absolute path argument,
-    such as `--aliases` or `--custom-template-dir`. Runs whose files cannot all be read are not cached.
+    such as `--aliases` or `--custom-template-dir`. The key also holds the order in which a directory input's files
+    are listed (`_listing_order`): the generator names colliding models in that order, which differs between file
+    systems. Runs whose files cannot all be read are not cached.
     """
 
     def __init__(self, root: Path | None, measured: str = "") -> None:
@@ -1776,7 +1793,7 @@ class OutputCache:
         files = [(str(path), _content_hash(path)) for path in paths]
         if any(digest is None for _, digest in files):
             return None
-        key = json.dumps([CACHE_FORMAT, str(schema), files, args, import_check, self.measured])
+        key = json.dumps([CACHE_FORMAT, str(schema), files, _listing_order(schema), args, import_check, self.measured])
         return self.root / f"{hashlib.sha256(key.encode()).hexdigest()}.json"
 
     def get(self, schema: Path, args: list[str], *, import_check: bool) -> Outcome | None:
@@ -2167,6 +2184,7 @@ def main(argv: list[str] | None = None) -> int:
     ns = _parse_args(argv)
     _content_hash.cache_clear()
     _referenced_files.cache_clear()
+    _listing_order.cache_clear()
     candidate_python = ns.candidate_python.absolute()
     resolved = (
         installed_base(ns.base_python.absolute())

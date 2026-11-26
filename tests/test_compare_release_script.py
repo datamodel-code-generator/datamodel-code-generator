@@ -2214,3 +2214,40 @@ def test_file_maps_refuse_a_revision_the_checkout_lacks(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as refused:
         file_maps(tmp_path, "0" * 40, None)
     assert_output(f"{str(refused.value)[:20]}\n")
+
+
+def test_compare_release_keys_base_outputs_by_listing_order(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A directory input listed in another order does not reuse a cached base output; the same order does."""
+    schemas = tmp_path / "inputs" / "schemas"
+    for name in ("first", "second"):
+        (schemas / name).mkdir(parents=True)
+        (schemas / name / "root.json").write_text(
+            '{"type": "object", "properties": {"id": {"type": "integer"}}}', encoding="utf-8"
+        )
+    walk = Path.rglob
+    reverse = False
+
+    def listed(self: Path, pattern: str, **kwargs: bool) -> list[Path]:
+        found = list(walk(self, pattern, **kwargs))
+        return found[::-1] if reverse else found
+
+    monkeypatch.setattr(Path, "rglob", listed)
+    outputs = []
+    for reverse in (False, False, True, True):
+        stdout = StringIO()
+        with redirect_stdout(stdout), redirect_stderr(StringIO()):
+            code = compare_release.main([
+                "--base-python",
+                sys.executable,
+                "--candidate-python",
+                sys.executable,
+                "--cache-dir",
+                str(tmp_path / "cache"),
+                "--types",
+                "pydantic_v2.BaseModel",
+                "--extra=--input-file-type jsonschema",
+                str(schemas),
+            ])
+        cached = re.search(r"cached base outputs: .*", stdout.getvalue())
+        outputs.append(f"reversed={reverse}: exit={code} {cached and cached.group()}")
+    assert_output("\n".join(outputs))
