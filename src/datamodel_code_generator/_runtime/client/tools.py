@@ -7,7 +7,9 @@ the result as its codec writes it. A read-only table leaves out every tool whose
 the client returns its class, reason, status, operation, request ID, and bounded body, never its headers, URL, or
 cause; every credential the client placed on the call's requests is replaced in the result, and in the request ID and
 the body of a failure, so an API that echoes one does not hand it to the caller, and a result its model refuses once
-they are replaced returns an error value that holds it; arguments a tool refuses return each problem.
+they are replaced returns an error value that holds it; arguments a tool refuses return each problem. A result whose
+JSON text is longer than the byte budget a table is given returns an error value with its size instead, never a cut
+result; a table has no budget unless it is given one.
 """
 
 from __future__ import annotations
@@ -89,6 +91,23 @@ def invalid(argument: str, error: ValidationError) -> list[JSONValue]:
 def refused(problems: list[JSONValue]) -> JSONValue:
     """Return the error value of a call whose arguments the tool refuses."""
     return {"error": {"type": "invalid_arguments", "problems": problems}}
+
+
+def unknown_tool(name: str) -> JSONValue:
+    """Return the error value of a call that names a tool the table holds none of, for a caller that asks by name."""
+    return {"error": {"type": "unknown_tool", "name": name}}
+
+
+def too_large(size: int, budget: int) -> JSONValue:
+    """Return the error value of a result whose JSON text of `size` bytes is over the table's budget."""
+    return {
+        "error": {
+            "type": "result_too_large",
+            "size": size,
+            "max_result_bytes": budget,
+            "hint": "Call the tool with arguments that select less, such as a filter or a smaller page",
+        }
+    }
 
 
 def redacted_result(value: JSONValue) -> JSONValue:
@@ -295,8 +314,8 @@ class ToolPlan:
 class ToolOutcome:
     """What a call of a tool returned: its JSON value, and whether that is an error value.
 
-    An error value is that of a refusal, of a failure, or of a result its model refuses with the placed credentials
-    replaced.
+    An error value is that of a refusal, of a failure, of a result over the budget, or of a result its model refuses
+    with the placed credentials replaced.
     """
 
     value: JSONValue
@@ -320,10 +339,17 @@ class _Table(Generic[ClientT]):
     rejected_patterns: ClassVar[frozenset[str]] = frozenset()
     """The patterns of the models that Python's `re` rejects, as generation decided, which MCP clients cannot check."""
 
-    def __init__(self, client: ClientT, *, read_only: bool = False) -> None:
-        """Keep the client the tools call, and the tools, without those of unsafe methods when read-only."""
+    def __init__(self, client: ClientT, *, read_only: bool = False, max_result_bytes: int | None = None) -> None:
+        """Keep the client the tools call, and the tools, without those of unsafe methods when read-only.
+
+        `max_result_bytes` is the budget of a result's JSON text in UTF-8 bytes; None, the default, sets none.
+        """
+        if max_result_bytes is not None and (type(max_result_bytes) is not int or max_result_bytes < 1):
+            msg = "max_result_bytes must be a positive integer or None"
+            raise ValueError(msg)
         self.client = client
         self.read_only = read_only
+        self.max_result_bytes = max_result_bytes
         self._tools = {plan.name: plan for plan in self.plans if plan.safe or not read_only}
 
     @property
@@ -355,6 +381,14 @@ class _Table(Generic[ClientT]):
                 ranked.append((-found, index, plan))
         ranked.sort(key=itemgetter(0, 1))
         return [_entry(plan) for _, _, plan in ranked[:limit]]
+
+    def catalog(self) -> list[dict[str, JSONValue]]:
+        """Return every tool the table holds, in table order, as a search lists it, with what its HTTP method promises.
+
+        Each entry is JSON-ready data: its name, route, tags, description, signature, and whether it is safe and
+        idempotent.
+        """
+        return [{**_entry(plan), "safe": plan.safe, "idempotent": plan.idempotent} for plan in self._tools.values()]
 
     def schema(self, name: str) -> dict[str, JSONValue]:
         """Return a tool's name, description, and the JSON schemas of its arguments object and of its result."""
@@ -450,7 +484,7 @@ class ToolTable(_Table[ClientT]):
                 result = getattr(resource, plan.method)(**values)
             except SDKError as error:
                 return ToolOutcome(failed(error, placed), error=True)
-            return _answered(plan, result, placed)
+            return _answered(plan, result, placed, self.max_result_bytes)
 
 
 class AsyncToolTable(_Table[ClientT]):
@@ -474,7 +508,7 @@ class AsyncToolTable(_Table[ClientT]):
                 result = await getattr(resource, plan.method)(**values)
             except SDKError as error:
                 return ToolOutcome(failed(error, placed), error=True)
-            return _answered(plan, result, placed)
+            return _answered(plan, result, placed, self.max_result_bytes)
 
 
 def _adapter(codec: ToolCodec) -> TypeAdapter[object]:
@@ -491,15 +525,20 @@ def _dumped(plan: ToolPlan, result: Never) -> JSONValue:
     return json_value(plan.result.encode(result))
 
 
-def _answered(plan: ToolPlan, result: Never, placed: Collection[str]) -> ToolOutcome:
+def _answered(plan: ToolPlan, result: Never, placed: Collection[str], budget: int | None) -> ToolOutcome:
     """Return the outcome of a call the client answered: its result without the credentials placed on its requests.
 
-    A result they were replaced in is validated again as JSON through its model, since the text that replaces one may
-    no longer match the result's schema, such as an integer that became text: one the model refuses is the error value
-    of `redacted_result`. A result that held none is returned as the codec wrote it, without a second validation.
+    A result whose compact JSON text is longer than `budget` bytes, with the credentials replaced, is the error value of
+    `result_too_large`. A result they were replaced in is validated again as JSON through its model, since the text
+    that replaces one may no longer match the result's schema, such as an integer that became text: one the model
+    refuses is the error value of `redacted_result`. A result that held none is returned as the codec wrote it, without
+    a second validation.
     """
     value = _dumped(plan, result)
-    if (cleared := _cleared(value, placed)) == value:
+    cleared = _cleared(value, placed)
+    if budget is not None and (size := len(json_bytes(cleared))) > budget:
+        return ToolOutcome(too_large(size, budget), error=True)
+    if cleared == value:
         return ToolOutcome(value)
     try:
         plan.result.decode(json_bytes(cleared))

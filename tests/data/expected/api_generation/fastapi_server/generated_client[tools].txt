@@ -41,6 +41,18 @@ store_get_inventory
   get_inventory()
   < 200 application/json
   = {'available': 2, 'sold': 0}
+budget pets_get_pet
+  > GET /pets/7
+  get_pet(petId=7)
+  < 200 application/json
+  = {'id': 7, 'name': 'Mimi', 'tag': None}
+budget pets_list_pets
+  > GET /pets?limit=5
+  list_pets(limit=5, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
+  < 200 application/json
+  = {'error': {'type': 'result_too_large', 'size': 69, 'max_result_bytes': 64, 'hint': 'Call the tool with arguments that select less, such as a filter or a smaller page'}}
+catalog
+  = [('pets_list_pets', True, True), ('pets_create_pet', False, False), ('pets_list_my_pets', True, True), ('pets_get_pet', True, True), ('pets_delete_pet', False, True), ('store_get_inventory', True, True)]
 # tools in-process async
 tools
   = [('pets_list_pets', True, True), ('pets_create_pet', False, False), ('pets_list_my_pets', True, True), ('pets_get_pet', True, True), ('pets_delete_pet', False, True), ('store_get_inventory', True, True)]
@@ -83,3 +95,23 @@ store_get_inventory
   get_inventory()
   < 200 application/json
   = {'error': False, 'structured': {'available': 2, 'sold': 0}, 'text': '{"available":2,"sold":0}'}
+meta tools
+  = ['search_tools', 'get_tool_schema', 'call_tool']
+meta search
+  = {'error': False, 'structured': {'result': [{'name': 'pets_create_pet', 'route': 'POST /pets', 'tags': ['pets'], 'description': 'Call POST /pets.', 'signature': 'def pets_create_pet(\n    *,\n    body: tools_models.NewPet,\n) -> CreatePetResponse: ...'}, {'name': 'pets_get_pet', 'route': 'GET /pets/{petId}', 'tags': ['pets'], 'description': 'Call GET /pets/{petId}.', 'signature': 'def pets_get_pet(\n    *,\n    petId: int,\n) -> GetPetResponse: ...'}]}, 'text': '{"result":[{"name":"pets_create_pet","route":"POST /pets","tags":["pets"],"description":"Call POST /pets.","signature":"def pets_create_pet(\\n    *,\\n    body: tools_models.NewPet,\\n) -> CreatePetResponse: ..."},{"name":"pets_get_pet","route":"GET /pets/{petId}","tags":["pets"],"description":"Call GET /pets/{petId}.","signature":"def pets_get_pet(\\n    *,\\n    petId: int,\\n) -> GetPetResponse: ..."}]}'}
+meta schema
+  = {'error': False, 'structured': {'name': 'pets_get_pet', 'description': 'Call GET /pets/{petId}.', 'input_schema': {'type': 'object', 'properties': {'petId': {'$ref': '#/$defs/PetsPetIdGetPathPetIdParameter'}}, 'additionalProperties': False, 'required': ['petId'], '$defs': {'PetsPetIdGetPathPetIdParameter': {'minimum': 1, 'type': 'integer'}}}, 'output_schema': {'properties': {'id': {'title': 'Id', 'type': 'integer'}, 'name': {'title': 'Name', 'type': 'string'}, 'tag': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'title': 'Tag'}}, 'required': ['id', 'name', 'tag'], 'title': 'Pet', 'type': 'object'}}, 'text': '{"name":"pets_get_pet","description":"Call GET /pets/{petId}.","input_schema":{"type":"object","properties":{"petId":{"$ref":"#/$defs/PetsPetIdGetPathPetIdParameter"}},"additionalProperties":false,"required":["petId"],"$defs":{"PetsPetIdGetPathPetIdParameter":{"minimum":1,"type":"integer"}}},"output_schema":{"properties":{"id":{"title":"Id","type":"integer"},"name":{"title":"Name","type":"string"},"tag":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Tag"}},"required":["id","name","tag"],"title":"Pet","type":"object"}}'}
+meta pets_get_pet
+  > GET /pets/7
+  get_pet(petId=7)
+  < 200 application/json
+  = {'error': False, 'structured': {'result': {'id': 7, 'name': 'Mimi', 'tag': None}}, 'text': '{"result":{"id":7,"name":"Mimi","tag":null}}'}
+meta pets_get_pet typed error
+  > GET /pets/404
+  get_pet(petId=404)
+  < 404 application/json
+  = {'error': True, 'structured': None, 'text': '{"error":{"type":"NotFoundError","reason":null,"status_code":404,"operation_id":"getPet","request_id":null,"body":{"code":404,"message":"no such pet"}}}'}
+meta pets_create_pet refused body
+  = {'error': True, 'structured': None, 'text': '{"error":{"type":"invalid_arguments","problems":[{"argument":"body","location":["name"],"message":"Field required","kind":"missing"},{"argument":"body","location":["tag"],"message":"Field required","kind":"missing"}]}}'}
+meta unknown tool
+  = {'error': True, 'structured': None, 'text': '{"error":{"type":"unknown_tool","name":"nope"}}'}

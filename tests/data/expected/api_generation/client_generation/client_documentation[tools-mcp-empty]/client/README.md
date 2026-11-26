@@ -45,7 +45,8 @@ This package has no operations.
 
 `client.tools` holds a tool for each operation below, which an agent calls by name with JSON arguments.
 `Toolset(client)` and `AsyncToolset(client)` search the tools, give each one's JSON schemas from the models, and call
-it, returning its JSON result or an error value; `read_only=True` leaves out the tools of unsafe methods.
+it, returning its JSON result or an error value; `read_only=True` leaves out the tools of unsafe methods, and a result
+whose JSON text is longer than a `max_result_bytes` budget, if one is given, is the error value `result_too_large`.
 
 ```python
 from client import Client
@@ -74,8 +75,10 @@ from client.mcp_server import serve
 serve(lambda: AsyncClient(base_url=...))
 ```
 
-`server(client)` returns the server for another transport, `read_only=True` lists only the tools of safe methods, and
-`python -m client.mcp_server [--base-url URL] [--read-only]` serves a client without credentials.
+`server(client)` returns the server for another transport, `read_only=True` lists only the tools of safe methods,
+`meta_tools=True` lists `search_tools`, `get_tool_schema`, and `call_tool` instead of one tool for each operation, and
+`python -m client.mcp_server [--base-url URL] [--read-only] [--max-result-bytes N] [--meta-tools]` serves a
+client without credentials.
 
 ## Dependencies
 

@@ -55,6 +55,40 @@
   > GET https://api.example.com/v1/pets/3?key=123456
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   credential id error=True null ['{"error":{"type":"redacted_result","result":{"id":"[redacted]","name":"Rex","species":"dog","born":"2020-02-29"}}}']
+  meta tool search_tools ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Find the tools of this API that match a query best, at most `limit`, each with its name, route, tags, description, and Python signature; an empty query lists every tool, and `tag` keeps the tools that carry it.'
+    input {"additionalProperties": false, "properties": {"limit": {"default": 10, "minimum": 1, "type": "integer"}, "query": {"default": "", "type": "string"}, "tag": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null}}, "type": "object"}
+    output {"properties": {"result": {"items": {"type": "object"}, "type": "array"}}, "required": ["result"], "type": "object"}
+  meta tool get_tool_schema ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None) "Return a tool's description and the JSON schemas of its arguments object and of its result."
+    input {"additionalProperties": false, "properties": {"name": {"type": "string"}}, "required": ["name"], "type": "object"}
+    output {"properties": {"description": {"type": "string"}, "input_schema": {"type": "object"}, "name": {"type": "string"}, "output_schema": {"type": "object"}}, "required": ["name", "description", "input_schema", "output_schema"], "type": "object"}
+  meta tool call_tool ToolAnnotations(title=None, read_only_hint=False, destructive_hint=None, idempotent_hint=False, open_world_hint=None) 'Call a tool by its name with its arguments object; its JSON result is the `result` member.'
+    input {"additionalProperties": false, "properties": {"arguments": {"default": {}, "type": "object"}, "name": {"type": "string"}}, "required": ["name"], "type": "object"}
+    output {"properties": {"result": {}}, "required": ["result"], "type": "object"}
+  meta search error=False {"result": [{"description": "Call POST /pets.", "name": "pets_create_pet", "route": "POST /pets", "signature": "def pets_create_pet(\n    *,\n    body: tools_mcp_pydantic_v2_basemodel_models.NewPet,\n) -> CreatePetResponse: ...", "tags": ["pets"]}, {"description": "Call GET /pets/{petId}.", "name": "pets_get_pet", "route": "GET /pets/{petId}", "signature": "def pets_get_pet(\n    *,\n    petId: int,\n) -> GetPetResponse: ...", "tags": ["pets"]}]} ['{"result":[{"name":"pets_create_pet","route":"POST /pets","tags":["pets"],"description":"Call POST /pets.","signature":"def pets_create_pet(\\n    *,\\n    body: tools_mcp_pydantic_v2_basemodel_models.NewPet,\\n) -> CreatePetResponse: ..."},{"name":"pets_get_pet","route":"GET /pets/{petId}","tags":["pets"],"description":"Call GET /pets/{petId}.","signature":"def pets_get_pet(\\n    *,\\n    petId: int,\\n) -> GetPetResponse: ..."}]}']
+  meta search by tag error=False {"result": [{"description": "Call GET /owners/{ownerId}.", "name": "owners_get_owner", "route": "GET /owners/{ownerId}", "signature": "def owners_get_owner(\n    *,\n    ownerId: UUID,\n) -> GetOwnerResponse: ...", "tags": ["owners"]}]} ['{"result":[{"name":"owners_get_owner","route":"GET /owners/{ownerId}","tags":["owners"],"description":"Call GET /owners/{ownerId}.","signature":"def owners_get_owner(\\n    *,\\n    ownerId: UUID,\\n) -> GetOwnerResponse: ..."}]}']
+  meta search refused error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"page","location":[],"message":"Unknown argument","kind":"extra_forbidden"},{"argument":"query","location":[],"message":"Input should be a valid string","kind":"string_type"},{"argument":"tag","location":[],"message":"Input should be a valid string or null","kind":"string_type"},{"argument":"limit","location":[],"message":"Input should be an integer of at least 1","kind":"int_type"}]}}']
+  meta schema error=False {"description": "Call GET /pets/{petId}.", "input_schema": {"$defs": {"PetsPetIdGetPathPetIdParameter": {"type": "integer"}}, "additionalProperties": false, "properties": {"petId": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "required": ["petId"], "type": "object"}, "name": "pets_get_pet", "output_schema": {"$defs": {"Pet": {"properties": {"born": {"anyOf": [{"format": "date", "type": "string"}, {"type": "null"}], "default": null, "examples": ["2020-02-29"], "title": "Birthday"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "name", "species"], "title": "Pet", "type": "object"}, "PetsPetIdGetResponse": {"title": "PetsPetIdGetResponse", "type": "string"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "anyOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/PetsPetIdGetResponse"}]}} ['{"name":"pets_get_pet","description":"Call GET /pets/{petId}.","input_schema":{"type":"object","properties":{"petId":{"$ref":"#/$defs/PetsPetIdGetPathPetIdParameter"}},"additionalProperties":false,"required":["petId"],"$defs":{"PetsPetIdGetPathPetIdParameter":{"type":"integer"}}},"output_schema":{"$defs":{"Pet":{"properties":{"id":{"title":"Id","type":"integer"},"name":{"description":"What the pet answers to.","title":"Name","type":"string"},"species":{"$ref":"#/$defs/Species"},"born":{"anyOf":[{"format":"date","type":"string"},{"type":"null"}],"default":null,"examples":["2020-02-29"],"title":"Birthday"}},"required":["id","name","species"],"title":"Pet","type":"object"},"PetsPetIdGetResponse":{"title":"PetsPetIdGetResponse","type":"string"},"Species":{"enum":["cat","dog"],"title":"Species","type":"string"}},"anyOf":[{"$ref":"#/$defs/Pet"},{"$ref":"#/$defs/PetsPetIdGetResponse"}]}}']
+  meta schema of an unknown tool error=True null ['{"error":{"type":"unknown_tool","name":"nope"}}']
+  meta schema refused error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"name","location":[],"message":"Field required","kind":"missing"}]}}']
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  meta call error=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} ['{"result":{"id":3,"name":"Rex","species":"dog","born":"2020-02-29"}}']
+  > GET https://api.example.com/v1/pets?limit=20&key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  meta call over the budget error=True null ['{"error":{"type":"result_too_large","size":291,"max_result_bytes":200,"hint":"Call the tool with arguments that select less, such as a filter or a smaller page"}}']
+  meta call refused error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"petId","location":[],"message":"Input should be a valid integer, unable to parse string as an integer","kind":"int_parsing"}]}}']
+  > GET https://api.example.com/v1/pets/4?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  meta call failed error=True null ['{"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"key=[redacted]","authorization":null,"api_key":null}}}']
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  meta call echoed error=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3?key=[redacted]", "species": "dog"}} ['{"result":{"id":3,"name":"https://api.example.com/v1/pets/3?key=[redacted]","species":"dog","born":"2020-02-29"}}']
+  meta call of an unknown tool error=True null ['{"error":{"type":"unknown_tool","name":"nope"}}']
+  meta call refused arguments error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"name","location":[],"message":"Input should be a valid string","kind":"string_type"},{"argument":"arguments","location":[],"message":"Input should be a valid object","kind":"dict_type"}]}}']
+  meta unknown tool ! -32602 No tool is named 'pets_get_pet'
+  meta read-only call_tool ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None)
+  meta read-only search ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
+  meta read-only create error=True ['{"error":{"type":"unknown_tool","name":"pets_create_pet"}}']
   > GET https://api.example.com/v1/pets/3?key=canary-7f3e
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   > GET https://api.example.com/v1/pets/3?key=canary-7f3e
@@ -104,6 +138,15 @@
   main 1 server tools_mcp_pydantic_v2_basemodel 2025-11-25
   main 2 tools ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
   main 3 isError=True null {"error":{"type":"ConfigurationError","reason":"missing_credentials","status_code":null,"operation_id":"getPet","request_id":null,"body":null}}
+  main meta 1 server tools_mcp_pydantic_v2_basemodel 2025-11-25
+  main meta 2 tools ['search_tools', 'get_tool_schema', 'call_tool']
+  main meta 3 isError=True null {"error":{"type":"ConfigurationError","reason":"missing_credentials","status_code":null,"operation_id":"getPet","request_id":null,"body":null}}
+  main meta 4 isError=True null {"error":{"type":"unknown_tool","name":"pets_create_pet"}}
+  main settings ServeCommand(base_url=None, read_only=True, max_result_bytes=20, meta_tools=True)
+  main --max-result-bytes '0' exits 2
+  main --max-result-bytes '-1' exits 2
+  main --max-result-bytes 'x' exits 2
+  main --max-result-bytes '１' exits 2
 # tools-mcp pydantic_v2.dataclass
   warning UserWarning: <root>/tools_mcp_pydantic_v2_dataclass: Leaving HEAD /pets/{petId} (client.pets.check_pet) out of the tools, since a HEAD response has no body to return
   warning UserWarning: <root>/tools_mcp_pydantic_v2_dataclass: Leaving PUT /pets/{petId}/photo (client.pets.upload_photo) out of the tools, since its request body (application/octet-stream) takes no JSON value of a model type
@@ -161,6 +204,40 @@
   > GET https://api.example.com/v1/pets/3?key=123456
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   credential id error=True null ['{"error":{"type":"redacted_result","result":{"id":"[redacted]","species":"dog","name":"Rex","born":"2020-02-29"}}}']
+  meta tool search_tools ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None) 'Find the tools of this API that match a query best, at most `limit`, each with its name, route, tags, description, and Python signature; an empty query lists every tool, and `tag` keeps the tools that carry it.'
+    input {"additionalProperties": false, "properties": {"limit": {"default": 10, "minimum": 1, "type": "integer"}, "query": {"default": "", "type": "string"}, "tag": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null}}, "type": "object"}
+    output {"properties": {"result": {"items": {"type": "object"}, "type": "array"}}, "required": ["result"], "type": "object"}
+  meta tool get_tool_schema ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None) "Return a tool's description and the JSON schemas of its arguments object and of its result."
+    input {"additionalProperties": false, "properties": {"name": {"type": "string"}}, "required": ["name"], "type": "object"}
+    output {"properties": {"description": {"type": "string"}, "input_schema": {"type": "object"}, "name": {"type": "string"}, "output_schema": {"type": "object"}}, "required": ["name", "description", "input_schema", "output_schema"], "type": "object"}
+  meta tool call_tool ToolAnnotations(title=None, read_only_hint=False, destructive_hint=None, idempotent_hint=False, open_world_hint=None) 'Call a tool by its name with its arguments object; its JSON result is the `result` member.'
+    input {"additionalProperties": false, "properties": {"arguments": {"default": {}, "type": "object"}, "name": {"type": "string"}}, "required": ["name"], "type": "object"}
+    output {"properties": {"result": {}}, "required": ["result"], "type": "object"}
+  meta search error=False {"result": [{"description": "Call POST /pets.", "name": "pets_create_pet", "route": "POST /pets", "signature": "def pets_create_pet(\n    *,\n    body: tools_mcp_pydantic_v2_dataclass_models.NewPet,\n) -> CreatePetResponse: ...", "tags": ["pets"]}, {"description": "Call GET /pets/{petId}.", "name": "pets_get_pet", "route": "GET /pets/{petId}", "signature": "def pets_get_pet(\n    *,\n    petId: int,\n) -> GetPetResponse: ...", "tags": ["pets"]}]} ['{"result":[{"name":"pets_create_pet","route":"POST /pets","tags":["pets"],"description":"Call POST /pets.","signature":"def pets_create_pet(\\n    *,\\n    body: tools_mcp_pydantic_v2_dataclass_models.NewPet,\\n) -> CreatePetResponse: ..."},{"name":"pets_get_pet","route":"GET /pets/{petId}","tags":["pets"],"description":"Call GET /pets/{petId}.","signature":"def pets_get_pet(\\n    *,\\n    petId: int,\\n) -> GetPetResponse: ..."}]}']
+  meta search by tag error=False {"result": [{"description": "Call GET /owners/{ownerId}.", "name": "owners_get_owner", "route": "GET /owners/{ownerId}", "signature": "def owners_get_owner(\n    *,\n    ownerId: UUID,\n) -> GetOwnerResponse: ...", "tags": ["owners"]}]} ['{"result":[{"name":"owners_get_owner","route":"GET /owners/{ownerId}","tags":["owners"],"description":"Call GET /owners/{ownerId}.","signature":"def owners_get_owner(\\n    *,\\n    ownerId: UUID,\\n) -> GetOwnerResponse: ..."}]}']
+  meta search refused error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"page","location":[],"message":"Unknown argument","kind":"extra_forbidden"},{"argument":"query","location":[],"message":"Input should be a valid string","kind":"string_type"},{"argument":"tag","location":[],"message":"Input should be a valid string or null","kind":"string_type"},{"argument":"limit","location":[],"message":"Input should be an integer of at least 1","kind":"int_type"}]}}']
+  meta schema error=False {"description": "Call GET /pets/{petId}.", "input_schema": {"$defs": {"PetsPetIdGetPathPetIdParameter": {"type": "integer"}}, "additionalProperties": false, "properties": {"petId": {"$ref": "#/$defs/PetsPetIdGetPathPetIdParameter"}}, "required": ["petId"], "type": "object"}, "name": "pets_get_pet", "output_schema": {"$defs": {"Pet": {"properties": {"born": {"examples": ["2020-02-29"], "format": "date", "title": "Birthday", "type": "string"}, "id": {"title": "Id", "type": "integer"}, "name": {"description": "What the pet answers to.", "title": "Name", "type": "string"}, "species": {"$ref": "#/$defs/Species"}}, "required": ["id", "species", "name"], "title": "Pet", "type": "object"}, "PetsPetIdGetResponse": {"type": "string"}, "Species": {"enum": ["cat", "dog"], "title": "Species", "type": "string"}}, "anyOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/PetsPetIdGetResponse"}]}} ['{"name":"pets_get_pet","description":"Call GET /pets/{petId}.","input_schema":{"type":"object","properties":{"petId":{"$ref":"#/$defs/PetsPetIdGetPathPetIdParameter"}},"additionalProperties":false,"required":["petId"],"$defs":{"PetsPetIdGetPathPetIdParameter":{"type":"integer"}}},"output_schema":{"$defs":{"Pet":{"properties":{"id":{"title":"Id","type":"integer"},"species":{"$ref":"#/$defs/Species"},"name":{"description":"What the pet answers to.","title":"Name","type":"string"},"born":{"examples":["2020-02-29"],"format":"date","title":"Birthday","type":"string"}},"required":["id","species","name"],"title":"Pet","type":"object"},"PetsPetIdGetResponse":{"type":"string"},"Species":{"enum":["cat","dog"],"title":"Species","type":"string"}},"anyOf":[{"$ref":"#/$defs/Pet"},{"$ref":"#/$defs/PetsPetIdGetResponse"}]}}']
+  meta schema of an unknown tool error=True null ['{"error":{"type":"unknown_tool","name":"nope"}}']
+  meta schema refused error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"name","location":[],"message":"Field required","kind":"missing"}]}}']
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  meta call error=False {"result": {"born": "2020-02-29", "id": 3, "name": "Rex", "species": "dog"}} ['{"result":{"id":3,"species":"dog","name":"Rex","born":"2020-02-29"}}']
+  > GET https://api.example.com/v1/pets?limit=20&key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  meta call over the budget error=True null ['{"error":{"type":"result_too_large","size":291,"max_result_bytes":200,"hint":"Call the tool with arguments that select less, such as a filter or a smaller page"}}']
+  meta call refused error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"petId","location":[],"message":"Input should be a valid integer, unable to parse string as an integer","kind":"int_parsing"}]}}']
+  > GET https://api.example.com/v1/pets/4?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  meta call failed error=True null ['{"error":{"type":"AuthenticationError","reason":null,"status_code":401,"operation_id":"getPet","request_id":null,"body":{"query":"key=[redacted]","authorization":null,"api_key":null}}}']
+  > GET https://api.example.com/v1/pets/3?key=secret-key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  meta call echoed error=False {"result": {"born": "2020-02-29", "id": 3, "name": "https://api.example.com/v1/pets/3?key=[redacted]", "species": "dog"}} ['{"result":{"id":3,"species":"dog","name":"https://api.example.com/v1/pets/3?key=[redacted]","born":"2020-02-29"}}']
+  meta call of an unknown tool error=True null ['{"error":{"type":"unknown_tool","name":"nope"}}']
+  meta call refused arguments error=True null ['{"error":{"type":"invalid_arguments","problems":[{"argument":"name","location":[],"message":"Input should be a valid string","kind":"string_type"},{"argument":"arguments","location":[],"message":"Input should be a valid object","kind":"dict_type"}]}}']
+  meta unknown tool ! -32602 No tool is named 'pets_get_pet'
+  meta read-only call_tool ToolAnnotations(title=None, read_only_hint=True, destructive_hint=None, idempotent_hint=True, open_world_hint=None)
+  meta read-only search ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
+  meta read-only create error=True ['{"error":{"type":"unknown_tool","name":"pets_create_pet"}}']
   > GET https://api.example.com/v1/pets/3?key=canary-7f3e
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   > GET https://api.example.com/v1/pets/3?key=canary-7f3e
@@ -210,3 +287,12 @@
   main 1 server tools_mcp_pydantic_v2_dataclass 2025-11-25
   main 2 tools ['pets_list_pets', 'pets_get_pet', 'owners_get_owner']
   main 3 isError=True null {"error":{"type":"ConfigurationError","reason":"missing_credentials","status_code":null,"operation_id":"getPet","request_id":null,"body":null}}
+  main meta 1 server tools_mcp_pydantic_v2_dataclass 2025-11-25
+  main meta 2 tools ['search_tools', 'get_tool_schema', 'call_tool']
+  main meta 3 isError=True null {"error":{"type":"ConfigurationError","reason":"missing_credentials","status_code":null,"operation_id":"getPet","request_id":null,"body":null}}
+  main meta 4 isError=True null {"error":{"type":"unknown_tool","name":"pets_create_pet"}}
+  main settings ServeCommand(base_url=None, read_only=True, max_result_bytes=20, meta_tools=True)
+  main --max-result-bytes '0' exits 2
+  main --max-result-bytes '-1' exits 2
+  main --max-result-bytes 'x' exits 2
+  main --max-result-bytes '１' exits 2

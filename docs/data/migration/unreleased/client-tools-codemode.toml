@@ -1,0 +1,28 @@
+[[change]]
+id = "client-tools-codemode"
+category = "experimental"
+title = "Result budgets, meta tools, a catalog and tool: false for --client-tools"
+summary = "The tool table gains catalog() and an opt-in max_result_bytes budget, the MCP server an opt-in meta-tool mode (search_tools, get_tool_schema, call_tool) and --max-result-bytes and --meta-tools, and --client-operations a tool member that leaves an operation out of the tools; calls without the new arguments behave as before."
+refs = ["#1"]
+decision = ["#1"]
+kind = "experimental"
+action = "none"
+source = "release-note"
+affects = { experimental = ["cli-option.client-tools"] }
+covers = [
+    "api_generation/client_cli/member_types[options].txt",
+    "api_generation/client_cli/member_types[pyproject].txt",
+    "api_generation/client_generation/client_documentation[tools-mcp-empty]/",
+    "api_generation/client_generation/client_render[tools-mcp].pydantic_v2_BaseModel/",
+    "api_generation/client_generation/client_render[tools-not-tools].pydantic_v2_BaseModel/",
+    "api_generation/client_generation/client_render[tools-not-tools].txt",
+    "api_generation/client_runtime/client_runtime[tools-mcp-adversarial].txt",
+    "api_generation/client_runtime/client_runtime[tools-mcp-untrusted].txt",
+    "api_generation/client_runtime/client_runtime[tools-mcp].txt",
+    "api_generation/client_runtime/client_runtime[tools-not-tools].txt",
+    "api_generation/client_runtime/client_runtime[tools].txt",
+    "api_generation/fastapi_server/docs_client_howto.code_mode.txt",
+    "api_generation/fastapi_server/generated_client[tools].txt",
+    "build_docs_examples_script/docs_examples_registry.txt",
+    "model/compiled_templates/target_templates_match_jinja_oracle[client].rendered.txt",
+]

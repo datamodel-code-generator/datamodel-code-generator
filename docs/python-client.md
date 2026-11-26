@@ -1407,6 +1407,16 @@ with the method.
   `message`, and `kind`, and a call the client fails returns `{"error": {...}}` with the exception's `type`,
   `reason`, `status_code`, `operation_id`, `request_id`, and the bounded `body`, never its headers, URL, or cause. A
   name the table has no tool of raises `UnknownToolError`.
+- `catalog()` returns every tool of the table as JSON-ready data, for a host that keeps the list in a file or builds
+  its own stubs: the `name`, `route`, `tags`, `description`, and `signature` that `search` gives, and `safe` and
+  `idempotent`, what the tool's HTTP method promises.
+
+`Toolset(client, max_result_bytes=65536)` sets a budget on the results of `call`: a result whose compact JSON text is
+longer, in UTF-8 bytes after the redaction below, returns
+`{"error": {"type": "result_too_large", "size": ..., "max_result_bytes": ..., "hint": ...}}` instead, so an agent
+narrows the call, with a filter or a smaller page, and no long result reaches the model. A result is never cut, since a
+cut one would no longer match its schema. A table has no budget unless it is given one; the client's own bound on an
+error body, 64 KiB (`MAX_ERROR_BODY_BYTES` of the runtime), is a reasonable value.
 
 A result or an error value shows no credential that the client's security schemes placed on the call's requests,
 where the API echoes one, such as a `next` link that repeats the query: every API key (also as its query field encodes
@@ -1449,7 +1459,7 @@ option refuses AsyncAPI input.
 README's dependencies gain `mcp>=2.3.0`; `--client-tools functions` adds no dependency.
 
 The server looks up no credentials. Build the client in a script of your own, the way your code builds it, and name
-the script in the agent's MCP configuration as the command it starts:
+the script, here `serve_shelter.py`, in the agent's MCP configuration as the command it starts:
 
 ```python
 import os
@@ -1460,12 +1470,15 @@ from app.client.mcp_server import serve
 serve(lambda: AsyncClient(base_url="https://eu.shelter.example/v1", bearer=os.environ["SHELTER_TOKEN"]))
 ```
 
-- `serve(make_client, read_only=False)` serves on stdin and stdout until stdin ends. It builds the client once with
-  `make_client`, which every call of the session shares, and closes it at the end.
-- `server(client, read_only=False)` returns the `mcp.server.Server` for another transport, such as the SDK's
-  Streamable HTTP application, which you mount with your own authentication.
-- `python -m app.client.mcp_server [--base-url URL] [--read-only]` serves a client without credentials, for an API
-  that needs none.
+- `serve(make_client, read_only=False, max_result_bytes=None, meta_tools=False)` serves on stdin and stdout until
+  stdin ends. It builds the client once with `make_client`, which every call of the session shares, and closes it at
+  the end.
+- `server(client, read_only=False, max_result_bytes=None, meta_tools=False)` returns the `mcp.server.Server` for
+  another transport, such as the SDK's Streamable HTTP application, which you mount with your own authentication.
+- `python -m app.client.mcp_server [--base-url URL] [--read-only] [--max-result-bytes N] [--meta-tools]` serves a
+  client without credentials, for an API that needs none.
+
+`max_result_bytes` and `--max-result-bytes` set the result budget of the tool table.
 
 `tools/list` lists each tool with its description, the JSON schemas `schema(name)` gives as `inputSchema` and
 `outputSchema`, and annotations from its HTTP method: `readOnlyHint` for a safe method and `idempotentHint` for a safe
@@ -1480,6 +1493,106 @@ validates the arguments through the models, as `call` does. A refusal, a failure
 credentials redacted the same way, and without structured content, so no output schema checks them; a tool name the
 server does not list is a protocol error (`-32602`). `read_only=True` and `--read-only` leave out the tools of
 unsafe methods instead of relying on the annotations, which the protocol calls hints.
+
+For an API of hundreds of operations, whose tool list alone would fill a model's context, `meta_tools=True` and
+`--meta-tools` list three tools instead of one for each operation:
+
+| Tool | Arguments | Result |
+|---|---|---|
+| `search_tools` | `query`, `tag`, and `limit`, as `search` takes them | The `result` member: the entries `search` returns |
+| `get_tool_schema` | `name` | What `schema(name)` returns |
+| `call_tool` | `name`, and `arguments`, the tool's arguments object | The `result` member: what `call` returns |
+
+`call_tool` calls the tool through the same table as the tool of its own would, so read-only serving, the result
+budget, the error values, and the redaction are the same, and its annotations are read-only or idempotent only when
+every tool it can call is. A name that `call_tool` or `get_tool_schema` does not know, also that of an unsafe tool of
+a read-only server, and arguments they refuse are results with `isError: true` (`{"error": {"type": "unknown_tool",
+"name": ...}}` and `invalid_arguments`); only a tool name that is none of the three is a protocol error.
+
+### Host the tools in an agent
+
+A Code Mode host lets the model write code that calls the tools in a sandbox, so that only what the code prints reaches
+the model. The generated client cannot run inside such a sandbox, which allows no third-party package, so the host
+passes the table's functions in, and the code calls them by name. The example's `run` stands in for the sandbox of the
+host:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.howto.code_mode -->
+<!-- fmt: off -->
+
+```python
+from app.client import Client
+from app.client.tools import Toolset
+from fake import http_client
+
+CODE = """
+found = [entry["name"] for entry in search("pet", limit=5)]
+pet = call("pets_get_pet", {"pet_id": 1})
+print(found, schema("pets_get_pet")["input_schema"]["required"], pet["name"])
+print(call("pets_list_pets", {})["error"])
+"""
+
+
+def run(code: str, functions: dict[str, object]) -> None:
+    """Stand in for the host's sandbox, which runs the model's code with only these functions."""
+    exec(code, {"__builtins__": {"print": print}, **functions})
+
+
+with Client(bearer="s3cret", http_client=http_client()) as client:
+    tools = Toolset(client, read_only=True, max_result_bytes=64)
+    print([(entry["name"], entry["safe"]) for entry in tools.catalog()])
+    run(CODE, {"search": tools.search, "schema": tools.schema, "call": tools.call})
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.howto.code_mode -->
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.howto.code_mode-output -->
+<!-- fmt: off -->
+
+```text
+[('pets_list_pets', True), ('pets_get_pet', True), ('default_get_health', True)]
+> GET https://eu.shelter.example/v1/pets/1 authorization: Bearer s3cret
+['pets_get_pet', 'pets_list_pets'] ['pet_id'] Mimi
+> GET https://eu.shelter.example/v1/pets?limit=20 authorization: Bearer s3cret
+{'type': 'result_too_large', 'size': 70, 'max_result_bytes': 64, 'hint': 'Call the tool with arguments that select less, such as a filter or a smaller page'}
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.howto.code_mode-output -->
+
+The tools are what the sandbox can reach: build the table read-only unless the model should change data, and set a
+budget for the results the code reads.
+
+Agent frameworks that speak MCP take the script that serves the tools, `serve_shelter.py` above. These
+examples were checked with FastMCP 4.2.6 and Pydantic AI 2.75.0; both libraries are outside the generated package's
+dependencies, and their experimental parts may change.
+
+FastMCP's `CodeMode` transform (`pip install "fastmcp[code-mode]"`) gives the model `search`, `get_schema`, and an
+`execute` tool whose code calls `call_tool(name, params)` in its own sandbox, over a proxy of the served tools:
+
+```python
+from pathlib import Path
+
+from fastmcp.experimental.transforms.code_mode import CodeMode
+from fastmcp.server import create_proxy
+
+proxy = create_proxy(Path("serve_shelter.py"), name="shelter")
+proxy.add_transform(CodeMode())
+proxy.run()
+```
+
+Pydantic AI's `MCPToolset` gives an agent the tools of the served script; with `meta_tools=True` in the script, the
+agent sees the three meta tools:
+
+```python
+from pathlib import Path
+
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPToolset
+
+agent = Agent("anthropic:claude-sonnet-4-5", toolsets=[MCPToolset(Path("serve_shelter.py"))])
+print(agent.run_sync("Which pets are cats?").output)
+```
 
 ## Test code that uses the client
 

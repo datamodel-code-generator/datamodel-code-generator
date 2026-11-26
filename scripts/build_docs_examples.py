@@ -43,7 +43,18 @@ CLIENT_HOWTO = DOCS_PROJECTS / "client-howto"
 CLIENT_HOWTO_TEST = "docs_client_howto"
 SNIPPETS = DOCS_PROJECTS / "snippets"
 PRESET_PLACEHOLDER = "<newest-standard-py312-preset>"
-CLIENT_HOWTO_SCRIPTS = ("calls", "responses", "options", "retries", "auth", "oauth", "signing", "errors", "agent_tools")
+CLIENT_HOWTO_SCRIPTS = (
+    "calls",
+    "responses",
+    "options",
+    "retries",
+    "auth",
+    "oauth",
+    "signing",
+    "errors",
+    "agent_tools",
+    "code_mode",
+)
 API_TARGET_OPTIONS: dict[str, tuple[str, ...]] = {
     "server": (
         "--generate-server",
