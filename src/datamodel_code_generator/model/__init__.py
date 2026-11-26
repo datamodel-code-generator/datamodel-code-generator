@@ -7,7 +7,7 @@ Provides factory functions and classes for generating different output formats
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Final, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._format_types import NEWEST_TARGET as NEWEST_TARGET
 from datamodel_code_generator._format_types import PythonVersion as PythonVersion
@@ -150,6 +150,26 @@ def get_data_model_types(  # noqa: PLR0912, PLR0917
             )
     msg = f"{data_model_type} is unsupported data model type"
     raise ValueError(msg)
+
+
+_BuiltinInheritance: TypeAlias = Literal["pydantic", "ordinary", "typed_dict", "struct"]
+_BUILTIN_INHERITANCE: Final[dict[str, _BuiltinInheritance]] = {
+    "datamodel_code_generator.model.pydantic_v2.base_model": "pydantic",
+    "datamodel_code_generator.model.pydantic_v2.dataclass": "ordinary",
+    "datamodel_code_generator.model.dataclass": "ordinary",
+    "datamodel_code_generator.model.typed_dict": "typed_dict",
+    "datamodel_code_generator.model.msgspec": "struct",
+}
+
+
+def _builtin_inheritance(data_model_type: type[DataModel]) -> _BuiltinInheritance | None:
+    """Return how Python creates the classes of a backend's model class, None for a class of no backend here.
+
+    The parser rejects the inheritance Python would refuse only for the classes of the package's backends: a pydantic
+    model, an ordinary class (a dataclass), a ``TypedDict`` or a msgspec ``Struct``. The class is read by its module,
+    so a subclass from outside the package is none of them, and no backend package is imported to ask.
+    """
+    return _BUILTIN_INHERITANCE.get(data_model_type.__module__)
 
 
 __all__ = [

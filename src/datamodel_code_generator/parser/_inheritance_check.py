@@ -10,7 +10,7 @@ hook the pipeline calls and subclasses override.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
 from typing_extensions import Protocol
 
@@ -19,6 +19,7 @@ from datamodel_code_generator._mro import c3_merge
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.imports import _override_module
+from datamodel_code_generator.model import _builtin_inheritance
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -28,10 +29,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._passes._state import ModuleContextView
 
 __all__ = ["InheritanceCheckHost", "check_model_inheritance"]
-
-# Keep these as module-name checks so non-pydantic-v2 outputs do not import the
-# pydantic_v2 generator package and its runtime feature gates.
-_PYDANTIC_V2_BASE_MODEL_MODULE: Final = "datamodel_code_generator.model.pydantic_v2.base_model"
 
 
 class InheritanceCheckHost(Protocol):
@@ -52,16 +49,10 @@ class InheritanceCheckHost(Protocol):
 
 def check_model_inheritance(parser: InheritanceCheckHost, contexts: Sequence[ModuleContextView]) -> None:  # noqa: PLR0912, PLR0914, PLR0915
     """Reject invalid builtin inheritance; an existing topological order needs no DFS."""
-    backend = parser.data_model_type.__module__
-    ordinary_backends = {
-        _PYDANTIC_V2_BASE_MODEL_MODULE,
-        "datamodel_code_generator.model.pydantic_v2.dataclass",
-        "datamodel_code_generator.model.dataclass",
-    }
-    typed_dict = backend == "datamodel_code_generator.model.typed_dict"
-    struct = backend == "datamodel_code_generator.model.msgspec"
-    if backend not in ordinary_backends and not typed_dict and not struct:
+    if (backend := _builtin_inheritance(parser.data_model_type)) is None:
         return
+    typed_dict = backend == "typed_dict"
+    struct = backend == "struct"
     if (
         typed_dict
         and (custom_template_dir := parser.custom_template_dir) is not None
@@ -99,7 +90,7 @@ def check_model_inheritance(parser: InheritanceCheckHost, contexts: Sequence[Mod
     for model in models:
         paths[model.path].append(model)
     parents: list[list[int]] = [[] for _ in models]
-    closed = [backend in ordinary_backends and builtin(model) for model in models]
+    closed = [backend in {"pydantic", "ordinary"} and builtin(model) for model in models]
     overrides = parser._import_overrides or {}
     ordered = True
     for index, model in enumerate(models):
@@ -110,7 +101,7 @@ def check_model_inheritance(parser: InheritanceCheckHost, contexts: Sequence[Mod
             if reference is None:
                 terminal = base.import_
                 closed[index] = closed[index] and (
-                    backend == _PYDANTIC_V2_BASE_MODEL_MODULE
+                    backend == "pydantic"
                     and terminal is not None
                     and terminal.from_ == "pydantic"
                     and terminal.import_ == "BaseModel"
