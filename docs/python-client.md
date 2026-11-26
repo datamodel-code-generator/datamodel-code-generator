@@ -1411,12 +1411,13 @@ with the method.
   its own stubs: the `name`, `route`, `tags`, `description`, and `signature` that `search` gives, and `safe` and
   `idempotent`, what the tool's HTTP method promises.
 
-`Toolset(client, max_result_bytes=65536)` sets a budget on the results of `call`: a result whose compact JSON text is
-longer, in UTF-8 bytes after the redaction below, returns
+`Toolset(client, max_result_bytes=65536)` sets a budget on the successful results of `call`: a result whose compact
+JSON text is longer, in UTF-8 bytes after the redaction below, returns
 `{"error": {"type": "result_too_large", "size": ..., "max_result_bytes": ..., "hint": ...}}` instead, so an agent
 narrows the call, with a filter or a smaller page, and no long result reaches the model. A result is never cut, since a
-cut one would no longer match its schema. A table has no budget unless it is given one; the client's own bound on an
-error body, 64 KiB (`MAX_ERROR_BODY_BYTES` of the runtime), is a reasonable value.
+cut one would no longer match its schema. Error values are not budgeted: the `body` they carry is already bounded. A table has no
+budget unless it is given one; the client's own bound on an error body, 64 KiB (`MAX_ERROR_BODY_BYTES` of the
+runtime), is a reasonable value.
 
 A result or an error value shows no credential that the client's security schemes placed on the call's requests,
 where the API echoes one, such as a `next` link that repeats the query: every API key (also as its query field encodes

@@ -120,11 +120,12 @@ def tool_server(package: ModuleType, lines: list[str]) -> None:
 
 def _exit_code(main: Callable[[list[str]], None], argv: list[str]) -> object:
     """Return the exit code a command line stops with, or None when it returns."""
+    code: object = None
     try:
         main(argv)
     except SystemExit as error:
-        return error.code
-    return None
+        code = error.code
+    return code
 
 
 async def _listed_and_called(package: ModuleType, module: ModuleType, lines: list[str]) -> None:
