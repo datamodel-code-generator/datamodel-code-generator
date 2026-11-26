@@ -8,3 +8,17 @@
 # `--enforce` fails on a malformed entry and on a stale one: an entry whose key the tree already counts at `head`
 # accepts no rise, so the pull request that reaches the count removes its entry and the table holds only pending
 # approvals.
+
+[[approved]]
+key = "allowlist:heki-baseline"
+head = 1863
+pr = 7553
+decision = ["#7553"]
+reason = "#7553 moves heki to 0.9.0, whose #547 reads an attribute write on an entry of a list handed to a helper as a write of the list: six heuristic sites (one EFF201 in parser/_passes/modules.py, five MUT201 of ModuleContext.models in parser/base.py) enter the baseline until heki reads helper writes as the entry class's, and three entries 0.9.0 no longer reports leave it (owner decision, 2026-11-26)"
+
+[[approved]]
+key = "allowlist:heki-baseline:EFF201:pass"
+head = 24
+pr = 7553
+decision = ["#7553"]
+reason = "#7553: the EFF201 of the six heki 0.9.0 helper-write sites (parser/_passes/modules.py, restore_inherited_field_names_for_unique_aliases) is a pass finding (owner decision, 2026-11-26)"
