@@ -2126,10 +2126,15 @@ name bound to it on one path only. A private name imported from a parser module 
 `private-parser-import` boundary. The architecture contracts of the same file (`architecture_contracts`) hold what an
 import boundary cannot name: parser code reads no member only a backend reads (`getattr` and `hasattr` included),
 asks the target version for no TypedDict construct, names no backend module by a `module=` argument or by the
-`__module__` of a class a backend derives from, and selects no output family; input-model code selects none either;
-shared model code reads no module of `sys.modules`; configuration reads no backend name outside the defaults of `ParserConfig`; the entry point reaches
-no private member of a parser; and no module reads a name through the bound root package. No module of the package imports the
-package root, and none but `__main__.py` imports `__main__` (rule `root-import`): every import form, relative ones,
+`__module__` of a class a backend derives from (three functions read it to tell this package's classes from others,
+and the contract allows them), and selects no output family; input-model code selects none either; shared model code
+reads no module of `sys.modules` (two functions that complete a model with the names of its own module read it, and
+the contract allows them); the functions of the configuration read no backend name, and its module body may read the
+pydantic v2 backend that holds the defaults of `ParserConfig` (it may read any of its names until heki attributes the
+body of a class to the class); the entry point reaches no private member of a parser except in `_build_parser` and
+`_parse_run` (the contract allows those two functions); and no module reads a name through the bound root package. No
+module of the package imports the package root, and none but `__main__.py` imports `__main__` (rule `root-import`):
+every import form, relative ones,
 `TYPE_CHECKING` and function-local ones included, and a read of a root name through a bound root package fail; the root
 re-exports the names of the modules that define them for users, so the package imports each name from its module. A
 submodule read through the root (`from datamodel_code_generator import enums`) is a module import where the root binds
