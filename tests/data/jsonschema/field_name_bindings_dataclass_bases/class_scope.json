@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Place": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Event": {
+      "type": "object",
+      "properties": {
+        "Place": {
+          "type": "string"
+        },
+        "where": {
+          "type": "string"
+        },
+        "many": {
+          "type": "string"
+        }
+      }
+    },
+    "Other": {
+      "type": "object",
+      "properties": {
+        "p": {
+          "$ref": "#/$defs/Place"
+        }
+      }
+    },
+    "Festival": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Event"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "many": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Place"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Concert": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Event"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "where": {
+              "$ref": "#/$defs/Place"
+            },
+            "many": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Place"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "All": {
+      "type": "object",
+      "properties": {
+        "c": {
+          "$ref": "#/$defs/Concert"
+        },
+        "f": {
+          "$ref": "#/$defs/Festival"
+        },
+        "o": {
+          "$ref": "#/$defs/Other"
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/All"
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Place": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Venue": {
+      "type": "object",
+      "properties": {
+        "city": {
+          "type": "string"
+        }
+      }
+    },
+    "Event": {
+      "type": "object",
+      "properties": {
+        "Place": {
+          "type": "string",
+          "default": "x"
+        },
+        "Venue": {
+          "type": "string",
+          "default": "y"
+        },
+        "where": {
+          "type": "string"
+        }
+      }
+    },
+    "Concert": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Event"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "where": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Place"
+                },
+                {
+                  "$ref": "#/$defs/Venue"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$ref": "#/$defs/Concert"
+}

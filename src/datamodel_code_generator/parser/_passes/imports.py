@@ -512,8 +512,8 @@ def _bind_module_field_names(
     *,
     texts: Sequence[str] | None = None,
     module_names_of: Callable[[DataModel], Collection[str]] | None = None,
-) -> bool:
-    """Alias the names a property hides from the text of its class; return whether it aliased any.
+) -> Mapping[int, str] | None:
+    """Alias the names a property hides from the text of its class; return what the module writes, None if no alias.
 
     The names are those the module's imports bind and the builtin classes of the ``target`` that no import binds,
     which a builtin import binds under the alias. An alias avoids every name the module's and the shared imports
@@ -523,7 +523,10 @@ def _bind_module_field_names(
     Where ``module_names_of`` gives the names the module of a model binds, the annotations a library evaluates as
     strings also count the namespaces of the bases it declares a redeclared field in
     (``DataModel.annotation_namespaces``): a name that a base binds in its class body to a value the annotation
-    raises on is hidden as well, and the alias avoids every name of those bases. It needs ``texts``.
+    raises on is hidden as well, and the alias avoids every name of those bases. It needs ``texts``. A class of the
+    module that such a name hides keeps its name: the module binds the alias beside it with the statement that the
+    result holds for the index of the class (the text of the class precedes it), and only the classes whose
+    annotations were evaluated through the name write it through the alias.
     """
     namespaces = (
         [model.annotation_namespaces() for model in models] if module_names_of is not None else [{} for _ in models]
@@ -541,28 +544,39 @@ def _bind_module_field_names(
         for name in sorted(field_names.difference(shadowable_imports))
         if is_builtin_type_name(name, target)
     )
-    if not shadowable_imports:
-        return False
+    class_names = (
+        {model.class_name for model in models}.intersection(inherited_names).difference(shadowable_imports)
+        if module_names_of is not None and texts is not None
+        else set()
+    )
+    if not shadowable_imports and not class_names:
+        return None
     collisions: set[str] = set()
     for index, model in enumerate(models):
         collisions.update(
             _model_field_name_collisions(model, None if texts is None else texts[index], shadowable_imports)
         )
+    class_collisions: list[set[str]] = [set() for _ in models]
     if module_names_of is not None and texts is not None:
-        aliased = frozenset(collisions)
-        for text, model, by_field in zip(texts, models, namespaces, strict=True):
+        scope = _ModuleScope(
+            module_names_of,
+            frozenset(collisions),
+            partial(is_builtin_type_name, target_version=target),
+            set(models).__contains__,
+        )
+        for index, (text, model, by_field) in enumerate(zip(texts, models, namespaces, strict=True)):
             if by_field:
-                collisions.update(
-                    _inherited_field_name_collisions(
-                        model.class_name,
-                        by_field,
-                        text,
-                        shadowable_imports,
-                        _ModuleScope(module_names_of, aliased, partial(is_builtin_type_name, target_version=target)),
-                    )
+                found = _inherited_field_name_collisions(
+                    model.class_name,
+                    by_field,
+                    text,
+                    {*shadowable_imports, *class_names.difference([model.class_name])},
+                    scope,
                 )
-    if not collisions:
-        return False
+                collisions.update(found.intersection(shadowable_imports))
+                class_collisions[index] = found.difference(shadowable_imports)
+    if not collisions and not any(class_collisions):
+        return None
     reserved_names = _alias_reserved_names(
         models,
         imports,
@@ -574,14 +588,29 @@ def _bind_module_field_names(
             else set()
         ),
     )
+    if collisions:
+        hidden_imports = {name: bound for name, bound in shadowable_imports.items() if name in collisions}
+        bindings = _alias_hidden_imports(models, imports, ledger, hidden_imports, reserved_names)
+        for model in models:
+            if not isinstance(model, TypeAliasBase):
+                model.set_field_name_bindings(bindings)
+    return _alias_hidden_classes(models, class_collisions, reserved_names)
+
+
+def _alias_hidden_imports(
+    models: Sequence[DataModel],
+    imports: Imports,
+    ledger: ModuleImportLedger,
+    hidden_imports: Mapping[str, tuple[str | None, str]],
+    reserved_names: set[str],
+) -> FieldNameBindings:
+    """Import each name of ``hidden_imports`` under an alias and return how the models write them."""
     type_alias_imports = {
         _import_key(import_) for model in models if isinstance(model, TypeAliasBase) for import_ in model.imports
     }
     expressions: dict[str, str] = {}
     loads: dict[str, str] = {}
-    for name, (from_, imported_name) in shadowable_imports.items():
-        if name not in collisions:
-            continue
+    for name, (from_, imported_name) in hidden_imports.items():
         alias = _reserve_import_alias(name, reserved_names)
         keep_unaliased = (from_, imported_name) in type_alias_imports
         aliased_import = Import(from_=from_, import_=imported_name, alias=alias, keep_unaliased=keep_unaliased)
@@ -591,11 +620,25 @@ def _bind_module_field_names(
         else:
             loads[name] = alias
             ledger.apply_alias(imports, aliased_import, _FIELD_NAME_BINDINGS)
-    bindings = FieldNameBindings(expressions, loads)
-    for model in models:
-        if not isinstance(model, TypeAliasBase):
-            model.set_field_name_bindings(bindings)
-    return True
+    return FieldNameBindings(expressions, loads)
+
+
+def _alias_hidden_classes(
+    models: Sequence[DataModel], class_collisions: Sequence[set[str]], reserved_names: set[str]
+) -> dict[int, str]:
+    """Bind ``<Name>_aliased = <Name>`` for each class hidden in a model and return the statements by class index.
+
+    A model writes the alias of the classes its own annotations were evaluated through; the class keeps its name.
+    """
+    aliases = {name: _reserve_import_alias(name, reserved_names) for name in sorted(set().union(*class_collisions))}
+    for model, hidden in zip(models, class_collisions, strict=True):
+        if hidden:
+            model.set_field_name_bindings(FieldNameBindings({name: aliases[name] for name in hidden}, {}))
+    return {
+        index: f"{aliases[model.class_name]} = {model.class_name}"
+        for index, model in enumerate(models)
+        if model.class_name in aliases
+    }
 
 
 def render_module_models(  # noqa: PLR0917
@@ -614,14 +657,18 @@ def render_module_models(  # noqa: PLR0917
     ``module_names_of`` (``_bind_module_field_names``) is given where the annotations are evaluated as strings.
     """
     texts = [model.render() for model in models]
-    if not _bind_module_field_names(
-        models, imports, shared_imports, ledger, target, texts=texts, module_names_of=module_names_of
-    ):
+    if (
+        statements := _bind_module_field_names(
+            models, imports, shared_imports, ledger, target, texts=texts, module_names_of=module_names_of
+        )
+    ) is None:
         return texts
     if overrides is not None:
         _remap_imports(ledger, imports, overrides)
     return [
-        text if isinstance(model, TypeAliasBase) else model.render() for model, text in zip(models, texts, strict=True)
+        (text if isinstance(model, TypeAliasBase) else model.render())
+        + (f"\n\n\n{statements[index]}" if index in statements else "")
+        for index, (model, text) in enumerate(zip(models, texts, strict=True))
     ]
 
 

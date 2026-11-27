@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Fan": {
+      "allOf": [
+        {
+          "$ref": "event.json#/$defs/Event"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "where": {
+              "$ref": "venue.json#/$defs/Place"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
