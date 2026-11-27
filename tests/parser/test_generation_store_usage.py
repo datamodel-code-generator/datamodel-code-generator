@@ -271,7 +271,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "MemberUse": ("CALL", "READ", "WRITE"),
     })
     assert Counter(row.kind for row in checker.ATTRIBUTE_FACTS) == snapshot(
-        Counter({"FACT": 75, "PRESENTATION": 61, "BOOKKEEPING": 35, "CACHE": 11})
+        Counter({"FACT": 76, "PRESENTATION": 61, "BOOKKEEPING": 35, "CACHE": 11})
     )
     assert sorted({row.owner for row in checker.ATTRIBUTE_FACTS}) == snapshot([
         "AnnotatedConstraintDataType",
