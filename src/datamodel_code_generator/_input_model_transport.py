@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Collection, Mapping
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
 
@@ -18,16 +18,23 @@ _PYTHON_TYPE_TOKEN_PREFIX = "<datamodel-code-generator-python-type:"  # noqa: S1
 class PythonTypeExpressionCollector:
     """Intern expressions behind per-load tokens that survive schema rewrites."""
 
-    __slots__ = ("_expressions", "_nonce", "_tokens")
+    __slots__ = ("_arbitrary_types", "_expressions", "_nonce", "_tokens")
 
     def __init__(self) -> None:
         self._nonce: str | None = None
+        self._arbitrary_types: set[str] = set()
         self._expressions: dict[str, PythonTypeExpr] = {}
         self._tokens: dict[PythonTypeExpr, str] = {}
 
-    def add(self, expression: PythonTypeExpr) -> str:
-        """Return one stable token for an equal immutable expression."""
+    def add(self, expression: PythonTypeExpr, *, arbitrary_types: bool = False) -> str:
+        """Return one stable token for an equal immutable expression.
+
+        ``arbitrary_types`` records that a class of the expression is one Pydantic builds only with
+        ``arbitrary_types_allowed``; a token keeps it for every use of the expression.
+        """
         if token := self._tokens.get(expression):
+            if arbitrary_types:
+                self._arbitrary_types.add(token)
             return token
         if (nonce := self._nonce) is None:
             from secrets import token_hex  # noqa: PLC0415
@@ -36,25 +43,39 @@ class PythonTypeExpressionCollector:
         token = f"{_PYTHON_TYPE_TOKEN_PREFIX}{nonce}:{len(self._expressions)}>"
         self._tokens[expression] = token
         self._expressions[token] = expression
+        if arbitrary_types:
+            self._arbitrary_types.add(token)
         return token
+
+    def has_arbitrary_types(self, token: object) -> bool:
+        """Return whether ``token`` is a token of an expression that names an arbitrary type (``add``)."""
+        return isinstance(token, str) and token in self._arbitrary_types
 
     def loaded_schema(self, schema: dict[str, object]) -> LoadedInputModelSchema:
         """Resolve build-only tokens into neutral IR at the input-model boundary."""
-        return LoadedInputModelSchema(_resolve_python_type_expressions(schema, self._expressions))
+        return LoadedInputModelSchema(
+            _resolve_python_type_expressions(schema, self._expressions, self._arbitrary_types)
+        )
 
 
 def _resolve_python_type_expressions(
     schema: dict[str, object],
     expressions: Mapping[str, PythonTypeExpr],
+    arbitrary_types: Collection[str] = (),
 ) -> dict[str, object]:
-    """Replace surviving build tokens in place without copying the schema tree."""
+    """Replace surviving build tokens in place without copying the schema tree.
+
+    A token of ``arbitrary_types`` keeps that fact on its annotation (``PythonTypeSchemaAnnotation.arbitrary_types``).
+    """
     for node in json_nodes(schema, tuples=True):
         if (
             isinstance(node, dict)
             and isinstance(token := node.get("x-python-type"), str)
             and (expression := expressions.get(token)) is not None
         ):
-            node["x-python-type"] = PythonTypeSchemaAnnotation(expression, token)
+            node["x-python-type"] = PythonTypeSchemaAnnotation(
+                expression, token, arbitrary_types=token in arbitrary_types
+            )
     return schema
 
 

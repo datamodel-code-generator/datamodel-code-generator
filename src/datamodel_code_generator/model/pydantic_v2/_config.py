@@ -8,7 +8,7 @@ from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.enums import TargetPydanticVersion
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
     from datamodel_code_generator.types import DataType
 
@@ -95,6 +95,28 @@ def get_config_attributes(
     return config_attributes_v2
 
 
+ARBITRARY_TYPES_ALLOWED_KEY = "arbitrary_types_allowed"
+_LEADING_CONFIG_KEYS: frozenset[str] = frozenset({
+    "extra",
+    "populate_by_name",
+    "validate_by_name",
+    "frozen",
+    "use_attribute_docstrings",
+})
+"""The items that ``build_base_config_parameters`` writes before ``arbitrary_types_allowed``."""
+
+
+def with_arbitrary_types_allowed(config_parameters: Mapping[str, object]) -> dict[str, object]:
+    """Return the config items with ``arbitrary_types_allowed`` where ``build_base_config_parameters`` puts it.
+
+    It comes after the items of the model's own settings (``extra``, population by name, ``frozen``, attribute
+    docstrings) and before the others, where a dataclass, which keeps the items in order, writes it.
+    """
+    items = list(config_parameters.items())
+    index = next((index for index, (key, _) in enumerate(items) if key not in _LEADING_CONFIG_KEYS), len(items))
+    return {**dict(items[:index]), ARBITRARY_TYPES_ALLOWED_KEY: True, **dict(items[index:])}
+
+
 def build_base_config_parameters(
     *,
     extra_template_data: dict[str, Any],
@@ -103,7 +125,13 @@ def build_base_config_parameters(
     config_attributes_v2_11: list[ConfigAttribute],
     include_extra: bool = True,
 ) -> dict[str, ConfigParameterValue]:
-    """Build shared ConfigDict parameters for Pydantic v2 models."""
+    """Build shared ConfigDict parameters for Pydantic v2 models.
+
+    A ``customTypePath`` type in the fields at ``__init__`` writes ``arbitrary_types_allowed``, and the config keeps it
+    where ``--type-overrides`` later replaces the type (row ``legacy-custom-type-config-at-init``): a class named by
+    text is unknown, so no later step reads it. The classes of an input model, which the model's own config allows,
+    decide once the field types are final (``_PydanticV2Model.finalize_type_alias_users``).
+    """
     config_attributes = get_config_attributes(
         extra_template_data,
         config_attributes_v2=config_attributes_v2,
@@ -128,7 +156,7 @@ def build_base_config_parameters(
 
     for data_type in all_data_types:
         if data_type.is_custom_type:
-            config_parameters["arbitrary_types_allowed"] = True
+            config_parameters[ARBITRARY_TYPES_ALLOWED_KEY] = True
             break
 
     return config_parameters

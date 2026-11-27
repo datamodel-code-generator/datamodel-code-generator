@@ -3612,6 +3612,29 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
+        "legacy-custom-type-config-at-init",
+        (
+            "a Pydantic v2 model whose fields hold a `customTypePath` type when it is created writes "
+            "`arbitrary_types_allowed` (`build_base_config_parameters`), whatever the class the path names, and "
+            "keeps it where `--type-overrides` later replaces the type; the classes of an input model decide once "
+            "the field types are final (`_PydanticV2Model._allow_arbitrary_types`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/custom_type_path_overridden.json",
+            "--input-file-type",
+            "jsonschema",
+            "--disable-timestamp",
+            "--target-python-version",
+            "3.11",
+            "--type-overrides",
+            '{"Model.kind": "decimal.Decimal", "A": "uuid.UUID"}',
+            "--formatters",
+            "builtin",
+        ),
+    ),
+    LegacyRow(
         "legacy-flat-bare-loads",
         (
             "the check of module imports named like a builtin counts every name node of a rendered model as a bare "
@@ -4407,6 +4430,7 @@ UNTESTED: Final[frozenset[str]] = frozenset({
     "legacy-content-parameter-copy",
     "legacy-converter-placeholder-title",
     "legacy-count-ref-member-as-written",
+    "legacy-custom-type-config-at-init",
     "legacy-cycle-walk-reads-values-whole",
     "legacy-dataclass-follows-every-reference",
     "legacy-dataclass-overwrites-engine",

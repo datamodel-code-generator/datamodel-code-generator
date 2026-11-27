@@ -387,6 +387,16 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         )
 
     @override
+    def _config_items_to_keep(self) -> dict[str, object]:
+        """Return the items of the config the dataclass takes from a base (``_taken_config``), then its own."""
+        return {**dict(_config_dict_items(self._taken_config())), **super()._config_items_to_keep()}
+
+    @override
+    def _fields_built_with_config(self) -> tuple[DataModelFieldBase, ...]:
+        """Return the fields of the dataclass and of its bases, which it builds again with the config it applies."""
+        return get_effective_fields(self)
+
+    @override
     def _bases_without_inherited_config(self) -> list[BaseClassDataType]:
         """Return the bases after the first, or every base where the dataclass has a config of its own.
 

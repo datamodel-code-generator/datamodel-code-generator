@@ -196,6 +196,7 @@ from datamodel_code_generator.enums import InputFileType, ReadOnlyWriteOnlyModel
 from datamodel_code_generator.imports import IMPORT_ANY as IMPORT_ANY
 from datamodel_code_generator.imports import Import as Import
 from datamodel_code_generator.imports import Imports as Imports
+from datamodel_code_generator.input_model_result import PythonTypeSchemaAnnotation, is_legacy_python_type_token
 from datamodel_code_generator.model import (  # Preserve the established parser.jsonschema export.
     DataModel,
     DataModelFieldBase,
@@ -1286,7 +1287,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if key != "x-python-type":
             return value
         from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
-        from datamodel_code_generator.input_model_result import PythonTypeSchemaAnnotation  # noqa: PLC0415
 
         if isinstance(value, PythonTypeSchemaAnnotation):
             return render_python_type_expr(value.expression)
@@ -2987,8 +2987,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not x_python_type:
             return None
         if not isinstance(x_python_type, str):
-            from datamodel_code_generator.input_model_result import PythonTypeSchemaAnnotation  # noqa: PLC0415
-
             return x_python_type.expression if isinstance(x_python_type, PythonTypeSchemaAnnotation) else None
         if (
             self._python_type_expressions is not None
@@ -2996,8 +2994,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ):
             return expression
         self._refuse_untrusted_code("x-python-type", x_python_type, obj.schema_location)
-        from datamodel_code_generator.input_model_result import is_legacy_python_type_token  # noqa: PLC0415
-
         if is_legacy_python_type_token(x_python_type):
             msg = "Internal x-python-type context is unavailable"
             raise Error(msg)
@@ -3053,7 +3049,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Get DataType from x-python-type if it's incompatible with schema type."""
         if (python_type := self._overriding_python_type(obj)) is None:
             return None
-        return _type_overrides.python_type_data_type(self, python_type)
+        return _type_overrides.python_type_data_type(
+            self,
+            python_type,
+            needs_arbitrary_types=isinstance(
+                x_python_type := obj.extras.get("x-python-type"), PythonTypeSchemaAnnotation
+            )
+            and x_python_type.arbitrary_types,
+        )
 
     def _apply_title_as_name(self, name: str, obj: JsonSchemaObject) -> str:
         """Apply title as name if use_title_as_name is enabled."""

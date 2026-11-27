@@ -314,6 +314,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact("DataType", "given_container", FactKind.FACT, (Fact.CONTAINERS,), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataType", "is_custom_type", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataType", "needs_arbitrary_types", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
         "DataType",
         "literals",

@@ -27592,6 +27592,32 @@ def test_main_root_model_config_frozen(output_file: Path) -> None:
     )
 
 
+def test_main_root_model_config_leaves_out_arbitrary_types(output_file: Path, tmp_path: Path) -> None:
+    """A RootModel leaves out an ``arbitrary_types_allowed`` its extra template data sets, as before (#7562).
+
+    Only a root that holds a class Pydantic builds with arbitrary types writes the key.
+    """
+    extra_template_data = tmp_path / "extra_template_data.json"
+    extra_template_data.write_text(
+        json.dumps({
+            "Items": {"config": {"arbitrary_types_allowed": True, "frozen": True}},
+            "ConstrainedString": {"config": {"arbitrary_types_allowed": True}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "root_model_config.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--extra-template-data",
+            str(extra_template_data),
+        ],
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--naming-strategy"],
     option_description="""Choose how models are named and how duplicate model names are told apart.

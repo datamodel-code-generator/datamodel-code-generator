@@ -5,9 +5,12 @@
 from __future__ import annotations
 
 from datamodel_code_generator.parser import DefaultPutDict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ModelWithDefaultPutDict(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
     cache: DefaultPutDict[str, str] = Field(..., title='Cache')
     optional_cache: DefaultPutDict[str, int] | None = Field(..., title='Optional Cache')

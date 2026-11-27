@@ -359,6 +359,13 @@ class Config(TypedDict):
 | TypedDict | Uses Pydantic TypeAdapter to derive schema |
 | Dict schemas | Treated as JSON Schema or OpenAPI based on `--input-file-type` |
 
+A field typed by a plain class that Pydantic builds only with `arbitrary_types_allowed=True` keeps that class, and
+each Pydantic v2 model that holds it, or names a type alias that holds it, gets `arbitrary_types_allowed=True` in its
+config. A root model of such a type is written `RootModel[Any]` with the class in its `root` field, since Pydantic
+builds the subscript before the config applies. A model whose `--base-class` the generator does not write takes the
+config of that base, so the base must allow arbitrary types itself. An `x-python-type` in a JSON Schema names a class
+by text only and gets no config; use `customTypePath` there.
+
 ## Limitations {#limitations}
 
 Python model input imports and evaluates the specified object, so the target module must be importable and safe to

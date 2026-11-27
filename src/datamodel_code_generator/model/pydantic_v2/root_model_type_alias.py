@@ -14,7 +14,7 @@ from typing_extensions import override
 
 from datamodel_code_generator._caches import cached_path_exists
 from datamodel_code_generator.model.base import _root_constraint_keywords, overrides_builtin_templates
-from datamodel_code_generator.model.pydantic_v2.base_model import _needs_model_regex_engine
+from datamodel_code_generator.model.pydantic_v2.base_model import _holds_arbitrary_type, _needs_model_regex_engine
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_ROOT_MODEL
 from datamodel_code_generator.model.pydantic_v2.root_model import RootModel
 from datamodel_code_generator.types import NONE
@@ -29,10 +29,14 @@ if TYPE_CHECKING:
 
 
 def _constrained_root_model(fields: list[DataModelFieldBase]) -> type[RootModel] | None:
-    """Keep constraints omitted by the alias template on an executable root class."""
+    """Keep what the alias template cannot write (constraints, an engine, arbitrary types) on a root class."""
     if len(fields) == 1 and (data_type := fields[0].data_type).type == NONE and not data_type.is_custom_type:
         return None
-    if any(map(_root_constraint_keywords, fields)) or _needs_model_regex_engine(fields):
+    if (
+        any(map(_root_constraint_keywords, fields))
+        or _needs_model_regex_engine(fields)
+        or _holds_arbitrary_type(fields)
+    ):
         return RootModel
     return None
 

@@ -102,9 +102,11 @@ from datamodel_code_generator.model.pydantic_base import (
     DataModelField as _PydanticBaseDataModelField,
 )
 from datamodel_code_generator.model.pydantic_v2._config import (
+    ARBITRARY_TYPES_ALLOWED_KEY,
     ConfigAttribute,
     build_base_config_parameters,
     config_attributes,
+    with_arbitrary_types_allowed,
 )
 from datamodel_code_generator.model.pydantic_v2._output_context import (
     ANNOTATED_CONSTRAINTS_CONTEXT as _ANNOTATED_CONSTRAINTS_CONTEXT,
@@ -1742,16 +1744,44 @@ def models_reaching_string_pattern_aliases(models: Iterable[DataModel]) -> set[i
     with the fields of its bases, so a model reaches an alias through any chain of fields and base classes. A lone
     surrogate is left to ``_select_surrogate_regex_engines``.
     """
-    from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
-
     models = list(models)
     pending = [
-        model
-        for model in models
-        if isinstance(model, TypeAliasBase)
-        and selects_python_engine((engine for _, engine in _alias_pattern_engines(model)), surrogates=False)
+        alias
+        for alias in _type_aliases(models)
+        if selects_python_engine((engine for _, engine in _alias_pattern_engines(alias)), surrogates=False)
     ]
     return _reaching_aliases(models, pending) if pending else set()
+
+
+def _type_aliases(models: Iterable[DataModel]) -> list[DataModel]:
+    """Return the type aliases of the models: they have no config, so the models that name one build it."""
+    from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
+
+    return [model for model in models if isinstance(model, TypeAliasBase)]
+
+
+def _holds_arbitrary_type(fields: Iterable[DataModelFieldBase]) -> bool:
+    """Return whether a type of the fields is one a model builds only with ``arbitrary_types_allowed``."""
+    return any(data_type.needs_arbitrary_types for field in fields for data_type in field.data_type.all_data_types)
+
+
+def _builds_arbitrary_type(fields: Iterable[DataModelFieldBase], aliases: Collection[int]) -> bool:
+    """Return whether the fields hold an arbitrary type, or name a type alias of ``aliases`` that does."""
+    fields = list(fields)
+    return _holds_arbitrary_type(fields) or (
+        bool(aliases) and any(id(reference.source) in aliases for reference in _field_references(fields))
+    )
+
+
+def _models_reaching_arbitrary_type_aliases(models: Iterable[DataModel]) -> set[int]:
+    """Return the ids of the type aliases that hold an arbitrary type or name another such alias.
+
+    A type alias has no config, and Pydantic builds its body with the config of the model that names it, so a model
+    needs ``arbitrary_types_allowed`` for the arbitrary types of an alias it names, through any chain of aliases.
+    """
+    aliases = _type_aliases(models)
+    pending = [alias for alias in aliases if _holds_arbitrary_type(alias.fields)]
+    return _reaching_aliases(aliases, pending) if pending else set()
 
 
 def _holds_lone_surrogate(models: Iterable[DataModel]) -> bool:
@@ -1968,6 +1998,9 @@ class _PydanticV2Model(DataModel):
         A config that selects the engine only for the patterns of its bases marks the models that apply it alone: they
         redeclare each inherited field whose pattern the engine cannot build (``_redeclare_rejected_patterns``), and the
         bases keep their output (#7452).
+
+        Last, a model whose final field types hold a class that Pydantic builds only with ``arbitrary_types_allowed``
+        allows it (``_allow_arbitrary_types``).
         """
         for model in models:
             if isinstance(model, BaseModel) and model._own_patterns_select_python():  # noqa: SLF001
@@ -1991,6 +2024,46 @@ class _PydanticV2Model(DataModel):
             for field in current.fields:
                 field.invalidate_semantic_caches()
         cls._redeclare_rejected_patterns(models, for_bases, built)
+        cls._allow_arbitrary_types(models)
+
+    @classmethod
+    def _allow_arbitrary_types(cls, models: list[DataModel]) -> None:
+        """Write ``arbitrary_types_allowed`` in the config of each model that builds an arbitrary type, once final.
+
+        A model builds the types of its fields (``_fields_built_with_config``) and those of the type aliases it names
+        (``_models_reaching_arbitrary_type_aliases``) with the config it applies. A base decides before its subclasses,
+        and a model that applies a config naming the key, its own or a generated base's, keeps it; so does a model
+        whose config a base class the generator does not read may set (``applied_config``), which no one can tell.
+        """
+        reached = _models_reaching_arbitrary_type_aliases(models)
+
+        def builds_arbitrary_type(model: _PydanticV2Model) -> bool:
+            return _builds_arbitrary_type(model._fields_built_with_config(), reached)
+
+        needing = {
+            id(model) for model in models if isinstance(model, _PydanticV2Model) and builds_arbitrary_type(model)
+        }
+        if not needing:
+            return
+        decided: set[int] = set()
+
+        def decide(model: _PydanticV2Model) -> None:
+            if id(model) in decided:
+                return
+            decided.add(id(model))
+            for base in _find_base_classes(model):
+                if isinstance(base, _PydanticV2Model):
+                    decide(base)
+            if id(model) not in needing:
+                return
+            model._keep_string_pattern_aliases_out_of_bases()
+            items, known = model.applied_config()
+            if ARBITRARY_TYPES_ALLOWED_KEY not in items and (known is None or ARBITRARY_TYPES_ALLOWED_KEY in known):
+                model._allow_arbitrary_types_in_config()
+
+        for model in models:
+            if isinstance(model, _PydanticV2Model):
+                decide(model)
 
     @classmethod
     def _select_engines_for_bases(cls, models: list[DataModel], selected: set[int]) -> None:
@@ -2052,6 +2125,10 @@ class _PydanticV2Model(DataModel):
         """Return whether the model applies the config of a base it names: a model merges the config of every base."""
         return True
 
+    def _fields_built_with_config(self) -> Sequence[DataModelFieldBase]:
+        """Return the fields Pydantic builds with the config the model applies: its own, a model merges the configs."""
+        return self.fields
+
     def _bases_without_inherited_config(self) -> Sequence[BaseClassDataType]:  # noqa: PLR6301
         """Return the bases whose config the model does not take: none, as a model takes the config of every base."""
         return ()
@@ -2080,6 +2157,19 @@ class _PydanticV2Model(DataModel):
         config_parameters["regex_engine"] = '"python-re"'
         self._store_config(config_parameters)
         self.invalidate_render_caches()
+
+    def _allow_arbitrary_types_in_config(self) -> None:
+        """Set ``arbitrary_types_allowed`` in the config the model renders, keeping the items it already has.
+
+        The model gets a config of its own, as ``_select_python_regex_engine`` does: the one in the template data may
+        be shared with every model of the same name (``--extra-template-data``).
+        """
+        self._store_config(with_arbitrary_types_allowed(self._config_items_to_keep()))
+        self.invalidate_render_caches()
+
+    def _config_items_to_keep(self) -> dict[str, object]:
+        """Return the items of the config the model has, which a config of its own keeps."""
+        return dict(_config_dict_items(self.extra_template_data.get("config")))
 
     def _store_config(self, config_parameters: dict[str, Any]) -> None:
         """Store the config the model renders with the items the template writes, and import what they name.

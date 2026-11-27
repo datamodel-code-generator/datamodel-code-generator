@@ -1618,10 +1618,12 @@ class PythonModelBases(list[dict[str, str]])
     __slots__ = ('_python_field_overrides',)
     def __init__(self, reference: str, fields: Mapping[str, str]) -> None
 class PythonTypeSchemaAnnotation
-    __slots__ = ('_expression', '_legacy_token')
-    def __init__(self, expression: PythonTypeExpr, legacy_token: str | None=None) -> None
+    __slots__ = ('_arbitrary_types', '_expression', '_legacy_token')
+    def __init__(self, expression: PythonTypeExpr, legacy_token: str | None=None, *, arbitrary_types: bool=False) -> None
     @property
     def expression(self) -> PythonTypeExpr
+    @property
+    def arbitrary_types(self) -> bool
     @property
     def legacy_token(self) -> str | None
     def __deepcopy__(self, _memo: dict[int, object]) -> PythonTypeSchemaAnnotation
@@ -5425,6 +5427,7 @@ class DataType(_BaseModel)
     tuple_item_count: int | None = Field(default=None, ge=0)
     given_container: Optional[GivenContainerName] = None
     is_custom_type: bool = False
+    needs_arbitrary_types: bool = False
     literals: list[Union[StrictBool, StrictInt, StrictStr]] = Field(default_factory=list)
     enum_member_literals: list[tuple[str, str]] = Field(default_factory=list)
     enum_member_tag_values: tuple[Union[StrictBool, StrictInt, StrictStr], ...] = ()
