@@ -21,22 +21,3 @@ covers = [
     "main/openapi/main_openapi/directory_input_type_of_top_level_files_does_not_depend_on_the_listing[in-place].model/",
     "main/openapi/main_openapi/directory_input_type_of_top_level_files_does_not_depend_on_the_listing[separate-output].model/",
 ]
-
-[[change.cells]]
-input = ["tests/data/jsonschema/nested_resources"]
-backends = "*"
-options = "*"
-aspects = ["exit", "message", "name-added", "name-removed", "numbered-name-removed", "type", "warning"]
-
-[[change.cells]]
-input = ["tests/data/jsonschema/merged_copy_duplicates"]
-backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
-options = "*"
-aspects = ["exit", "message", "name-added", "name-removed", "numbered-name-removed", "type", "warning"]
-
-[[change.cells]]
-input = ["project:openmetadata/schema"]
-backends = ["pydantic_v2.BaseModel"]
-options = [["--use-annotated", "--base-class", "metadata.ingestion.models.custom_pydantic.BaseModel", "--set-default-enum-member", "--formatters", "black", "isort"]]
-input_file_type = "jsonschema"
-aspects = ["numbered-name-removed"]
