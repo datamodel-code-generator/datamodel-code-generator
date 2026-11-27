@@ -740,8 +740,9 @@ referenced types directly.
 Write a dataclass or TypedDict root with the Python types of a Pydantic model root.
 
 `--input-model` writes a Pydantic model with the Python types JSON Schema cannot spell: a `Callable` branch of a union
-and a `type[X]` field keep their types. A dataclass or TypedDict root takes the JSON Schema Pydantic's standard
-generator writes for it instead, which drops the `Callable` branch (`retries: int`) and writes `type[int]` as `Any`.
+and a `type[X]` field keep their types. Outside the reuse path, a dataclass or TypedDict root takes the JSON Schema
+Pydantic's standard generator writes for it instead, which drops the `Callable` branch (`retries: int`) and writes
+`type[int]` as `Any`.
 With this option such a root is written as a Pydantic model root is, so the output keeps both.
 
 !!! tip "Usage"

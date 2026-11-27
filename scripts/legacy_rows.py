@@ -4218,8 +4218,8 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         (
             "without `--keep-typed-input-model-root-python-types`, a dataclass or TypedDict root of an input model is "
             "written as the JSON Schema of Pydantic's standard generator spells it, which drops the `Callable` branch "
-            "of a union (`int | Callable` is `int`, and `int | str` on the reuse path) and writes `type[X]` as `Any`, "
-            "where a Pydantic model root keeps "
+            "of a union (`int \\| Callable` is `int`, and `int \\| str` on the reuse path) and writes "
+            "`type[X]` as `Any`, where a Pydantic model root keeps "
             "both (`input_model.py:_model_schema_with_python_types`)"
         ),
         fix=KEEP,
