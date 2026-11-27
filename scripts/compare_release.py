@@ -1734,14 +1734,17 @@ class Runner:
 
 
 def _hashed_files(path: Path) -> list[Path]:
-    """Return the files a hash covers: the file itself, or a directory's files outside hidden and cache dirs."""
+    """Return the files a hash covers: the file itself, or every file of a directory outside cache dirs.
+
+    Files under hidden directories count too: a directory input reads their text files (`is_hidden_binary`), so adding,
+    removing or changing one must change the key of a cached base output.
+    """
     if not path.is_dir():
         return [path]
     return [
         file
         for file in sorted(path.rglob("*"))
-        if file.is_file()
-        and not any(part.startswith(".") or part == "__pycache__" for part in file.relative_to(path).parts[:-1])
+        if file.is_file() and "__pycache__" not in file.relative_to(path).parts[:-1]
     ]
 
 
