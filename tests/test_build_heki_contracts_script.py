@@ -505,9 +505,7 @@ def test_the_import_boundaries_raise_where_the_layer_table_is_out_of_step(
     ):
         build_heki_contracts.import_boundary_contracts(repo)
     build_heki_contracts.import_boundary_contracts(repo, partial=True)
-    with pytest.raises(
-        ValueError, match=r"^architecture contracts without a class or module of the package to judge: "
-    ):
+    with pytest.raises(ValueError, match=r"^architecture contracts without a module of the package to judge: "):
         build_heki_contracts.architecture_contracts(repo)
     build_heki_contracts.architecture_contracts(repo, partial=True)
     monkeypatch.setitem(build_heki_contracts._LEAF_IMPORTS, "no-such-layer", ((), "why"))
@@ -526,24 +524,6 @@ def test_the_architecture_allowances_name_a_function_the_package_defines(
 
     with pytest.raises(
         ValueError, match=r"^architecture contracts allow functions the package does not define: parser\.base:gone$"
-    ):
-        build_heki_contracts.architecture_contracts(repo)
-
-
-@pytest.mark.parametrize(
-    ("table", "entry"), [("SEMANTIC_OWNERS", "model.base.Gone"), ("SEMANTIC_ATTRIBUTES", "gone_attribute")]
-)
-@pytest.mark.allow_direct_assert("a stale owner or attribute must stop the build, not be stored as an expected output")
-def test_the_architecture_contracts_name_only_what_a_class_has(
-    table: str, entry: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """An owner class or an attribute that no class of the package has is an error, not an entry heki refuses."""
-    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
-    monkeypatch.setattr(build_heki_contracts, table, (*getattr(build_heki_contracts, table), entry))
-
-    with pytest.raises(
-        ValueError,
-        match=rf"^architecture contracts name classes or attributes the package does not have: {re.escape(entry)}$",
     ):
         build_heki_contracts.architecture_contracts(repo)
 
@@ -1788,28 +1768,14 @@ def test_heki_reports_a_decision_that_calls_the_write_of_another(tmp_path: Path)
 @pytest.mark.parametrize(
     ("changes", "message"),
     [
-        (
-            {"writer_methods": ("never_defined",)},
-            "DECISION_DECLS: omit_held_null writes through never_defined, which _DecisionWriter does not define",
-        ),
-        (
-            {"module": ""},
-            "DECISION_DECLS: omit_held_null names no module of the package or no write (module, writer_methods)",
-        ),
-        (
-            {"module": "parser/never_defined.py"},
-            "DECISION_DECLS: omit_held_null names no module of the package or no write (module, writer_methods)",
-        ),
-        (
-            {"writer_methods": ()},
-            "DECISION_DECLS: omit_held_null names no module of the package or no write (module, writer_methods)",
-        ),
+        ({"module": ""}, "DECISION_DECLS: omit_held_null names no module or no write (module, writer_methods)"),
+        ({"writer_methods": ()}, "DECISION_DECLS: omit_held_null names no module or no write (module, writer_methods)"),
     ],
-    ids=["undefined-write", "no-module", "unknown-module", "no-write"],
+    ids=["no-module", "no-write"],
 )
 @pytest.mark.allow_direct_assert("a stale table row must stop the build, not be stored as an expected output")
 def test_decision_writes_name_a_method_of_the_writer(changes: dict[str, Any], message: str) -> None:
-    """Each declaration of ``DECISION_DECLS`` names its module and writes, methods ``_DecisionWriter`` defines."""
+    """Each declaration of ``DECISION_DECLS`` names its module and writes; heki refuses a method naming nothing."""
     repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
     decls = {"omit_held_null": replace(DECISION_DECLS["omit_held_null"], **changes)}
 
@@ -2008,29 +1974,16 @@ def test_heki_reports_imports_written_outside_the_ledger(tmp_path: Path) -> None
     ), result.stderr
 
 
-@pytest.mark.parametrize(
-    ("mutators", "writers", "message"),
-    [
-        pytest.param(("never_defined",), (), "IMPORTS_MUTATORS: Imports defines no method never_defined", id="mutator"),
-        pytest.param(
-            (),
-            (LedgerWriter("parser/base.py", "Parser.never_defined", "none"),),
-            "LEDGER_WRITERS: parser/base.py defines no Parser.never_defined",
-            id="writer",
-        ),
-    ],
-)
 @pytest.mark.allow_direct_assert("a stale table row must stop the build, not be stored as an expected output")
-def test_import_ledger_rows_name_defined_methods(
-    mutators: tuple[str, ...], writers: tuple[LedgerWriter, ...], message: str
-) -> None:
-    """``IMPORTS_MUTATORS`` names methods of ``Imports`` and ``LEDGER_WRITERS`` defs the package defines."""
+def test_import_ledger_rows_name_defined_methods() -> None:
+    """``LEDGER_WRITERS`` names defs the package defines; heki refuses an ``IMPORTS_MUTATORS`` row naming nothing."""
     repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+    writers = (LedgerWriter("parser/base.py", "Parser.never_defined", "none"),)
 
     with pytest.raises(SystemExit) as stopped:
-        build_heki_contracts.import_ledger_contracts(repo, mutators, writers)
+        build_heki_contracts.import_ledger_contracts(repo, (), writers)
 
-    assert str(stopped.value) == message
+    assert str(stopped.value) == "LEDGER_WRITERS: parser/base.py defines no Parser.never_defined"
 
 
 SEEDED_STORE_CALLS = {
@@ -2071,9 +2024,8 @@ def test_heki_reports_store_operations_called_outside_the_builder(tmp_path: Path
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
     (tmp_path / "scripts").mkdir()
-    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    _contracts_file(contracts, build_heki_contracts.store_operation_contracts(repo, ("omit_field_default",)))
+    _contracts_file(contracts, build_heki_contracts.store_operation_contracts(("omit_field_default",)))
     heki = shutil.which("heki", path=sysconfig.get_path("scripts")) or "heki"
 
     result = subprocess.run(
@@ -2100,22 +2052,10 @@ def test_heki_reports_store_operations_called_outside_the_builder(tmp_path: Path
     ), result.stderr
 
 
-@pytest.mark.allow_direct_assert("a stale table row must stop the build, not be stored as an expected output")
-def test_store_operations_name_a_method_of_the_store() -> None:
-    """An operation ``GENERATION_STORE_MUTATION_METHODS`` names is a method ``GenerationStore`` defines."""
-    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
-
-    with pytest.raises(SystemExit) as stopped:
-        build_heki_contracts.store_operation_contracts(repo, ("never_defined",))
-
-    assert str(stopped.value) == "GENERATION_STORE_MUTATION_METHODS: GenerationStore defines no never_defined"
-
-
-@pytest.mark.parametrize("name", ["FINAL_FACTS", "FINAL_FACTS_SITE", "PARSER"])
 @pytest.mark.allow_direct_assert("a stale pipeline home must stop the build, not be stored as an expected output")
-def test_pipeline_contracts_name_scopes_the_package_defines(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
-    """The scopes the pipeline contracts name exist in the package."""
-    monkeypatch.setattr(build_heki_contracts, name, Home("parser/base.py", "NeverDefined"))
+def test_pipeline_contracts_name_the_site_the_package_defines(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The one function the pipeline contracts let build ``FinalFacts`` exists in the package."""
+    monkeypatch.setattr(build_heki_contracts, "FINAL_FACTS_SITE", Home("parser/base.py", "NeverDefined"))
     repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
 
     with pytest.raises(SystemExit) as stopped:
