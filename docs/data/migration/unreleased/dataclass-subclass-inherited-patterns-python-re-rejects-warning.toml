@@ -1,0 +1,20 @@
+[[change]]
+id = "dataclass-subclass-inherited-patterns-python-re-rejects-warning"
+category = "notice"
+kind = "warning"
+action = "warn"
+title = "A pydantic dataclass that redeclares an inherited field of another module or a type alias without a pattern Python's re rejects warns"
+summary = "Where a pydantic_v2.dataclass selects python-re for a look-around pattern of a base, it now also redeclares the fields of bases in other modules, and the fields whose type alias holds a pattern Python's re rejects, such as \\p{L}, without that pattern, and warns that the field is generated without the constraint, as it does for the fields of the bases of its module. Such a module failed at import before."
+refs = ["#7563", "#7487"]
+source = "release-note"
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/python_engine_beside_rejected_in_an_alias.json",
+    "tests/data/openapi/python_engine_beside_rejected_alias_in_a_builtin_named_module.yaml",
+    "tests/data/openapi/python_engine_beside_rejected_alias_in_other_modules.yaml",
+    "tests/data/openapi/python_engine_beside_rejected_in_other_modules.yaml",
+]
+backends = ["pydantic_v2.dataclass"]
+options = "*"
+match = "regex engine, which the config building it selects, does not compile"

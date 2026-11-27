@@ -2376,8 +2376,10 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         decision=(
             "how the config of a Pydantic v2 model takes Python's regex engine once a pattern needs it: "
             '`regex_engine="python-re"` unless the config already names an engine, which the model keeps (row '
-            "`legacy-dataclass-overwrites-engine`: a dataclass writes it over the engine its config names); the config "
-            "is stored with the items its template writes, which the readers take from there inside a parse"
+            "`legacy-dataclass-overwrites-engine`: a dataclass writes it over the engine its config names); a config "
+            "the model takes from a base gives its items first, which only the engine the patterns of a dataclass's "
+            "bases select keeps (row `legacy-dataclass-own-engine-drops-taken-config`); the config is stored with the "
+            "items its template writes, which the readers take from there inside a parse"
         ),
         homes=(
             Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._select_python_regex_engine"),
@@ -2396,7 +2398,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`BaseModel.refresh_field_config` (called by `BaseModel.__init__`, the pass `refresh_field_config` and "
             "`type_dict_keys_by_root_types`), `_PydanticV2Model.finalize_type_alias_users` (again from the final "
             "patterns of every BaseModel), `model/pydantic_v2/dataclass.py`: "
-            "`DataClass._apply_lookaround_regex_engine` (lazily, from `imports` and `render`); the stores of "
+            "`DataClass._apply_lookaround_regex_engine` (lazily, from `imports` and `render`), "
+            "`DataClass._config_owner` (the first dataclass base whose config it applies), `DataClass._taken_config` "
+            "(that base's config, which `_select_python_regex_engine` keeps); the stores of "
             "`BaseModel.__init__` and `DataClass.__init__`; the readers `_applied_config_items`, "
             "`_pydantic_constructs`, `DataClass._takes_config_of`, `DataClass._bases_without_inherited_config`; "
             "`model/pydantic_v2/root_model.py`: `RootModel._decide_config_items` stores a root model's items again "
@@ -2409,6 +2413,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("model/pydantic_v2/dataclass.py", "DataClass.__init__"),
             Home("model/pydantic_v2/dataclass.py", "DataClass._takes_config_of"),
             Home("model/pydantic_v2/dataclass.py", "DataClass._bases_without_inherited_config"),
+            Home("model/pydantic_v2/dataclass.py", "DataClass._config_owner"),
+            Home("model/pydantic_v2/dataclass.py", "DataClass._taken_config"),
             Home("model/pydantic_v2/root_model.py", "RootModel._decide_config_items"),
         ),
     ),
@@ -2586,11 +2592,14 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "the callers of the overridable `parser/base.py:Parser._copy_model_type` hook "
             "(`parser/_passes/modules.py:collapse_root_models_in_scope`, `parser/jsonschema.py`: "
             "`JsonSchemaParser._copy_schema_runtime_validation_for_variant`, "
-            "`JsonSchemaParser._get_inherited_field_type`), `model/msgspec.py:DataModelField._copy_data_type`"
+            "`JsonSchemaParser._get_inherited_field_type`), `model/msgspec.py:DataModelField._copy_data_type`, "
+            "`parser/generation.py:GenerationStore.record_hint_body_types` (the copies a field keeps of the types "
+            "naming a model that its hint writes from type alias bodies)"
         ),
         sites=(
             Home("types.py", "DataTypeManager.copy_data_type"),
             Home("parser/_passes/modules.py", "collapse_root_models_in_scope"),
+            Home("parser/generation.py", "GenerationStore.record_hint_body_types"),
             Home("parser/jsonschema.py", "JsonSchemaParser._copy_schema_runtime_validation_for_variant"),
             Home("parser/jsonschema.py", "JsonSchemaParser._get_inherited_field_type"),
         ),
@@ -7590,6 +7599,24 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "dataclass or TypedDict a single `--input-model` loads (`_load_single_model_schema`, which refuses a "
             "msgspec Struct, for which Pydantic has no schema, and reads the classes with typed fields, so that an "
             "enum with a dataclass mixin loads as its dataclass does)"
+        ),
+        sites=(),
+    ),
+    DecisionHome(
+        decision=(
+            "the JSON Schema a root class of an input model is written to, and the generator that writes it: a "
+            "Pydantic model, a dataclass or a TypedDict, with the Python types JSON Schema cannot express added"
+        ),
+        homes=(Home("input_model.py", "_model_schema_with_python_types"),),
+        core="`input_model.py:_model_schema_with_python_types`",
+        adapters=(
+            "the roots a load writes (`_load_model_schema`, `_load_single_model_schema`, which takes the one root of a "
+            "single `--input-model` whatever its kind) and the parents of a model whose inheritance a load rewrites "
+            "(`_transform_single_model_to_inheritance`); a Pydantic model takes the generator of the input model, as "
+            "does a dataclass or TypedDict on the reuse path (which keeps the forms it was released with), and any "
+            "other dataclass or TypedDict takes Pydantic's standard generator, and the generator of a Pydantic model "
+            "only where the standard one cannot write it (a `Callable` field or an arbitrary class), which also "
+            "names the definitions Pydantic merged while it wrote the schema"
         ),
         sites=(),
     ),

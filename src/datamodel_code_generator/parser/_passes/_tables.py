@@ -380,10 +380,7 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
                 late(render_prep.prepare_type_alias_fields),
                 when=lambda self, _: self.data_model_field_type.PREPARE_TYPE_ALIAS_FIELD is not None,
             ),
-            PassSpec(
-                "finalize_type_alias_users",
-                lambda self, s: self.data_model_type.finalize_type_alias_users(s.all_models),
-            ),
+            PassSpec("finalize_type_alias_users", late(render_prep.finalize_type_alias_users)),
             PassSpec(
                 "mark_set_item_models_hashable",
                 lambda self, s: render_prep.mark_set_item_models_hashable(self, s.all_models),

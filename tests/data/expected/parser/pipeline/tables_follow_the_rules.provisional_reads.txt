@@ -71,6 +71,7 @@ fix_constructor_field_ordering reads FIELD_TYPES, NULLABLE before update_type_al
 assign_forward_reference_fields reads FIELD_TYPES before update_type_aliases writes it (the forward-reference assignment reads the field types unquoted)
 assign_forward_reference_fields reads DEFAULTS before set_validate_default_on_fields writes it (the forward-reference assignment reads which fields have a default, which deserializing it keeps)
 warn_required_assignments_after_defaults reads KEYWORD_ONLY before fix_tag_opt_out_field_ordering writes it (the pydantic warning and this msgspec repair never read or write the same models)
+finalize_type_alias_users reads MODULE_IMPORTS before finalize_structured_imports writes it (aliases imports after the copies a model redeclares imported their models)
 snapshot_model_imports reads MODELS_EXIST before remove_unused_models writes it (the snapshot holds the imports of unused models, which leave with them)
 remove_unused_imports reads MODULE_IMPORTS before resolve_module_import_conflicts writes it (resolves the conflicts of the imports that are used)
 resolve_module_import_conflicts reads MODULE_IMPORTS before alias_builtin_shadowing_module_imports writes it (aliases the module imports once their names are final)

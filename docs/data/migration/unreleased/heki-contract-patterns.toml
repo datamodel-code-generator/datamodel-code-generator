@@ -3,7 +3,7 @@ id = "heki-contract-patterns"
 category = "harness"
 title = "Write the heki contracts with heki's own patterns"
 summary = "The heki contract tests store the targets the contracts now write with heki's globs, and the seeded packages the repository contracts judge are fixture files whose reports are stored."
-refs = ["#1"]
+refs = ["#7570"]
 covers = [
     "build_heki_contracts_script/heki_reports_the_imports_that_cross_a_layer.txt",
 ]

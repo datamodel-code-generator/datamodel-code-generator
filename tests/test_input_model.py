@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, get_args, get_origin, get_type_hints
 
 import pytest
 from pydantic import TypeAdapter, ValidationError
+from pydantic.json_schema import PydanticJsonSchemaWarning
 
 from datamodel_code_generator import (
     DataModelType,
@@ -1102,6 +1103,244 @@ def test_input_model_unserializable_fields_of_held_classes(
             "builtin",
         ],
     )
+
+
+_TYPED_ROOTS = (
+    "from __future__ import annotations\n\n"
+    "import collections.abc\n"
+    "from dataclasses import dataclass, field\n"
+    "from typing import Annotated, Callable, Generic, Optional, TypeVar, Union\n\n"
+    "from pydantic import BaseModel, ConfigDict, Field\n"
+    "from pydantic.dataclasses import dataclass as pydantic_dataclass\n"
+    "from typing_extensions import NotRequired, TypedDict\n\n"
+    "T = TypeVar('T')\n\n\n"
+    "class Thing:\n"
+    "    pass\n\n\n"
+    "@dataclass\n"
+    "class Job:\n"
+    "    name: str\n"
+    "    hook: Callable\n\n\n"
+    "class Probe(TypedDict):\n"
+    "    name: str\n"
+    "    hook: Callable[[int], int]\n\n\n"
+    "@pydantic_dataclass\n"
+    "class Task:\n"
+    "    name: str\n"
+    "    hook: Callable[[int], int]\n\n\n"
+    "@dataclass\n"
+    "class Forms:\n"
+    "    convert: Callable[[int], str]\n"
+    "    count: collections.abc.Callable[..., int]\n\n\n"
+    "@dataclass\n"
+    "class OptionalHook:\n"
+    "    name: str\n"
+    "    hook: Optional[Callable[[int], int]] = None\n\n\n"
+    "class OptionalProbe(TypedDict):\n"
+    "    name: str\n"
+    "    hook: Optional[Callable[[int], int]]\n\n\n"
+    "@dataclass\n"
+    "class Containers:\n"
+    "    hooks: list[Callable[[int], int]]\n"
+    "    table: dict[str, Callable[[int], int]]\n\n\n"
+    "@dataclass\n"
+    "class Pair:\n"
+    "    pair: tuple[Callable[[int], int], int]\n\n\n"
+    "@dataclass\n"
+    "class Defaults:\n"
+    "    name: str\n"
+    "    printer: Callable[[object], None] = print\n"
+    "    hooks: list[Callable[[], None]] = field(default_factory=list)\n\n\n"
+    "class PartialProbe(TypedDict, total=False):\n"
+    "    name: str\n"
+    "    hook: Callable[[int], int]\n\n\n"
+    "class LaterProbe(TypedDict):\n"
+    "    name: str\n"
+    "    hook: NotRequired[Callable[[int], int]]\n\n\n"
+    "@dataclass\n"
+    "class Box(Generic[T]):\n"
+    "    name: str\n"
+    "    hook: Callable[[T], T]\n\n\n"
+    "@dataclass\n"
+    "class Leaf:\n"
+    "    run: Callable[[int], int]\n\n\n"
+    "class LeafModel(BaseModel):\n"
+    "    run: Callable[[int], int]\n\n\n"
+    "class LeafProbe(TypedDict):\n"
+    "    stop: Callable[[str], str]\n\n\n"
+    "@dataclass\n"
+    "class Tree:\n"
+    "    name: str\n"
+    "    leaf: Leaf\n"
+    "    leaves: list[Leaf]\n"
+    "    model: LeafModel\n\n\n"
+    "class ProbeTree(TypedDict):\n"
+    "    name: str\n"
+    "    probe: LeafProbe\n"
+    "    leaf: Leaf\n\n\n"
+    "@dataclass\n"
+    "class FailingUnion:\n"
+    "    hook: Callable[[int], int]\n"
+    "    value: Union[int, Callable]\n"
+    "    kind: type[int]\n\n\n"
+    "@pydantic_dataclass\n"
+    "class Aliased:\n"
+    "    name: str\n"
+    "    run: Annotated[Callable[[], None], Field(alias='runner')]\n\n\n"
+    "@pydantic_dataclass(config=ConfigDict(arbitrary_types_allowed=True))\n"
+    "class Holder:\n"
+    "    name: str\n"
+    "    thing: Thing\n\n\n"
+    "@dataclass\n"
+    "class Plain:\n"
+    "    tags: list[str]\n\n\n"
+    "@dataclass\n"
+    "class ReusedHook:\n"
+    "    job: Plain\n"
+    "    hook: Callable[[int], int]\n\n\n"
+    "@dataclass\n"
+    "class ReusedOptionalHook:\n"
+    "    job: Plain\n"
+    "    hook: Optional[Callable[[int], int]] = None\n\n\n"
+    "@dataclass\n"
+    "class ReusedUnion:\n"
+    "    job: Plain\n"
+    "    value: Union[int, Callable]\n"
+    "    choice: Union[int, Callable, None] = None\n"
+    "    values: list[Union[int, Callable]] = field(default_factory=list)\n\n\n"
+    "@dataclass\n"
+    "class ReusedType:\n"
+    "    job: Plain\n"
+    "    kind: type[int]\n\n\n"
+    "class Wrapped(BaseModel, Generic[T]):\n"
+    "    value: T\n\n\n"
+    "@dataclass\n"
+    "class ForeignGeneric:\n"
+    "    box: Wrapped[int]\n"
+    "    hook: Callable[[int], int]\n"
+    "    value: Union[int, Callable]\n"
+    "    kind: type[int]\n\n\n"
+    "@pydantic_dataclass\n"
+    "class Collide:\n"
+    "    job: Plain\n"
+    "    a: int = Field(validation_alias='b')\n"
+    "    b: str = 'x'\n\n\n"
+    "@dataclass\n"
+    "class HeldHook:\n"
+    "    hook: Callable[[int], int]\n"
+    "    value: Union[int, Callable]\n"
+    "    kind: type[int]\n"
+    "    opt: Optional[Union[int, Callable]] = None\n\n\n"
+    "@dataclass\n"
+    "class ForeignHolds:\n"
+    "    box: Wrapped[int]\n"
+    "    held: HeldHook\n"
+    "    items: list[HeldHook] = field(default_factory=list)\n\n\n"
+    "@dataclass\n"
+    "class WorkingUnion:\n"
+    "    value: Union[int, Callable]\n\n\n"
+    "class WorkingProbe(TypedDict):\n"
+    "    value: Union[int, Callable]\n\n\n"
+    "@dataclass\n"
+    "class WorkingType:\n"
+    "    kind: type[int]\n"
+    "    inner: WorkingUnion\n"
+)
+
+_OUTPUT_MODEL_TYPES = (
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "dataclasses.dataclass",
+    "typing.TypedDict",
+    "msgspec.Struct",
+)
+_REUSE_ALL = ("--input-model-ref-strategy", "reuse-all")
+
+
+@pytest.mark.parametrize(
+    ("root", "extra_args"),
+    [
+        *(
+            pytest.param("Job", ["--output-model-type", output], id=f"dataclass-root-{output}")
+            for output in _OUTPUT_MODEL_TYPES
+        ),
+        pytest.param("Probe", [], id="typeddict-root"),
+        pytest.param("Task", [], id="pydantic-dataclass-root"),
+        pytest.param("Forms", [], id="callable-forms"),
+        pytest.param("OptionalHook", [], id="optional-callable"),
+        pytest.param("OptionalProbe", ["--output-model-type", "typing.TypedDict"], id="optional-callable-typeddict"),
+        pytest.param("Containers", [], id="callable-in-containers"),
+        pytest.param("Pair", [], id="callable-in-tuple"),
+        pytest.param("PartialProbe", ["--output-model-type", "typing.TypedDict"], id="typeddict-total-false"),
+        pytest.param("LaterProbe", ["--output-model-type", "typing.TypedDict"], id="typeddict-not-required"),
+        pytest.param("Box", [], id="generic-dataclass-root"),
+        pytest.param("Tree", [], id="nested-held-classes"),
+        pytest.param("Tree", ["--input-model-ref-strategy", "regenerate-all"], id="nested-held-classes-regenerate-all"),
+        pytest.param("Tree", ["--input-model-ref-strategy", "reuse-foreign"], id="nested-held-classes-reuse-foreign"),
+        pytest.param("ProbeTree", [], id="typeddict-holds-dataclass"),
+        pytest.param("FailingUnion", [], id="union-in-failing-root"),
+        pytest.param("Aliased", ["--read-input-model-dataclass-fields-by-alias"], id="pydantic-dataclass-by-alias"),
+        pytest.param("Aliased", [_ALL_KEYS], id="pydantic-dataclass-by-name"),
+        pytest.param("Holder", ["--output-model-type", "dataclasses.dataclass"], id="arbitrary-type"),
+        pytest.param("ReusedHook", [*_REUSE_ALL, _ALL_KEYS], id="reuse-all-root-field"),
+        *(
+            pytest.param(
+                "ReusedHook", [*_REUSE_ALL, "--output-model-type", output], id=f"reuse-all-root-field-{output}"
+            )
+            for output in _OUTPUT_MODEL_TYPES[1:]
+        ),
+        pytest.param("ReusedOptionalHook", [*_REUSE_ALL, _ALL_KEYS], id="reuse-all-optional"),
+        pytest.param("ReusedUnion", list(_REUSE_ALL), id="reuse-all-union"),
+        pytest.param("ReusedType", list(_REUSE_ALL), id="reuse-all-type-kept"),
+        pytest.param("ForeignGeneric", ["--input-model-ref-strategy", "reuse-foreign"], id="reuse-foreign-generic"),
+        pytest.param("Collide", [*_REUSE_ALL, _ALL_KEYS], id="reuse-all-field-name-marker"),
+        pytest.param(
+            "ForeignHolds", ["--input-model-ref-strategy", "reuse-foreign", _ALL_KEYS], id="reuse-foreign-held-class"
+        ),
+        pytest.param("WorkingUnion", [], id="working-union"),
+        pytest.param("WorkingProbe", [], id="working-union-typeddict"),
+        pytest.param("WorkingType", [], id="working-type"),
+    ],
+)
+def test_input_model_unserializable_fields_of_typed_roots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, root: str, extra_args: list[str]
+) -> None:
+    """A dataclass or TypedDict root writes the fields JSON Schema cannot express as a Pydantic root does (#7435).
+
+    A root whose schema Pydantic's standard generator cannot write, because a field of it or of a class it holds is a
+    ``Callable`` or an arbitrary class, takes the generation of a Pydantic root: such a field keeps its Python type,
+    where the run used to fail. On the reuse path (``reuse-all`` with held classes, ``reuse-foreign`` with a Pydantic
+    generic) a ``Callable`` field the output typed ``str``, which refused every valid value, and wrote an internal
+    number under ``--field-include-all-keys``, keeps its type too. A union with another branch and ``type[int]`` keep
+    the forms the released output writes there (``int | str``, ``Any``), as does a root the standard generator writes
+    (``int``, ``Any``). A Pydantic dataclass read by name, not by alias, has no field to pair with its aliased property,
+    as for a held class (#6885). The input module is written for the test.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "typed_roots", raising=False)
+    (tmp_path / "typed_roots.py").write_text(_TYPED_ROOTS, encoding="utf-8")
+    run_input_model_and_assert(
+        input_model=f"typed_roots:{root}",
+        output_path=tmp_path / "output.py",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+def test_input_model_typed_root_callable_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A dataclass root with ``Callable`` defaults writes them as a Pydantic root does (#7435).
+
+    Pydantic cannot write the default ``print`` and warns, as for a Pydantic root, and the field is written optional
+    with a ``None`` default. The input module is written for the test.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    monkeypatch.delitem(sys.modules, "typed_roots", raising=False)
+    (tmp_path / "typed_roots.py").write_text(_TYPED_ROOTS, encoding="utf-8")
+    with pytest.warns(PydanticJsonSchemaWarning, match=r"Default value <built-in function print> is not JSON"):
+        run_input_model_and_assert(
+            input_model="typed_roots:Defaults",
+            output_path=tmp_path / "output.py",
+            extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        )
 
 
 def test_input_model_custom_class(tmp_path: Path) -> None:

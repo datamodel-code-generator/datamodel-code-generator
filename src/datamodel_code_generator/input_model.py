@@ -34,9 +34,10 @@ from functools import partial
 from hashlib import sha256
 from operator import itemgetter, methodcaller
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_origin, get_type_hints
+from typing import TYPE_CHECKING, Annotated, Any, NamedTuple, Union, cast, get_args, get_origin, get_type_hints
 
 from pydantic import BaseModel
+from pydantic.errors import PydanticInvalidForJsonSchema
 from pydantic.json_schema import GenerateJsonSchema
 from typing_extensions import Self, Sentinel, TypeIs
 
@@ -734,14 +735,25 @@ def _remove_unserializable_markers(value: Any) -> None:
         _consume_union_branch(node)
 
 
+def _remove_union_markers(prop: dict[str, object]) -> None:
+    """Remove the markers of each union in a property that has another branch than ``None``."""
+    for branches in [node.get("anyOf", node.get("oneOf", ())) for node in _iter_schema_nodes(prop)]:
+        if sum(branch != {"type": "null"} for branch in branches) > 1:
+            _remove_unserializable_markers(branches)
+
+
 def _process_unserializable_property(
     prop: dict[str, Any],
     annotation: object,
     expression_collector: PythonTypeExpressionCollector | None = None,
     *,
     in_union: bool = False,
+    released_typed_root_forms: bool = False,
 ) -> None:
-    """Process a single property, handling anyOf/oneOf/items structures."""
+    """Process a single property, handling anyOf/oneOf/items structures.
+
+    ``released_typed_root_forms`` leaves a ``type[...]`` annotation without its Python type.
+    """
     if branches := prop.get("anyOf", prop.get("oneOf")):
         if not in_union and not _has_unserializable_schema(prop):
             return
@@ -755,14 +767,20 @@ def _process_unserializable_property(
         for item in branches:
             index = _consume_union_branch(item)
             branch_annotation = args[index] if args and index is not None else args[0] if len(args) == 1 else annotation
-            _process_unserializable_property(item, branch_annotation, expression_collector, in_union=True)
+            _process_unserializable_property(
+                item,
+                branch_annotation,
+                expression_collector,
+                in_union=True,
+                released_typed_root_forms=released_typed_root_forms,
+            )
     elif prop.get(_UNSERIALIZABLE_MARKER):
         prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
         prop.pop(_UNSERIALIZABLE_MARKER, None)
     elif not _UNSERIALIZABLE_PART_KEYS.isdisjoint(prop) and _has_unserializable_schema(prop):
         prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
         _remove_unserializable_markers(prop)
-    elif not in_union and get_origin(annotation) is type:
+    elif not in_union and not released_typed_root_forms and get_origin(annotation) is type:
         prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
 
 
@@ -801,6 +819,8 @@ def _add_python_type_for_unserializable(
     model: type,
     schema_types: ABCMapping[str, type | str],
     expression_collector: PythonTypeExpressionCollector | None = None,
+    *,
+    released_typed_root_forms: bool = False,
 ) -> dict[str, Any]:
     """Add x-python-type to ALL fields marked as unserializable.
 
@@ -809,6 +829,10 @@ def _add_python_type_for_unserializable(
     field is paired with is removed: it never leaves the schema. Those are the fields of a Pydantic dataclass read by
     name, not by alias, and of a generic dataclass or TypedDict, whose recorded class is the unspecialised one, with
     type variables in its annotations.
+
+    ``released_typed_root_forms`` keeps the forms a dataclass or TypedDict root wrote on the reuse path before these
+    types were added: a ``type[...]`` field stays ``Any``, and a union with another branch than ``None`` keeps its
+    marked branches as written.
     """
     definitions = schema.get("$defs", {})
     classes = [
@@ -820,7 +844,11 @@ def _add_python_type_for_unserializable(
     for definition, definition_type in [(schema, model), *classes]:
         if properties := definition.get("properties"):
             for annotation, prop in _model_properties(properties, definition_type):
-                _process_unserializable_property(prop, annotation, expression_collector)
+                if released_typed_root_forms:
+                    _remove_union_markers(prop)
+                _process_unserializable_property(
+                    prop, annotation, expression_collector, released_typed_root_forms=released_typed_root_forms
+                )
         elif _model_class(definition_type) and definition_type.__pydantic_root_model__:
             _process_unserializable_property(
                 definition, definition_type.model_fields["root"].annotation, expression_collector
@@ -1468,24 +1496,62 @@ def _try_rebuild_model(obj: type) -> None:
         obj.model_rebuild()  # ty: ignore[unresolved-attribute]
 
 
+class _PythonTypedSchema(NamedTuple):
+    """The JSON Schema of a root class and the definitions Pydantic merged from distinct types while writing it."""
+
+    schema: dict[str, Any]
+    merged_names: frozenset[str]
+
+
 def _model_schema_with_python_types(
-    model: type[BaseModel],
+    model: type,
     schema_generator: type[GenerateJsonSchema],
     expression_collector: PythonTypeExpressionCollector | None,
     generic_definitions: dict[str, type | str] | None,
     schema_types: dict[str, type | str],
-) -> dict[str, Any]:
-    """Generate a model's JSON Schema and add the Python types it cannot express."""
-    schema = _add_python_type_for_unserializable(
-        model.model_json_schema(schema_generator=schema_generator), model, schema_types, expression_collector
-    )
-    return _add_python_type_info(
-        schema,
-        model,
-        expression_collector,
-        generic_definitions,
-        schema_types,
-        clear_field_names=getattr(schema_generator, "has_field_schema_owners", False),
+) -> _PythonTypedSchema:
+    """Generate the JSON Schema of a root class and add the Python types it cannot express.
+
+    ``schema_generator`` is the input-model generator. A Pydantic model takes it, and so does a dataclass or TypedDict
+    on the reuse path (``generic_definitions``), which keeps the forms it was released with
+    (``_add_python_type_for_unserializable``). Any other dataclass or TypedDict takes Pydantic's standard generator, as
+    released, and only a root that generator cannot write, which never generated, takes ``schema_generator``: the
+    generation of a Pydantic model. The result names the definitions Pydantic merged from distinct types in the
+    generation that wrote the schema.
+    """
+    if _model_class(model):
+        write_schema = model.model_json_schema
+    else:
+        from pydantic import TypeAdapter  # noqa: PLC0415
+
+        write_schema = TypeAdapter(model).json_schema
+    generator, schema = schema_generator, None
+    if generic_definitions is None and not _model_class(model):
+        standard = _get_input_model_json_schema_class(schema_types, [model], use_standard_schema=True)
+        try:
+            schema = write_schema(schema_generator=standard)
+        except PydanticInvalidForJsonSchema:
+            schema_types.clear()
+        else:
+            generator = standard
+    if schema is None:
+        schema = _add_python_type_for_unserializable(
+            write_schema(schema_generator=schema_generator),
+            model,
+            schema_types,
+            expression_collector,
+            released_typed_root_forms=generic_definitions is not None and not _model_class(model),
+        )
+    return _PythonTypedSchema(
+        _add_python_type_info(
+            schema,
+            model,
+            expression_collector,
+            generic_definitions,
+            schema_types,
+            clear_field_names=getattr(generator, "has_field_schema_owners", False),
+        ),
+        frozenset(getattr(generator, "merged_definition_names", frozenset())),
     )
 
 
@@ -1575,7 +1641,7 @@ def _transform_single_model_to_inheritance(  # noqa: PLR0917
         _try_rebuild_model(parent)
         parent_schema = _model_schema_with_python_types(
             parent, schema_generator, expression_collector, generic_definitions, schema_types
-        )
+        ).schema
         released_parent_schema = parent_schema
         if identify_definitions is not None:
             parent_schema = identify_definitions(parent_schema)
@@ -1830,7 +1896,7 @@ def _load_model_schema(  # noqa: PLR0914
         for model_class in model_classes:
             schema = _model_schema_with_python_types(
                 model_class, schema_generator, expression_collector, generic_definitions, definitions.current_types
-            )
+            ).schema
             schema = definitions.normalize(schema, model_class)
             model_name = definitions.name(model_class.__name__, model_class)
 
@@ -1909,7 +1975,7 @@ def _load_single_model_schema(
             )
             schema = _model_schema_with_python_types(
                 obj, schema_generator, expression_collector, definition_types, schema_types
-            )
+            ).schema
             _add_reused_definitions(nested_models, definition_types, identify=True)
             released_schema = schema
             identify_definitions = (
@@ -1937,22 +2003,16 @@ def _load_single_model_schema(
             )
         elif _typed_fields_family(obj) not in {None, _OutputModelFamily.MSGSPEC}:
             _require_json_schema_input(input_file_type, "a dataclass or TypedDict")
-            from pydantic import TypeAdapter  # noqa: PLC0415
-
             nested_models, definition_types = _prepare_reused_model_types(model, ref_strategy, output_family)
             schema_types = definition_types if definition_types is not None else {}
             schema_generator = _get_input_model_json_schema_class(
-                schema_types,
-                [model],
-                use_standard_schema=definition_types is None,
-                preserve_generic_identity=definition_types is not None,
+                schema_types, [model], preserve_generic_identity=definition_types is not None
             )
-            schema = TypeAdapter(model).json_schema(schema_generator=schema_generator)
-            schema = _add_python_type_info(schema, model, expression_collector, definition_types, schema_types)
+            schema, merged_names = _model_schema_with_python_types(
+                model, schema_generator, expression_collector, definition_types, schema_types
+            )
             _add_reused_definitions(nested_models, definition_types)
-            _identify_reused_definitions(
-                nested_models, schema_types, getattr(schema_generator, "merged_definition_names", frozenset())
-            )
+            _identify_reused_definitions(nested_models, schema_types, merged_names)
         else:
             msg = (
                 f"{stable_repr(qualname)} is not a supported type. "

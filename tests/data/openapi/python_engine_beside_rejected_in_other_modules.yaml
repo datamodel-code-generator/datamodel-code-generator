@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: Inherited patterns from other modules
+  version: '1'
+paths: {}
+components:
+  schemas:
+    a.Name:
+      type: string
+      pattern: '^\p{L}+$'
+    a.Color:
+      type: string
+      enum: [red]
+    a.Named:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: '^\p{L}+$'
+        tint:
+          anyOf:
+            - type: string
+              pattern: '^\p{L}+$'
+            - $ref: '#/components/schemas/a.Color'
+        nickname:
+          $ref: '#/components/schemas/a.Name'
+        date:
+          type: string
+          pattern: '^\p{L}+$'
+        date_aliased:
+          type: string
+          pattern: '^\p{L}+$'
+    a.Closed:
+      type: object
+      additionalProperties: false
+      properties:
+        user_name:
+          type: string
+    b.Coded:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^(?!x)[a-z]+$'
+    c.Both:
+      allOf:
+        - $ref: '#/components/schemas/a.Named'
+        - $ref: '#/components/schemas/b.Coded'
+        - type: object
+          properties:
+            when:
+              type: string
+              format: date
+    c.Shut:
+      allOf:
+        - $ref: '#/components/schemas/a.Closed'
+        - $ref: '#/components/schemas/b.Coded'

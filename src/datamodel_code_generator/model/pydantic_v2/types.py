@@ -976,6 +976,20 @@ class AnnotatedFormatDataType(AnnotatedConstraintDataType):
         return self._binding(name, name)
 
 
+class _AnnotatedMemberConstraintDataType(AnnotatedConstraintDataType):
+    """Its one member with constraint keywords, written as ``Annotated`` constraints.
+
+    The copy of a field that writes a type alias as its body keeps the constraint arguments of the alias's field so
+    (#7487); ``constrained_base`` is the type of the member, which decides as the scalar of a ``con*`` call does.
+    """
+
+    @property
+    @override
+    def annotated_base_type(self) -> str:
+        """Return the type hint of the member."""
+        return self.data_types[0].type_hint
+
+
 _ANNOTATED_CONSTRAINT_BASES: dict[_ImportKey, str] = {
     _import_key(IMPORT_CONSTR): "str",
     _import_key(IMPORT_CONINT): "int",
