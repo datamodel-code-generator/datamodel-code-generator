@@ -1141,7 +1141,9 @@ _TYPED_ROOTS = (
     "@dataclass\n"
     "class Containers:\n"
     "    hooks: list[Callable[[int], int]]\n"
-    "    table: dict[str, Callable[[int], int]]\n"
+    "    table: dict[str, Callable[[int], int]]\n\n\n"
+    "@dataclass\n"
+    "class Pair:\n"
     "    pair: tuple[Callable[[int], int], int]\n\n\n"
     "@dataclass\n"
     "class Defaults:\n"
@@ -1217,6 +1219,22 @@ _TYPED_ROOTS = (
     "    hook: Callable[[int], int]\n"
     "    value: Union[int, Callable]\n"
     "    kind: type[int]\n\n\n"
+    "@pydantic_dataclass\n"
+    "class Collide:\n"
+    "    job: Plain\n"
+    "    a: int = Field(validation_alias='b')\n"
+    "    b: str = 'x'\n\n\n"
+    "@dataclass\n"
+    "class HeldHook:\n"
+    "    hook: Callable[[int], int]\n"
+    "    value: Union[int, Callable]\n"
+    "    kind: type[int]\n"
+    "    opt: Optional[Union[int, Callable]] = None\n\n\n"
+    "@dataclass\n"
+    "class ForeignHolds:\n"
+    "    box: Wrapped[int]\n"
+    "    held: HeldHook\n"
+    "    items: list[HeldHook] = field(default_factory=list)\n\n\n"
     "@dataclass\n"
     "class WorkingUnion:\n"
     "    value: Union[int, Callable]\n\n\n"
@@ -1251,6 +1269,7 @@ _REUSE_ALL = ("--input-model-ref-strategy", "reuse-all")
         pytest.param("OptionalHook", [], id="optional-callable"),
         pytest.param("OptionalProbe", ["--output-model-type", "typing.TypedDict"], id="optional-callable-typeddict"),
         pytest.param("Containers", [], id="callable-in-containers"),
+        pytest.param("Pair", [], id="callable-in-tuple"),
         pytest.param("PartialProbe", ["--output-model-type", "typing.TypedDict"], id="typeddict-total-false"),
         pytest.param("LaterProbe", ["--output-model-type", "typing.TypedDict"], id="typeddict-not-required"),
         pytest.param("Box", [], id="generic-dataclass-root"),
@@ -1273,6 +1292,10 @@ _REUSE_ALL = ("--input-model-ref-strategy", "reuse-all")
         pytest.param("ReusedUnion", list(_REUSE_ALL), id="reuse-all-union"),
         pytest.param("ReusedType", list(_REUSE_ALL), id="reuse-all-type-kept"),
         pytest.param("ForeignGeneric", ["--input-model-ref-strategy", "reuse-foreign"], id="reuse-foreign-generic"),
+        pytest.param("Collide", [*_REUSE_ALL, _ALL_KEYS], id="reuse-all-field-name-marker"),
+        pytest.param(
+            "ForeignHolds", ["--input-model-ref-strategy", "reuse-foreign", _ALL_KEYS], id="reuse-foreign-held-class"
+        ),
         pytest.param("WorkingUnion", [], id="working-union"),
         pytest.param("WorkingProbe", [], id="working-union-typeddict"),
         pytest.param("WorkingType", [], id="working-type"),

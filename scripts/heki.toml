@@ -1175,8 +1175,8 @@ targets = ["datamodel_code_generator.input_model._annotation_nodes"]
 allowed-callers = ["datamodel_code_generator._graph:reach{,.*}", "datamodel_code_generator.input_model:*"]
 
 [[call-owners]]
-name = "home:input_model.py:_get_type_family +3"
-targets = ["datamodel_code_generator.input_model._get_type_family", "datamodel_code_generator.input_model._model_field_annotations", "datamodel_code_generator.input_model._pydantic_fields", "datamodel_code_generator.input_model._typed_fields_family"]
+name = "home:input_model.py:_get_type_family +4"
+targets = ["datamodel_code_generator.input_model._get_type_family", "datamodel_code_generator.input_model._model_field_annotations", "datamodel_code_generator.input_model._model_schema_with_python_types", "datamodel_code_generator.input_model._pydantic_fields", "datamodel_code_generator.input_model._typed_fields_family"]
 allowed-callers = ["datamodel_code_generator.input_model:*"]
 targets-call-each-other = "report"
 

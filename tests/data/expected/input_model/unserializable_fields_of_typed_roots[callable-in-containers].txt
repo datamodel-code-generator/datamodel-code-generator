@@ -11,4 +11,3 @@ from pydantic import BaseModel, Field
 class Containers(BaseModel):
     hooks: list[Callable[[int], int]] = Field(..., title='Hooks')
     table: dict[str, Callable[[int], int]] = Field(..., title='Table')
-    pair: tuple[Callable[[int], int], int] = Field(..., title='Pair')

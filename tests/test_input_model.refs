@@ -1393,6 +1393,7 @@ two-models	input_model/unserializable_fields_of_held_classes[two-models].txt
 arbitrary-type	input_model/unserializable_fields_of_typed_roots[arbitrary-type].txt
 callable-forms	input_model/unserializable_fields_of_typed_roots[callable-forms].txt
 callable-in-containers	input_model/unserializable_fields_of_typed_roots[callable-in-containers].txt
+callable-in-tuple	input_model/unserializable_fields_of_typed_roots[callable-in-tuple].txt
 dataclass-root-dataclasses.dataclass	input_model/unserializable_fields_of_typed_roots[dataclass-root-dataclasses.dataclass].txt
 dataclass-root-msgspec.Struct	input_model/unserializable_fields_of_typed_roots[dataclass-root-msgspec.Struct].txt
 dataclass-root-pydantic_v2.BaseModel	input_model/unserializable_fields_of_typed_roots[dataclass-root-pydantic_v2.BaseModel].txt
@@ -1407,6 +1408,7 @@ optional-callable-typeddict	input_model/unserializable_fields_of_typed_roots[opt
 pydantic-dataclass-by-alias	input_model/unserializable_fields_of_typed_roots[pydantic-dataclass-by-alias].txt
 pydantic-dataclass-by-name	input_model/unserializable_fields_of_typed_roots[pydantic-dataclass-by-name].txt
 pydantic-dataclass-root	input_model/unserializable_fields_of_typed_roots[pydantic-dataclass-root].txt
+reuse-all-field-name-marker	input_model/unserializable_fields_of_typed_roots[reuse-all-field-name-marker].txt
 reuse-all-optional	input_model/unserializable_fields_of_typed_roots[reuse-all-optional].txt
 reuse-all-root-field	input_model/unserializable_fields_of_typed_roots[reuse-all-root-field].txt
 reuse-all-root-field-dataclasses.dataclass	input_model/unserializable_fields_of_typed_roots[reuse-all-root-field-dataclasses.dataclass].txt
@@ -1416,6 +1418,7 @@ reuse-all-root-field-typing.TypedDict	input_model/unserializable_fields_of_typed
 reuse-all-type-kept	input_model/unserializable_fields_of_typed_roots[reuse-all-type-kept].txt
 reuse-all-union	input_model/unserializable_fields_of_typed_roots[reuse-all-union].txt
 reuse-foreign-generic	input_model/unserializable_fields_of_typed_roots[reuse-foreign-generic].txt
+reuse-foreign-held-class	input_model/unserializable_fields_of_typed_roots[reuse-foreign-held-class].txt
 typeddict-holds-dataclass	input_model/unserializable_fields_of_typed_roots[typeddict-holds-dataclass].txt
 typeddict-not-required	input_model/unserializable_fields_of_typed_roots[typeddict-not-required].txt
 typeddict-root	input_model/unserializable_fields_of_typed_roots[typeddict-root].txt
