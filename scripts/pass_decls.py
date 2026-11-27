@@ -1489,8 +1489,9 @@ FINALIZE_TYPE_ALIAS_USERS = PassDecl(
     ),
     summary=(
         "Lets the backend configure the regex engine of its models from their final patterns, also through the type "
-        "aliases they use (model hook), gives each field its copies of the types naming a model that its hint writes "
-        "from type alias bodies, then imports the models that those and the inherited fields a model redeclares name."
+        "aliases they use, and the arbitrary types they allow from their final field types (model hook), gives each "
+        "field its copies of the types naming a model that its hint writes from type alias bodies, then imports the "
+        "models that those and the inherited fields a model redeclares name."
     ),
     after=(After("prepare_type_alias_fields", "the alias bodies, whose patterns the copies leave out, are final"),),
 )

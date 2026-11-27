@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from tests.data.python.input_model.pydantic_models import CustomClass
 
 
 class ModelWithCustomClass(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
     custom_obj: CustomClass = Field(..., title='Custom Obj')

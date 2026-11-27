@@ -4,11 +4,14 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from tests.data.python.input_model.pydantic_models import CustomGenericDict
 
 
 class ModelWithCustomGeneric(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
     custom_dict: CustomGenericDict[str, int] = Field(..., title='Custom Dict')
     optional_custom_dict: CustomGenericDict[str, str] | None = Field(
         ..., title='Optional Custom Dict'

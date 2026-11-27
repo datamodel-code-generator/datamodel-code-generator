@@ -14,6 +14,7 @@ from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._shared_types import Error
 from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model._render_plan import RENDER_READY
+from datamodel_code_generator.model.pydantic_v2._config import ARBITRARY_TYPES_ALLOWED_KEY
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
     _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY,
@@ -40,7 +41,10 @@ _SEQUENCE_TEMPLATE_DATA_KEYS = (
     _SEQUENCE_SLICE_TYPE_TEMPLATE_DATA_KEY,
 )
 _STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY = "string_pattern_alias_reached"
+_ARBITRARY_TYPES_TEMPLATE_DATA_KEY = "arbitrary_types_reached"
 _ROOT_MODEL_CONFIG_KEYS: frozenset[str] = frozenset({"regex_engine", "frozen"})
+_ARBITRARY_TYPES_ROOT_MODEL_CONFIG_KEYS: frozenset[str] = _ROOT_MODEL_CONFIG_KEYS | {ARBITRARY_TYPES_ALLOWED_KEY}
+"""The keys a root model writes once its root holds an arbitrary type (``_allow_arbitrary_types_in_config``)."""
 _CONFIG_TEMPLATE_DATA_KEY = "config"
 
 
@@ -50,11 +54,11 @@ def _sequence_imports(item_type: str) -> tuple[Import, ...]:
     return (*imports, IMPORT_ANY) if item_type == "Any" else imports
 
 
-def _root_model_config_items(config: Any) -> list[tuple[str, Any]]:
+def _root_model_config_items(config: Any, keys: frozenset[str] = _ROOT_MODEL_CONFIG_KEYS) -> list[tuple[str, Any]]:
     return [
         (field_name, value)
         for field_name, value in _config_dict_items(config)
-        if field_name in _ROOT_MODEL_CONFIG_KEYS and value is not None
+        if field_name in keys and value is not None
     ]
 
 
@@ -220,8 +224,13 @@ class RootModel(BaseModel):
 
     @override
     def _config_items(self) -> list[tuple[str, str]]:
-        """Return the root model's config items: its engine and freezing, literal values and a neutral ``extra``."""
-        config = {**dict(_root_model_config_items(self.extra_template_data.get("config"))), **self._root_config()}
+        """Return the root model's config items: engine, freezing, arbitrary types, literals, a neutral ``extra``."""
+        keys = (
+            _ARBITRARY_TYPES_ROOT_MODEL_CONFIG_KEYS
+            if self._internal_template_data.get(_ARBITRARY_TYPES_TEMPLATE_DATA_KEY)
+            else _ROOT_MODEL_CONFIG_KEYS
+        )
+        config = {**dict(_root_model_config_items(self.extra_template_data.get("config"), keys)), **self._root_config()}
         return _safe_config_dict_items(config, self.target_python_version) if config else []
 
     def _root_config(self) -> dict[str, Any]:
@@ -265,8 +274,20 @@ class RootModel(BaseModel):
             self._additional_imports = [imp for imp in self._additional_imports if imp != IMPORT_CONFIG_DICT]
 
     @override
+    def _allow_arbitrary_types_in_config(self) -> None:
+        """Write ``arbitrary_types_allowed`` for a root that holds an arbitrary type, the one case it is written.
+
+        Other roots leave the key of ``--extra-template-data`` out of their config, as they always did.
+        """
+        self._set_internal_template_data(key=_ARBITRARY_TYPES_TEMPLATE_DATA_KEY, value=True)
+        super()._allow_arbitrary_types_in_config()
+
+    @override
     def _keep_string_pattern_aliases_out_of_bases(self) -> None:
-        """Write ``Any`` in the generic: Pydantic builds it without this model's config, and aliases stay named."""
+        """Write ``Any`` in the generic: Pydantic builds it without this model's config, and aliases stay named.
+
+        A root of an arbitrary type, which the config allows (``_allow_arbitrary_types``), takes it the same way.
+        """
         self._set_internal_template_data(key=_STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY, value=True)
         self._additional_imports.append(IMPORT_ANY)
         self.invalidate_render_caches()

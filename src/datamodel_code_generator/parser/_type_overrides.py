@@ -346,18 +346,26 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
 
 
 def python_type_data_type(
-    parser: TypeOverridesHost, expression: PythonTypeExpr, *, is_optional: bool = False
+    parser: TypeOverridesHost,
+    expression: PythonTypeExpr,
+    *,
+    is_optional: bool = False,
+    needs_arbitrary_types: bool = False,
 ) -> DataType:
     """Return the type a Python type expression spells: its bound names and imports, written as the bound expression.
 
     ``x-python-type``, an ``x-python-import`` that names a runtime symbol and a ``--type-overrides`` annotation each
-    become a type this way.
+    become a type this way. An input model's ``x-python-type`` names the classes that Pydantic builds only with
+    ``arbitrary_types_allowed`` (``needs_arbitrary_types``).
     """
     from datamodel_code_generator._python_type_annotation import render_python_type_expr  # noqa: PLC0415
 
     bound_type = bind_python_type(parser, expression)
     return parser.data_type(
-        type=render_python_type_expr(bound_type.expression), python_type=bound_type, is_optional=is_optional
+        type=render_python_type_expr(bound_type.expression),
+        python_type=bound_type,
+        is_optional=is_optional,
+        needs_arbitrary_types=needs_arbitrary_types,
     )
 
 
@@ -499,9 +507,12 @@ def _override_node(data_type: DataType, *, whole_type: bool) -> DataType:
     """Return the copy of a field's own type node that a class override is written on, with its nullability.
 
     With ``whole_type`` the copy holds none of the container it replaces (``_WITHOUT_CONTAINER``), so an object map
-    gives the class itself; the members of any other copy leave once the override replaces the type.
+    gives the class itself; the members of any other copy leave once the override replaces the type. The copy names no
+    arbitrary type of the input model: the class the override names is not that one.
     """
-    return _copy_data_type(data_type.model_copy(update=_WITHOUT_CONTAINER) if whole_type else data_type)
+    return _copy_data_type(
+        data_type.model_copy(update={**(_WITHOUT_CONTAINER if whole_type else {}), "needs_arbitrary_types": False})
+    )
 
 
 def _untaken_container_counts(
