@@ -946,6 +946,27 @@ OPTIONS: Final[tuple[Option, ...]] = (
         ),
     ),
     toggle(
+        (Section.MODEL, _G.MODEL_SHAPE),
+        "--keep-inherited-dataclass-config",
+        help="pydantic_v2.dataclass output only: a dataclass that writes a config of its own also writes the items of "
+        "the config its first dataclass base applies that it does not set itself, such as extra='forbid' "
+        "(`ConfigDict(extra='forbid', populate_by_name=True)`), as a Pydantic model merges the config of every base. "
+        "Pydantic applies only the config a dataclass names, so without it such a dataclass stops applying the config "
+        "of its base, as in 0.103.0, and accepts the extra keys the base rejects. The kept items can select the "
+        "python-re regex engine of the base for the dataclass's own patterns too: a `$` then also accepts a trailing "
+        "newline, and a pattern Python's re rejects is left out with a warning. A configured base class that the "
+        "generator does not read (--base-class) gives no items.",
+        preset=PresetJoin(
+            "20261127",
+            {"keep_inherited_dataclass_config": True},
+            title="Inherited dataclass config",
+            description=(
+                "A Pydantic dataclass that writes a config of its own keeps the config items of its first dataclass "
+                "base that it does not set itself, such as extra='forbid'."
+            ),
+        ),
+    ),
+    toggle(
         (Section.MODEL, _C.FIELD), "--use-schema-description", help="Use schema description to populate class docstring"
     ),
     toggle((Section.MODEL, _C.FIELD), "--use-title-as-name", help="use titles as class names of models"),

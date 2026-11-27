@@ -117,6 +117,8 @@ keep-field-defaults-off-branch-roots-practical	main/preset_opt_in_options/preset
 keep-field-defaults-off-branch-roots-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].model.py
 keep-first-character-of-path-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].model.py
 keep-first-character-of-path-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].model.py
+keep-inherited-dataclass-config-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-inherited-dataclass-config-practical].tree/
+keep-inherited-dataclass-config-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-inherited-dataclass-config-standard].tree/	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-inherited-dataclass-config-practical].tree/
 keep-null-of-nullable-items-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-null-of-nullable-items-practical].model.py
 keep-null-of-nullable-items-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-null-of-nullable-items-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-null-of-nullable-items-practical].model.py
 keep-reference-null-on-collapsed-root-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-collapsed-root-models-practical].model.py

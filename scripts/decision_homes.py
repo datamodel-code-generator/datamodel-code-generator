@@ -2378,8 +2378,11 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             '`regex_engine="python-re"` unless the config already names an engine, which the model keeps (row '
             "`legacy-dataclass-overwrites-engine`: a dataclass writes it over the engine its config names); a config "
             "the model takes from a base gives its items first, which only the engine the patterns of a dataclass's "
-            "bases select keeps (row `legacy-dataclass-own-engine-drops-taken-config`); the config is stored with the "
-            "items its template writes, which the readers take from there inside a parse"
+            "bases select keeps (row `legacy-dataclass-own-config-drops-taken-config`: with "
+            "`--keep-inherited-dataclass-config` a dataclass with a config of its own reads and, once every config "
+            "is final, writes the items of its first dataclass base it does not set, "
+            "`DataClass._store_inherited_configs`); the config is stored with the items its template writes, which "
+            "the readers take from there inside a parse"
         ),
         homes=(
             Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._select_python_regex_engine"),
@@ -2415,6 +2418,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("model/pydantic_v2/dataclass.py", "DataClass._bases_without_inherited_config"),
             Home("model/pydantic_v2/dataclass.py", "DataClass._config_owner"),
             Home("model/pydantic_v2/dataclass.py", "DataClass._taken_config"),
+            Home("model/pydantic_v2/dataclass.py", "DataClass._store_inherited_configs"),
             Home("model/pydantic_v2/root_model.py", "RootModel._decide_config_items"),
         ),
     ),

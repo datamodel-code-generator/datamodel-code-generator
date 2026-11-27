@@ -127,6 +127,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--keep-false-dataclass-arguments": "Write every dataclass decorator argument set to false.",
     "--keep-field-defaults-off-branch-roots": "Leave a property's default off the root models extracted from its `a...",
     "--keep-first-character-of-path-keys": "Strip only a leading slash from a paths key when naming its operation m...",
+    "--keep-inherited-dataclass-config": "Keep the config items of the first base in a Pydantic dataclass with a co...",
     "--keep-model-order": "Keep generated model order deterministic while respecting dependency constraints.",
     "--keep-null-of-nullable-items": "Write the null that `nullable: true` declares on an array item, a tuple item ...",
     "--keep-reference-null-on-collapsed-root-models": "Keep the null of a root model that admits null where `--coll...",

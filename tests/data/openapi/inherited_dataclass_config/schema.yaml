@@ -1,0 +1,108 @@
+openapi: 3.0.3
+info:
+  title: Dataclasses that write a config of their own beside the config of a base
+  version: '1'
+paths: {}
+components:
+  schemas:
+    a.Closed:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+    a.Open:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: integer
+    a.Guarded:
+      type: object
+      additionalProperties: false
+      properties:
+        pin:
+          type: string
+          pattern: '^(?!0)[0-9]+$'
+    a.Plain:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^(?!x)[a-z]+$'
+    a.Code:
+      allOf:
+        - $ref: '#/components/schemas/a.Closed'
+        - type: object
+          properties:
+            code:
+              type: string
+              pattern: '^(?!x)[a-z]+$'
+    a.Tagged:
+      allOf:
+        - $ref: '#/components/schemas/a.Open'
+        - type: object
+          properties:
+            tag:
+              type: string
+              pattern: '^(?!x)[a-z]+$'
+    a.Guard:
+      allOf:
+        - $ref: '#/components/schemas/a.Guarded'
+        - type: object
+          properties:
+            code:
+              type: string
+              pattern: '^(?!x)[a-z]+$'
+    a.Mid:
+      allOf:
+        - $ref: '#/components/schemas/a.Closed'
+        - type: object
+          properties:
+            note:
+              type: string
+    a.Deep:
+      allOf:
+        - $ref: '#/components/schemas/a.Mid'
+        - type: object
+          properties:
+            code:
+              type: string
+              pattern: '^(?!x)[a-z]+$'
+    a.Leaf:
+      allOf:
+        - $ref: '#/components/schemas/a.Code'
+        - type: object
+          properties:
+            tag:
+              type: string
+              pattern: '^(?!y)[a-z]+$'
+    a.Two:
+      allOf:
+        - $ref: '#/components/schemas/a.Open'
+        - $ref: '#/components/schemas/a.Closed'
+        - type: object
+          properties:
+            two:
+              type: string
+              pattern: '^(?!x)[a-z]+$'
+    b.Word:
+      type: string
+      pattern: '^(?!x)[a-z]+$'
+    b.Remote:
+      allOf:
+        - $ref: '#/components/schemas/a.Closed'
+        - type: object
+          properties:
+            user_name:
+              type: string
+            code:
+              type: string
+              pattern: '^(?!x)[a-z]+$'
+    b.Worded:
+      allOf:
+        - $ref: '#/components/schemas/a.Closed'
+        - type: object
+          properties:
+            word:
+              $ref: '#/components/schemas/b.Word'

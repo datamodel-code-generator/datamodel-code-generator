@@ -1,0 +1,6 @@
+default
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Named.name is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Lettered.letters is generated without this constraint.
+option
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Named.name is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Lettered.letters is generated without this constraint.

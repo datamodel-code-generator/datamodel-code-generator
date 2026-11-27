@@ -85,6 +85,7 @@ class ParserConfigDict(TypedDict):
     use_generic_base_class: NotRequired[bool]
     keep_bases_beside_generic_base_class: NotRequired[bool]
     keep_bases_of_typed_dicts_listed_before_their_parents: NotRequired[bool]
+    keep_inherited_dataclass_config: NotRequired[bool]
     force_optional_for_required_fields: NotRequired[bool]
     class_name: NotRequired[str | None]
     allow_leading_underscore_class_name: NotRequired[bool]

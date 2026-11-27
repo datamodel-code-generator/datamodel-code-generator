@@ -10,7 +10,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 |-------|---------|-------------|
 | [Model Naming](#model-naming) | 12 | Class names, suffixes, prefixes, and duplicate-name behavior. |
 | [Model Reuse](#model-reuse) | 4 | Schema deduplication and shared generated modules. |
-| [Model Shape](#model-shape) | 9 | Output model family and compatibility targets. |
+| [Model Shape](#model-shape) | 10 | Output model family and compatibility targets. |
 | [Root Model](#root-model) | 12 | Root model creation, collapse, and alias behavior. |
 
 ## Model Naming {#model-naming}
@@ -53,6 +53,7 @@ Output model family and compatibility targets.
 | [`--base-class-map`](../model-customization.md#base-class-map) | Specify different base classes for specific models via JSON mapping. |
 | [`--keep-bases-beside-generic-base-class`](../model-customization.md#keep-bases-beside-generic-base-class) | Keep configured base classes beside the generated base class. |
 | [`--keep-bases-of-typed-dicts-listed-before-their-parents`](../model-customization.md#keep-bases-of-typed-dicts-listed-before-their-parents) | Keep the generated bases of a TypedDict listed before its parent. |
+| [`--keep-inherited-dataclass-config`](../model-customization.md#keep-inherited-dataclass-config) | Keep the config items of the first base in a Pydantic dataclass with a config of... |
 | [`--merge-message-trait-headers`](../model-customization.md#merge-message-trait-headers) | Give an AsyncAPI message the headers of all its traits, merged in order, and the... |
 | [`--output-model-type`](../model-customization.md#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 dataclass, dataclasses, T... |
 | [`--target-pydantic-version`](../model-customization.md#target-pydantic-version) | Target Pydantic version for generated code compatibility. |

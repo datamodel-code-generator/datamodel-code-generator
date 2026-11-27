@@ -1,0 +1,10 @@
+default
+Remote
+camel: valid
+extra: valid
+Remote.user_name: None
+option
+Remote
+camel: valid
+extra: unexpected_keyword_argument
+Remote.user_name: 'u'

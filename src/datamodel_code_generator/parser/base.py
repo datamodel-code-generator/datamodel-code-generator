@@ -130,10 +130,8 @@ from datamodel_code_generator.imports import (
 )
 from datamodel_code_generator.model._decisions.enum_kind import enum_is_open, open_enum_base
 from datamodel_code_generator.model._render_plan import RENDER_READY, NestedFactoryMetadata, RenderReady
-from datamodel_code_generator.model.base import ALL_MODEL as ALL_MODEL
-from datamodel_code_generator.model.base import BaseClassDataType as BaseClassDataType
-from datamodel_code_generator.model.base import ConstraintsBase as ConstraintsBase
 from datamodel_code_generator.model.base import (
+    _KEEP_INHERITED_DATACLASS_CONFIG_TEMPLATE_DATA_KEY,
     DataModel,
     DataModelFieldBase,
     _bind_bare_loads,
@@ -146,6 +144,9 @@ from datamodel_code_generator.model.base import (
     forget_model_memos,
     get_resolve_reference_action_capabilities,
 )
+from datamodel_code_generator.model.base import ALL_MODEL as ALL_MODEL
+from datamodel_code_generator.model.base import BaseClassDataType as BaseClassDataType
+from datamodel_code_generator.model.base import ConstraintsBase as ConstraintsBase
 from datamodel_code_generator.model.enum import (
     Enum,
     enum_class_base,
@@ -1301,6 +1302,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.data_model_type.configure_dataclass_arguments(
             self.extra_template_data, keep_false_dataclass_arguments=config.keep_false_dataclass_arguments
         )
+        if config.keep_inherited_dataclass_config:
+            self.extra_template_data[ALL_MODEL][_KEEP_INHERITED_DATACLASS_CONFIG_TEMPLATE_DATA_KEY] = True
 
         self.use_generic_base_class: bool = config.use_generic_base_class
         self.keep_bases_beside_generic_base_class: bool = config.keep_bases_beside_generic_base_class
