@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Place": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Event": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "default": "x"
+        },
+        "Place": {
+          "type": "string",
+          "default": "y"
+        },
+        "when": {
+          "type": "string"
+        }
+      }
+    },
+    "Concert": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Event"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "when": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "$ref": "#/$defs/Place"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$ref": "#/$defs/Concert"
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Event": {
+      "type": "object",
+      "properties": {
+        "str": {
+          "type": "string",
+          "default": "x"
+        },
+        "int": {
+          "type": "string",
+          "default": "y"
+        },
+        "when": {
+          "type": "string"
+        }
+      }
+    },
+    "Concert": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Event"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "when": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$ref": "#/$defs/Concert"
+}

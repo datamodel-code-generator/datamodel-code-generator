@@ -37976,6 +37976,7 @@ _DATACLASS_BASES_SAMPLE = {
     "tag": "abc",
 }
 _SLOTS = ["--dataclass-arguments", '{"slots": true}']
+_CLASS_SAMPLE = {"Place": "p", "where": "w", "Concert.where": {"name": "x"}, "x": 1}
 
 
 def _dataclass_bases_observations(output_dir: Path, sample: dict[str, object]) -> str:
@@ -38074,8 +38075,35 @@ def _dataclass_bases_values(cls: type, sample: dict[str, object]) -> dict[str, o
             {},
             id="alias_of_import",
         ),
+        pytest.param("class_of_the_module", "pydantic_v2.dataclass", [], _CLASS_SAMPLE, id="class_of_the_module"),
+        pytest.param(
+            "class_of_the_module",
+            "pydantic_v2.dataclass",
+            ["--use-exact-imports"],
+            _CLASS_SAMPLE,
+            id="class_of_the_module-exact",
+        ),
+        pytest.param(
+            "class_and_base_of_the_module",
+            "pydantic_v2.dataclass",
+            [],
+            _CLASS_SAMPLE,
+            id="class_and_base_of_the_module",
+        ),
+        pytest.param("class_chain_modules", "pydantic_v2.dataclass", [], _CLASS_SAMPLE, id="class_chain"),
+        pytest.param(
+            "class_scope_modules",
+            "pydantic_v2.dataclass",
+            [],
+            {**_CLASS_SAMPLE, "many": "m", "Festival.many": [{"name": "y"}], "Fan.where": {"name": "x"}},
+            id="class_scope",
+        ),
         *(
             pytest.param("qualifier", backend, [], {}, id=f"qualifier-{backend}")
+            for backend in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict")
+        ),
+        *(
+            pytest.param("class_of_the_module", backend, [], _CLASS_SAMPLE, id=f"class_of_the_module-{backend}")
             for backend in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict")
         ),
     ],
@@ -38108,27 +38136,98 @@ def test_field_name_bindings_of_dataclass_bases(
     assert_output(_dataclass_bases_observations(output_dir, {**_DATACLASS_BASES_SAMPLE, **sample}), suffix=".json")
 
 
+_CLASS_PAYLOAD = {"Place": "p", "where": {"name": "x"}}
+
+
 @pytest.mark.parametrize(
-    ("input_name", "args"),
+    ("input_name", "args", "payload"),
     [
-        pytest.param("same_module.json", [], id="same_module"),
+        pytest.param("same_module.json", [], {"str": 1, "label": "7"}, id="same_module"),
         pytest.param(
             "renamed_class.json",
             ["--type-overrides", '{"Item.amount": "decimal.Decimal", "Item.when": "datetime.date"}'],
+            {"str": 1, "label": "7"},
             id="renamed_class",
         ),
+        pytest.param("class_of_the_module.json", [], _CLASS_PAYLOAD, id="class_of_the_module"),
+        pytest.param("class_chain.json", [], {**_CLASS_PAYLOAD, "x": 1}, id="class_chain"),
+        pytest.param("class_in_list.json", [], {"Place": "p", "where": [{"name": "x"}]}, id="class_in_list"),
+        pytest.param("class_in_union.json", [], _CLASS_PAYLOAD, id="class_in_union"),
+        pytest.param("class_of_the_module.json", ["--no-use-union-operator"], _CLASS_PAYLOAD, id="class_optional"),
+        pytest.param("class_required.json", [], {"where": {"name": "x"}}, id="class_required"),
+        pytest.param("class_required_base.json", [], {"Place": "p"}, id="class_required_base"),
+        pytest.param("class_base_default.json", [], _CLASS_PAYLOAD, id="class_base_default"),
+        pytest.param("class_no_redeclare.json", [], {"other": {"name": "x"}}, id="class_no_redeclare"),
+        pytest.param("class_forward.json", [], _CLASS_PAYLOAD, id="class_forward"),
+        pytest.param("class_enum.json", [], {"Place": "p", "where": "a"}, id="class_enum"),
+        pytest.param("class_of_the_module.json", ["--use-annotated"], _CLASS_PAYLOAD, id="class_annotated"),
+        pytest.param(
+            "class_of_the_module.json",
+            ["--target-python-version", "3.14"],
+            _CLASS_PAYLOAD,
+            id="class_py314",
+            marks=needs("type-statements"),
+        ),
+        pytest.param(
+            "class_of_the_module.json",
+            ["--preset", "standard-py312-20261127"],
+            _CLASS_PAYLOAD,
+            id="class_preset",
+            marks=needs("type-statements"),
+        ),
+        pytest.param("class_type_alias.json", [], {"Place": "p", "where": ["a", "b"]}, id="class_type_alias"),
+        pytest.param("class_scope.json", [], {**_CLASS_PAYLOAD, "many": [{"name": "y"}]}, id="class_scope"),
+        pytest.param("class_pair.json", [], _CLASS_PAYLOAD, id="class_pair"),
+        pytest.param("class_pair_none.json", [], _CLASS_PAYLOAD, id="class_pair_none"),
+        pytest.param("class_and_import.json", [], {"when": "2026-01-02"}, id="class_and_import"),
+        pytest.param("builtin_pair.json", [], {"when": 3}, id="builtin_pair"),
     ],
 )
 def test_field_name_bindings_of_dataclass_base_of_the_module(
-    output_file: Path, input_name: str, args: list[str]
+    output_file: Path, input_name: str, args: list[str], payload: dict[str, object]
 ) -> None:
-    """Import a module whose dataclass redeclares a field of a base of the same module with a hidden builtin.
+    """Import a module whose dataclass redeclares a field of a base of the same module with a hidden name.
 
     ``renamed_class`` has a class that takes the name of an overridden type, so the names the imports hide are bound
-    before the models render, and the inherited ones in the rendered texts after them.
+    before the models render, and the inherited ones in the rendered texts after them. In the ``class_*`` cases the
+    base declares a field named like a class of the module that the redeclared field is typed by: the class keeps its
+    name and the module binds ``<Name>_aliased`` after it, which only the classes that name it write. ``class_pair``
+    needs the alias of two classes, ``class_and_import`` that of a class beside an import and ``builtin_pair`` that of
+    two builtins. ``class_py314`` writes no future import, and the plain execution of the generated code that the run
+    validates it with has no module name for Pydantic to find the base in: the import below checks it.
     """
     run_main_and_assert(
         input_path=_DATACLASS_BASES_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            *(() if "--preset" in args or "--target-python-version" in args else ("--target-python-version", "3.10")),
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *args,
+        ],
+        skip_code_validation="3.14" in args,
+    )
+    with _generated_model(output_file, "dataclass_base_of_the_module", "Concert") as model:
+        assert_output(
+            json.dumps(asdict(TypeAdapter(model).validate_python(payload)), indent=2, default=str) + "\n",
+            suffix=".json",
+        )
+
+
+def test_field_name_bindings_of_dataclass_base_field_named_like_the_subclass(output_file: Path) -> None:
+    """Keep the output of a base field named like the subclass that redeclares another field with its own type.
+
+    Pydantic 2.10 and later evaluate ``Concert | None`` where the class body of the base binds ``Concert`` to
+    ``None``, so the module does not import. An alias of the class itself is a forward reference that Pydantic
+    before 2.6 never resolves, where the name resolved at the creation of the class, so the output waits for the
+    owner's decision and is stored as it is written today.
+    """
+    run_main_and_assert(
+        input_path=_DATACLASS_BASES_PATH / "class_self_name.json",
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=[
@@ -38139,14 +38238,8 @@ def test_field_name_bindings_of_dataclass_base_of_the_module(
             "--formatters",
             "builtin",
             "--disable-timestamp",
-            *args,
         ],
     )
-    with _generated_model(output_file, "dataclass_base_of_the_module", "Concert") as model:
-        assert_output(
-            json.dumps(asdict(TypeAdapter(model).validate_python({"str": 1, "label": "7"})), indent=2) + "\n",
-            suffix=".json",
-        )
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])

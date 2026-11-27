@@ -1,0 +1,3 @@
+[
+  "/where enum null: invalid, model accepts"
+]

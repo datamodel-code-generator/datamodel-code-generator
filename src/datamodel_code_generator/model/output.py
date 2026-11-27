@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-from itertools import islice
 from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator.model._rendered_names import _class_bodies, _expression_names, _parsed
@@ -161,6 +160,7 @@ class _Namespace(NamedTuple):
     restore_name: Callable[[str], str]
     aliased: Collection[str]
     is_builtin: Callable[[str], bool]
+    binds_aliases: bool = False
 
 
 _TYPE = _Value("type")
@@ -202,10 +202,14 @@ def _base_body_bindings(base: DataModel) -> dict[str, Literal["none", "object"]]
 
 
 def _evaluate_name(node: ast.Name, namespace: _Namespace) -> _Value:
-    """Return the value of a name an annotation loads: the class body first, then the module and the builtins."""
+    """Return the value of a name an annotation loads: the class body first, then the module and the builtins.
+
+    An aliased name is loaded under its alias, which the module of the base binds where the base stands in the module
+    that writes it, and which is a ``NameError`` in any other.
+    """
     name = namespace.restore_name(node.id)
     if name in namespace.aliased:
-        return _STOP
+        return _TYPE if namespace.binds_aliases else _STOP
     if (kind := namespace.body.get(name)) is not None:
         return _Value(kind, (name,))
     if name in namespace.module_names or namespace.is_builtin(name):
@@ -257,27 +261,41 @@ def _union_value(operands: Sequence[_Value]) -> _Value:
 
 
 class _ModuleScope(NamedTuple):
-    """What the module of a model binds, as the namespace of a base reads it."""
+    """What the module of a model binds, as the namespace of a base reads it.
+
+    ``in_module`` tells whether a base stands in the module of the model, which binds the aliases the model writes.
+    """
 
     module_names_of: Callable[[DataModel], Collection[str]]
     aliased: Collection[str]
     is_builtin: Callable[[str], bool]
+    in_module: Callable[[DataModel], bool]
+
+
+def _hidden_name(annotation: ast.expr, namespace: _Namespace, hideable: Collection[str]) -> str | None:
+    """Return the first name of ``hideable`` whose value in ``namespace`` makes ``annotation`` raise, if it raises."""
+    value = _evaluate(annotation, namespace)
+    if value.kind != "raise":
+        return None
+    return next((name for name in value.names if name in hideable), None)
 
 
 def _inherited_field_name_collisions(
     class_name: str,
     namespaces: Mapping[str, Sequence[DataModel]],
     rendered: str,
-    import_names: Collection[str],
+    hideable: Collection[str],
     scope: _ModuleScope,
 ) -> set[str]:
-    """Find imported names that a base of the class binds in its class body to a value the annotations raise on.
+    """Find the names that a base of the class binds in its class body to a value the annotations raise on.
 
     The library evaluates the annotation of a field that ``namespaces`` names (``annotation_namespaces``) in the
-    namespace of each of its bases that declares it: the base's module and its class body. The first name an
-    annotation loads whose value there makes the evaluation raise is the collision, where the module imports it or it
-    is a builtin: its alias is a ``NameError`` in the base. The names the own fields alias (``aliased``) are loaded
-    under their aliases already.
+    namespace of each of its bases that declares it: the base's module and its class body. A name an annotation loads
+    whose value there makes the evaluation raise is a collision, where it is one of ``hideable``: a name the module
+    imports, a builtin or a class of the module other than the class itself. Its alias is a ``NameError`` in the base of
+    another module and a class in the base of the same one. An alias lets the evaluation go on to the next name that
+    raises, so each annotation is evaluated again until it no longer raises. The names the own fields alias
+    (``aliased``) are loaded under their aliases already.
     """
     tree, restore_name = _parsed(rendered)
     scopes = {
@@ -287,18 +305,24 @@ def _inherited_field_name_collisions(
             restore_name,
             scope.aliased,
             scope.is_builtin,
+            scope.in_module(base),
         )
         for bases in namespaces.values()
         for base in bases
     }
-    collisions: set[str] = set()
+    found: set[str] = set()
     for node in next(_class_bodies(tree, restore_name, class_name), []):
         if not (isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)):
             continue
+        hidden: set[str] = set()
         for base in namespaces.get(restore_name(node.target.id), ()):
-            if (value := _evaluate(node.annotation, scopes[id(base)])).kind == "raise":
-                collisions.update(islice((name for name in value.names if name in import_names), 1))
-    return collisions
+            namespace = scopes[id(base)]
+            while (
+                name := _hidden_name(node.annotation, namespace._replace(aliased=[*scope.aliased, *hidden]), hideable)
+            ) is not None:
+                hidden.add(name)
+        found.update(hidden)
+    return found
 
 
 class OutputModelContext:
