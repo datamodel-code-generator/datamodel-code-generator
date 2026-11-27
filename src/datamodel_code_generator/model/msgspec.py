@@ -1179,9 +1179,9 @@ class Struct(DataModel):
         """Create a shared base class model for DRY configuration.
 
         Creates a Struct that inherits from msgspec.Struct (aliased as _Struct)
-        with the specified configuration. Names the reference in place; its path stays ``GENERIC_BASE_CLASS_PATH``,
-        which tells the class from a model of the schema.
+        with the specified configuration. Updates the reference path and name in place.
         """
+        reference.path = f"#/{cls.BASE_CLASS_NAME}"
         reference.name = cls.BASE_CLASS_NAME
 
         base_model = cls(

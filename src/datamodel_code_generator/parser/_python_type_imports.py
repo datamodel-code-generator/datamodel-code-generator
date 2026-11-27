@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, NamedTuple
+from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._python_type_annotation import PythonTypeName, rewrite_python_type_expr
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.types import DataType
 
 _ImportsByName = dict[str, dict[_ImportKey, Import]]
-_BaseBindingRow = Literal["base-follows-binding", "legacy-generic-base-names-dropped-class-binding"]
+_BaseBindingRow: TypeAlias = Literal["base-follows-binding", "legacy-generic-base-names-dropped-class-binding"]
 
 
 class StructuredImportAliases(NamedTuple):

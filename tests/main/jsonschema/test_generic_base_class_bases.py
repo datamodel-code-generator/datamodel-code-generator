@@ -13,6 +13,7 @@ import pytest
 
 from tests.conftest import assert_output
 from tests.main.conftest import (
+    DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
     _forget_generated_package,
@@ -317,6 +318,25 @@ def test_generic_base_class_beside_its_library_base_in_modules(output_dir: Path)
     with _generated_package_module(output_dir, "sub.other") as module:
         verdict = _inheritance(module)
     assert_output(verdict, name="inheritance")
+
+
+def test_generic_base_class_path_in_custom_template(output_file: Path) -> None:
+    """Give a custom template the path ``#/BaseModel`` of the generic base class, as released (#7437).
+
+    The template writes ``{{ path }}``; the generic base class still tells the template its path is ``#/BaseModel``
+    although the module imports the library base it inherits under an alias.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_id.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--use-generic-base-class", "--formatters", "builtin", "--disable-timestamp"),
+            *("--custom-template-dir", str(DATA_PATH / "templates_schema_id")),
+            *PYDANTIC,
+            *FORBID,
+        ],
+    )
 
 
 @pytest.mark.parametrize(

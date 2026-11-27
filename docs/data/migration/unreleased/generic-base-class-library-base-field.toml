@@ -2,7 +2,7 @@
 id = "generic-base-class-library-base-field"
 category = "default-fix"
 title = "--use-generic-base-class imports a field typed pydantic.BaseModel or msgspec.Struct"
-summary = "With --use-generic-base-class, a field whose x-python-type names the class the generated base class inherits (pydantic.BaseModel, msgspec.Struct) imported it as _BaseModel_aliased while the generated base class kept naming _BaseModel, which nothing bound, so the module failed with NameError; beside a kept --base-class class named _BaseModel it failed with a TypeError on the method resolution order, and with --generate-schema-validators the helper class came before the generated base class. The import, the field and the generated base class now name one binding: from pydantic import BaseModel as _BaseModel and x: _BaseModel | None, or BaseModel_1 and _BaseModel_aliased where another import takes _BaseModel. A dropped --base-class class named _BaseModel keeps the released output. As the inheritance check now knows what the generated base class inherits, generated bases whose method resolution orders conflict are rejected with the error the same input gives without --use-generic-base-class, where the written module failed to import with a TypeError."
+summary = "With --use-generic-base-class, a field whose x-python-type names the class the generated base class inherits (pydantic.BaseModel, msgspec.Struct) imported it as _BaseModel_aliased while the generated base class kept naming _BaseModel, which nothing bound, so the module failed with NameError; beside a kept --base-class class named _BaseModel it failed with a TypeError on the method resolution order, and with --generate-schema-validators the helper class came before the generated base class. The import, the field and the generated base class now name one binding: from pydantic import BaseModel as _BaseModel and x: _BaseModel | None, or BaseModel_1 and _BaseModel_aliased where another import takes _BaseModel. A dropped --base-class class named _BaseModel keeps the released output. As the inheritance check now knows what the generated base class inherits, generated bases whose method resolution orders conflict are rejected with the error the same input gives without --use-generic-base-class, and the run writes no module; before, the module with the conflict was written and failed to import with a TypeError, and the modules beside it were written too."
 refs = ["#1", "#7437"]
 decision = ["#1"]
 kind = "default-output"
@@ -63,6 +63,7 @@ covers = [
     "main/jsonschema/generic_base_class_bases/generic_base_class_beside_its_library_base[pydantic_v2-with-root-model-released].py",
     "main/jsonschema/generic_base_class_bases/generic_base_class_beside_its_library_base_in_modules.inheritance.txt",
     "main/jsonschema/generic_base_class_bases/generic_base_class_beside_its_library_base_in_modules/",
+    "main/jsonschema/generic_base_class_bases/generic_base_class_path_in_custom_template.py",
     "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_generic_b~326eeffd.errors.txt",
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_generic_base_class_library_base_plain.json~a0da8d12].errors.txt",
 ]

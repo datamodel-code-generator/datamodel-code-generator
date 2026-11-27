@@ -72,7 +72,6 @@ from datamodel_code_generator.model._render_plan import (
 from datamodel_code_generator.model.base import (
     _COMPILED_PATTERN_KEY,
     ALL_MODEL,
-    GENERIC_BASE_CLASS_PATH,
     UNDEFINED,
     BaseClassDataType,
     DataModel,
@@ -2359,10 +2358,16 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     def _is_generated_generic_base_class(cls, model: DataModel) -> bool:
         """Return whether ``model`` is the generic base class, named ``BaseModel``, whatever its base is spelled.
 
-        The class is told by its reference path; a generic base class renamed beside a kept class of its name
-        (``BaseModelModel``) is not, so helpers keep inheriting the kept class.
+        The class is told by the import of its first base, the library's ``BaseModel``, and its name; a generic base
+        class renamed beside a kept class of its name (``BaseModelModel``) is not, so helpers keep inheriting the kept
+        class.
         """
-        return model.class_name == cls.BASE_CLASS_NAME and model.reference.path == GENERIC_BASE_CLASS_PATH
+        return (
+            model.class_name == cls.BASE_CLASS_NAME
+            and bool(model.base_classes)
+            and (base_import := model.base_classes[0].import_) is not None
+            and (base_import.from_, base_import.import_) == (IMPORT_BASE_MODEL.from_, IMPORT_BASE_MODEL.import_)
+        )
 
     @classmethod
     def _has_local_generated_generic_base_class(cls, models: list[DataModel]) -> bool:
@@ -3038,9 +3043,9 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         """Create a shared base class model for DRY configuration.
 
         Creates a BaseModel that inherits from pydantic's BaseModel (aliased as _BaseModel)
-        with the specified configuration. Names the reference in place; its path stays ``GENERIC_BASE_CLASS_PATH``,
-        which tells the class from a model of the schema.
+        with the specified configuration. Updates the reference path and name in place.
         """
+        reference.path = f"#/{cls.BASE_CLASS_NAME}"
         reference.name = cls.BASE_CLASS_NAME
 
         extra_data: defaultdict[str, dict[str, Any]] = defaultdict(dict)
