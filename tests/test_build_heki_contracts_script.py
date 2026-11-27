@@ -155,8 +155,17 @@ def test_the_package_has_no_import_cycle_that_runs_while_its_modules_load(tmp_pa
 
 
 def _seeded(case: str, path: Path) -> Path:
-    """Copy the seeded package ``case`` of `HEKI_SEEDED` to ``path`` with its project file and an empty baseline."""
-    shutil.copytree(HEKI_SEEDED / case, path, dirs_exist_ok=True)
+    """Write the seeded package ``case`` of `HEKI_SEEDED` to ``path`` with its project file and an empty baseline.
+
+    The fixtures are stored as ``.py.txt`` so that no scan reads them as package code; they are written as ``.py``, and
+    every directory of modules gets the empty ``__init__.py`` the fixtures leave out.
+    """
+    for source in sorted((HEKI_SEEDED / case).rglob("*.py.txt")):
+        target = path / source.relative_to(HEKI_SEEDED / case).with_suffix("")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+    for package in sorted({target.parent for target in path.rglob("*.py")}):
+        (package / "__init__.py").touch()
     (path / "pyproject.toml").write_text(SEEDED_PYPROJECT, encoding="utf-8")
     (path / BASELINE.name).write_text("version = 3\n", encoding="utf-8")
     return path
