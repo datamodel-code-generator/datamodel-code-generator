@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "A": {
+      "type": "object",
+      "properties": {
+        "b": {
+          "$ref": "b.json#/$defs/B"
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/A"
+}

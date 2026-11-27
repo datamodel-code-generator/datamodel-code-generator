@@ -129,6 +129,7 @@ from datamodel_code_generator.model._rendered_names import (
     FieldNameBindings,
     _bind_bare_loads,
     _bind_field_expressions,
+    _composed_aliases,
 )
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
@@ -2439,6 +2440,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     SUPPORTS_GENERIC_BASE_CLASS: ClassVar[bool] = True
     FIRST_BASE_CONFIGURES: ClassVar[bool] = False
     """Whether the first base of a class gives an option its bases set differently, not the last (msgspec)."""
+    EVALUATES_ANNOTATIONS_IN_BASES: ClassVar[bool] = False
+    """Whether the library evaluates a field's string annotation in the namespace of each base declaring it too."""
     FIELD_ASSIGNMENT_CHECKER: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_has_field_assignment)
     FIELD_DEFAULT_CLASSIFIER: ClassVar[Callable[[DataModelFieldBase], tuple[bool, bool]]] = staticmethod(
         _get_field_default_info
@@ -3285,7 +3288,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         field_loads = {} if self._field_name_bindings is None else self._field_name_bindings.loads
         if not (bindings := {**field_loads, **(self._builtin_name_bindings or {})}):
             return rendered
-        return _bind_bare_loads(rendered, bindings)
+        return _bind_bare_loads(rendered, bindings, field_loads)
 
     def _typename_property(self) -> str:
         """Return the ``__typename`` property of a GraphQL object type, which returns its ``__typename`` field.
@@ -3406,6 +3409,28 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         ``as_string`` that the library resolves it from a string.
         """
         return assigned
+
+    def annotation_namespaces(self) -> dict[str, list[DataModel]]:
+        """Return, by field name, the generated bases whose namespace evaluates the annotation of a class body field.
+
+        Where the library evaluates a string annotation in the namespace of each base declaring the field too
+        (``EVALUATES_ANNOTATIONS_IN_BASES``, Pydantic dataclasses): the module of the base and its class body, failing
+        the class on any error but ``NameError``. The other libraries do not.
+        """
+        if not (self.EVALUATES_ANNOTATIONS_IN_BASES and self.base_classes):
+            return {}
+        walk = _base_walk((self,))
+        bases = [
+            base
+            for key in walk.graph.preorder(walk.starts[0], EdgeKind.BASE)
+            if (base := walk.node_of[key]) is not self and base.EVALUATES_ANNOTATIONS_IN_BASES
+        ]
+        declared = {base: {field.name for field in _class_body_fields(base)} for base in bases}
+        return {
+            field.name: declaring
+            for field in _class_body_fields(self)
+            if field.name is not None and (declaring := [base for base in bases if field.name in declared[base]])
+        }
 
     def assigns_forward_reference_field(  # noqa: PLR6301
         self,
@@ -3854,7 +3879,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return _bind_field_expressions(rendered, rendered_class_name, self._field_name_bindings.expressions)
 
     def set_field_name_bindings(self, bindings: FieldNameBindings) -> None:
-        """Set the aliases of the names the module's field names hide, which the rendered text writes."""
+        """Set the aliases of the names the module's field names hide, which the rendered text writes.
+
+        The aliases an earlier call set stay: the pass that binds them before the models render and the one that
+        binds the names a base hides in the rendered texts both set them. The second pass reads texts that already
+        write the aliases of the first, so it can alias an alias again; the rendered template writes the original
+        name, which the merged bindings map to the last alias.
+        """
+        if (earlier := self._field_name_bindings) is not None:
+            bindings = FieldNameBindings(
+                _composed_aliases(earlier.expressions, bindings.expressions),
+                _composed_aliases(earlier.loads, bindings.loads),
+            )
         self._field_name_bindings = bindings
         self.invalidate_render_caches()
 

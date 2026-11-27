@@ -122,6 +122,7 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_PYDANTIC_DATACLASS,)
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = True
     SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = True
+    EVALUATES_ANNOTATIONS_IN_BASES: ClassVar[bool] = True
     FIELD_ASSIGNMENT_CHECKER = staticmethod(_has_pydantic_dataclass_field_assignment)
     FIELD_DEFAULT_CLASSIFIER = staticmethod(_get_pydantic_dataclass_field_default_info)
     FIELD_PARTICIPATES_IN_CONSTRUCTOR = staticmethod(_pydantic_dataclass_field_participates_in_constructor)

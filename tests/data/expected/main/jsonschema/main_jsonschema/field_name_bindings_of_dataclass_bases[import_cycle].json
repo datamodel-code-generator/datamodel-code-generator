@@ -1,0 +1,1 @@
+"{\n  \"_internal\": {\n    \"A\": {\n      \"signature\": \"(b: 'B | None' = None) -> None\",\n      \"value\": {\n        \"b\": null\n      }\n    },\n    \"B\": {\n      \"signature\": \"(a: 'A | None' = None) -> None\",\n      \"value\": {\n        \"a\": null\n      }\n    }\n  },\n  \"a\": {},\n  \"b\": {}\n}\n"

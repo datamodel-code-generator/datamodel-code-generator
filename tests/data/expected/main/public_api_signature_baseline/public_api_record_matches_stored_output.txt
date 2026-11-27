@@ -1776,6 +1776,7 @@ class DataModel(TemplateBase, Nullable, ABC)
     DEFERS_RECURSIVE_TYPE_HINT: ClassVar[bool] = False
     SUPPORTS_GENERIC_BASE_CLASS: ClassVar[bool] = True
     FIRST_BASE_CONFIGURES: ClassVar[bool] = False
+    EVALUATES_ANNOTATIONS_IN_BASES: ClassVar[bool] = False
     FIELD_ASSIGNMENT_CHECKER: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_has_field_assignment)
     FIELD_DEFAULT_CLASSIFIER: ClassVar[Callable[[DataModelFieldBase], tuple[bool, bool]]] = staticmethod(_get_field_default_info)
     FIELD_PARTICIPATES_IN_CONSTRUCTOR: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_field_participates_in_constructor)
@@ -1898,6 +1899,7 @@ class DataModel(TemplateBase, Nullable, ABC)
     def resolves_hidden_types_from_strings(self) -> bool
     def fields_evaluated_at_definition(self) -> Sequence[DataModelFieldBase]
     def class_attribute_hides_named_type(self, field: DataModelFieldBase, *, assigned: bool, resolved_late: bool, as_string: bool) -> bool
+    def annotation_namespaces(self) -> dict[str, list[DataModel]]
     def assigns_forward_reference_field(self, field: DataModelFieldBase, positions: Mapping[str, int], index: int) -> bool
     def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool
     @deprecated('DataModel.imports is computed at each read; there is no imports cache to clear.', category=None)
@@ -2665,6 +2667,7 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model)
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_PYDANTIC_DATACLASS,)
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = True
     SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = True
+    EVALUATES_ANNOTATIONS_IN_BASES: ClassVar[bool] = True
     FIELD_ASSIGNMENT_CHECKER = staticmethod(_has_pydantic_dataclass_field_assignment)
     FIELD_DEFAULT_CLASSIFIER = staticmethod(_get_pydantic_dataclass_field_default_info)
     FIELD_PARTICIPATES_IN_CONSTRUCTOR = staticmethod(_pydantic_dataclass_field_participates_in_constructor)
