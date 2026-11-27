@@ -74,14 +74,25 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   group is a new report. heki reports it as a warning, so ``[lint] fail`` names it to fail the check. A cycle of
   the imports that run while their modules load inside a group adds no report: the ``heki`` lane refuses every such
   cycle with ``IMP101`` over those imports alone (``tests/test_build_heki_contracts_script.py``).
-- ``import-boundaries`` (``IMP201``, ``IMP202``) of the layers of the package (`_classify_source_path` of
-  ``scripts/check_architecture_boundaries.py``, which keeps the reads an import boundary cannot name): each leaf layer
-  imports only the standard library, ``typing_extensions`` and the modules `_LEAF_IMPORTS` lists, the runtime its
-  third-party packages and its own modules only relatively; no module imports the package root or ``__main__``, the
-  pass modules no parser module but `PARSER_PASS_IMPORTS`, the parser, configuration, shared model and reference code
-  no concrete backend, configuration and the targets no parser module, the core no target and no code outside the
-  parser a private parser module. Every import counts, under ``TYPE_CHECKING`` and by name too, and an import heki
-  cannot name is reported (``IMP202``), so the baseline counts the imports of modules only the run knows.
+- ``import-boundaries`` (``IMP201``, ``IMP202``) of the layers of the package (`classify_source_path` of
+  ``scripts/_package_layers.py``): each leaf layer imports only the standard library, ``typing_extensions`` and the
+  modules `_LEAF_IMPORTS` lists, the runtime its third-party packages and its own modules only relatively; no module
+  imports the package root or ``__main__``, the pass modules no parser module but `PARSER_PASS_IMPORTS`, the parser,
+  configuration, shared model and reference code no concrete backend, configuration and the targets no parser module,
+  the core no target and no code outside the parser a private parser module or a private name of one. Every import
+  counts, under ``TYPE_CHECKING`` and by name too, and an import heki cannot name is reported (``IMP202``): a relative
+  import that leaves the top-level package, and a call that may be ``importlib.import_module`` or ``__import__``. So
+  the baseline counts the imports of modules only the run knows.
+- ``read-owners``, ``call-owners`` and ``write-owners`` of the layers (`architecture_contracts`, ``MUT201``,
+  ``MUT203``, ``MUT204``, ``MUT206``, ``MUT207``): what a layer reads of another one beyond its imports. Parser code
+  reads no member only a backend reads, names no backend module and selects no output family; input model code
+  selects none; shared model code reads no module of ``sys.modules``; configuration reads no backend name but the
+  ``pydantic_v2`` ones of its module body (the defaults of ``ParserConfig``); the entry point reaches no private
+  member of a parser; no module but the root and ``__main__`` reads a name through the root. The functions whose read
+  of ``__module__`` or ``sys.modules`` asks something else, and the two private members the entry point reaches, are
+  left out with their reasons (`MODULE_NAME_READERS`, `MODULE_REGISTRY_READERS`, `ENTRYPOINT_PRIVATE_READERS`,
+  `CONFIG_DEFAULTS_BACKEND`). The checker's ``reference-backend-definition`` rule, a naming lint on the classes of
+  reference code, has no contract (owner 2026-11-26): a use of a backend there is held by the import contracts.
 - ``effect-boundaries`` (``EFF201``) of the passes, from ``scripts/pass_decls.py`` and the pipeline tables
   (``parser/_passes/_tables.py``): each pass after L1 and each decision, over the functions its step or its
   ``DecisionPass`` runs and those they call, writes only the fact and presentation rows its declaration lets it write
@@ -124,18 +135,18 @@ import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._decision_home_reads import checked_homes, held_parse_methods, typed_children_readers
-from scripts.check_architecture_boundaries import (
-    _PARSER_LAYERS,
-    _PRIVATE_PARSER_IMPORT_MESSAGE,
-    _ROOT_IMPORT_MESSAGE,
-    _TARGET_MODULES,
+from scripts._package_layers import (
     CONCRETE_BACKEND_ROOTS,
+    PARSER_LAYERS,
+    PRIVATE_PARSER_IMPORT_MESSAGE,
+    ROOT_IMPORT_MESSAGE,
+    TARGET_MODULES,
     Layer,
     PackageIndex,
-    _classify_source_path,
-    _protocol_bases,
-    bases,
+    classify_source_path,
+    protocol_bases,
 )
+from scripts._source_model import bases
 from scripts.check_generation_store_usage import GENERATION_STORE_MUTATION_METHODS, PARSER_STATE_OWNERS
 from scripts.check_ratchets import DECISION_READ_ADVICE, ENVIRONMENT_ADVICE, GLUE_ADVICE, PASS_ADVICE
 from scripts.decision_homes import BUILDER_HOMES, DECISION_HOMES, Home, Mark
@@ -165,6 +176,7 @@ from scripts.where import ASSIGNS, PACKAGE, PACKAGE_DIR, Page, Repo
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
+    from scripts._source_model import Scope, SourceModule
     from scripts.decision_homes import BuilderHome, DecisionHome
     from scripts.pass_decls import PassDecl
 
@@ -455,29 +467,71 @@ class _Classes:
 
     def __init__(self, repo: Repo) -> None:
         """Read the class scopes of the package's modules."""
-        index = PackageIndex()
+        index = PackageIndex(repo.root / PACKAGE_DIR)
         self.modules: dict[str, list[str]] = {}
         """The classes by the module that defines them, as ``module`` and ``qualname`` joined by a dot."""
         self.bases: dict[str, list[str]] = {}
+        self._scopes: dict[str, tuple[SourceModule, Scope]] = {}
         for rel, module in _package_modules(repo).items():
             model = repo.model(rel)
             for scope in model.scopes:
                 if scope.kind == "class" and "<locals>" not in scope.qualname:
                     self.modules.setdefault(module, []).append(scope.qualname)
+                    self._scopes[f"{module}.{scope.qualname}"] = (model, scope)
                     self.bases[f"{module}.{scope.qualname}"] = [
                         index.resolve(o) for base in bases(scope) if (o := model.origin(base))
                     ]
         self.functions = _package_functions(repo)
 
+    def lineage(self, name: str) -> list[str]:
+        """Return the class ``name`` and every class it derives from, through bases read by origin."""
+        todo, seen = [name], []
+        while todo:
+            if (current := todo.pop()) not in seen:
+                seen.append(current)
+                todo += self.bases.get(current, [])
+        return seen
+
     def derives(self, name: str, root: str) -> bool:
         """Return whether the class ``name`` is ``root`` or derives from it."""
-        todo, seen = [name], set()
+        return root in self.lineage(name)
+
+    def descendants(self, name: str) -> list[str]:
+        """Return the class ``name`` and every class of the package that derives from it."""
+        return [child for child in self.bases if self.derives(child, name)]
+
+    def has_attribute(self, name: str, attribute: str) -> bool:
+        """Return whether ``attribute`` is bound or stored by the class ``name``, a class it derives from or a subclass.
+
+        A read through ``name`` may reach a value of a subclass, so heki takes an attribute a subclass defines as one
+        of the class too.
+        """
+        return any(
+            attribute in model.class_members(scope, spelled=True)
+            for related in [*self.lineage(name), *self.descendants(name)]
+            if (found := self._scopes.get(related))
+            for model, scope in [found]
+        )
+
+    def defines(self, name: str, function: str) -> bool:
+        """Return whether the class ``name`` or a subclass defines the function ``function``, which a call may reach."""
+        return any(f"{related}.{function}" in self.functions for related in self.descendants(name))
+
+    def neutral_bases(self, backends: Iterable[str]) -> list[str]:
+        """Return the classes outside the modules ``backends`` and below them that a class inside derives from."""
+        roots = tuple(backends)
+        home = {f"{module}.{qualname}": module for module, qualnames in self.modules.items() for qualname in qualnames}
+        inside = {
+            name
+            for name, module in home.items()
+            if any(module.startswith(f"{root}.") or module == root for root in roots)
+        }
+        todo, seen = sorted(inside), set()
         while todo:
-            if (current := todo.pop()) == root:
-                return True
-            seen.add(current)
-            todo += [parent for parent in self.bases.get(current, []) if parent not in seen]
-        return False
+            if (current := todo.pop()) not in seen:
+                seen.add(current)
+                todo += self.bases.get(current, [])
+        return sorted(name for name in seen if name in home and name not in inside)
 
     def definers(self, root: str, name: str) -> list[str]:
         """Return the scopes of the methods ``name`` that ``root`` and the classes deriving from it define."""
@@ -816,7 +870,7 @@ class _Protocols:
                 if scope.kind != "class" or "<locals>" in scope.qualname:
                     continue
                 self.classes.add(f"{module}.{scope.qualname}")
-                if _protocol_bases(model, scope):
+                if protocol_bases(model, scope):
                     for name in scope.bindings:
                         self.members[name].add(f"{module}.{scope.qualname}.{name}")
 
@@ -980,7 +1034,7 @@ def host_contracts(repo: Repo) -> list[str]:
             for scope in model.scopes
             if scope.kind == "class"
             and "<locals>" not in scope.qualname
-            and (not concern or (_protocol_bases(model, scope) and not scope.qualname.endswith("Host")))
+            and (not concern or (protocol_bases(model, scope) and not scope.qualname.endswith("Host")))
         ]
     targets = sorted(set(targets))
     keys = {
@@ -1072,7 +1126,7 @@ _LEAF_IMPORTS: Final[dict[str, tuple[tuple[str, ...], str]]] = {
         "a pure parser core computes from the dumped schemas it is given",
     ),
 }
-"""The leaf layers of `_classify_source_path`: the modules of the package each may import besides the standard
+"""The leaf layers of `classify_source_path`: the modules of the package each may import besides the standard
 library and ``typing_extensions`` (with their submodules), and why."""
 RUNTIME_PACKAGE: Final = f"{PACKAGE}._runtime"
 RUNTIME_IMPORTS: Final = (
@@ -1126,10 +1180,10 @@ def _listing(names: Iterable[str]) -> str:
 
 
 def import_layers(repo: Repo) -> dict[str, list[str]]:
-    """Return the modules of the package by their layer (`_classify_source_path` of the architecture check)."""
+    """Return the modules of the package by their layer (`classify_source_path` of the architecture check)."""
     layers: dict[str, list[str]] = defaultdict(list)
     for rel, module in sorted(_package_modules(repo).items()):
-        layers[_classify_source_path(SOURCE_ROOT / Path(rel).relative_to(PACKAGE_DIR))].append(module)
+        layers[classify_source_path(SOURCE_ROOT / Path(rel).relative_to(PACKAGE_DIR))].append(module)
     return layers
 
 
@@ -1152,8 +1206,8 @@ def import_boundary_contracts(repo: Repo, *, partial: bool = False) -> list[str]
     main = f"{PACKAGE}.__main__"
     others = sorted(m for found in layers.values() for m in found if m not in {PACKAGE, main})
     rows: list[tuple[str, list[str], dict[str, object], str]] = [
-        ("root-import", others, {"forbidden_imports": [PACKAGE, main]}, _ROOT_IMPORT_MESSAGE),
-        ("root-main-import", [PACKAGE], {"forbidden_imports": [main]}, _ROOT_IMPORT_MESSAGE),
+        ("root-import", others, {"forbidden_imports": [PACKAGE, main]}, ROOT_IMPORT_MESSAGE),
+        ("root-main-import", [PACKAGE], {"forbidden_imports": [main]}, ROOT_IMPORT_MESSAGE),
     ]
     for layer, (modules, why) in _LEAF_IMPORTS.items():
         allowed = ["the standard library", "typing_extensions", *(f"{PACKAGE}.{module}" for module in modules)]
@@ -1220,16 +1274,23 @@ def import_boundary_contracts(repo: Repo, *, partial: bool = False) -> list[str]
         (
             "target-reverse-import",
             sorted(m for layer, found in layers.items() if layer != "target" for m in found if m not in leaves),
-            {"forbidden_imports": _below(*sorted(_TARGET_MODULES))},
+            {"forbidden_imports": _below(*sorted(TARGET_MODULES))},
             "model generation must not depend on target generation; targets depend on the core",
         ),
         (
             "private-parser-import",
             sorted(
-                m for layer, found in layers.items() if layer not in _PARSER_LAYERS for m in found if m not in leaves
+                m for layer, found in layers.items() if layer not in PARSER_LAYERS for m in found if m not in leaves
             ),
-            {"forbidden_imports": [f"{PACKAGE}.parser._*", f"{PACKAGE}.parser.*._*"]},
-            _PRIVATE_PARSER_IMPORT_MESSAGE,
+            {
+                "forbidden_imports": [
+                    f"{PACKAGE}.parser._*",
+                    f"{PACKAGE}.parser.*._*",
+                    f"{PACKAGE}.parser:_*",
+                    f"{PACKAGE}.parser.*:_*",
+                ]
+            },
+            PRIVATE_PARSER_IMPORT_MESSAGE,
         ),
     ]
     if not partial and (empty := [name for name, importers, _, _ in rows if not importers]):
@@ -1247,6 +1308,253 @@ def import_boundary_contracts(repo: Repo, *, partial: bool = False) -> list[str]
         )
         for name, importers, keys, message in rows
         if importers
+    ]
+
+
+def _everywhere(modules: Iterable[str]) -> list[str]:
+    """Return the scopes of modules: every function and class in them and the module bodies (``<module>``)."""
+    return [f"{module}:*" for module in modules]
+
+
+BACKEND_SEMANTIC_MESSAGE: Final = "parser code must query a neutral DataModel or DataModelFieldBase capability"
+BACKEND_IDENTITY_MESSAGE: Final = (
+    "parser code must not identify an output backend by module/name; declare a neutral capability"
+)
+ENTRYPOINT_PRIVATE_MESSAGE: Final = "entrypoint code must use the Parser public lifecycle and run-context API"
+SEMANTIC_ATTRIBUTES: Final = (
+    "PLAIN_PATTERN_ROOT_TYPES",
+    "SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH",
+    "_append_internal_template_data",
+    "_internal_template_data",
+    "has_typed_dict_closed",
+    "has_typed_dict_non_required",
+    "is_pydantic_extra_field",
+)
+"""The members of the models and the target version that only a backend reads: parser code reads none of them, with
+``getattr`` or ``hasattr`` too, and calls none."""
+SEMANTIC_OWNERS: Final = (
+    "model.base.DataModel",
+    "model.base.DataModelFieldBase",
+    "_format_types.PythonVersion",
+    "model.pydantic_v2.base_model.BaseModel",
+    "model.pydantic_v2.base_model.DataModelField",
+)
+"""The classes parser code reads `SEMANTIC_ATTRIBUTES` through: the two neutral model bases, the target version and
+the backend classes that define some of them. A name is a target on a class only where heki finds it there: the class
+binds or stores it, derives it, or a subclass defines it (a read through the class may reach the subclass's value).
+heki refuses a target that names nothing, so a name a class never has is not listed for it."""
+REQUIREMENT_READERS: Final = ("_requirements.python_target_meets", "_format_types.PythonVersion._meets")
+"""The functions that answer whether the target Python has a construct: parser code asks them for no TypedDict one."""
+MODULE_REGISTRY_READERS: Final = (
+    "model.base:_model_rebuild_namespace",
+    "model.base:_rebuild_model_with_datamodel_namespace",
+)
+"""The shared model code that reads ``sys.modules``: both complete a pydantic model of the package with the names of
+the module that defines it, never a backend's module, so the contract, which refuses every read of the registry and
+not only one keyed by a backend module, leaves them out."""
+MODULE_NAME_READERS: Final = (
+    "parser.base:_naming_rules_of",
+    "parser.jsonschema:JsonSchemaParser._reads_schema_version_per_document",
+    "parser._passes.render_prep:deserialize_decimal_default",
+)
+"""The parser code that reads the ``__module__`` of a class: each asks whether a class comes from this package or is
+``decimal.Decimal``, never which backend a model is, so the contract, which refuses every read of ``__module__`` and
+not only a comparison with a backend module, leaves them out."""
+CONFIG_DEFAULTS_BACKEND: Final = f"{PACKAGE}.model.pydantic_v2"
+"""The backend whose names the module body of the configuration may read: the defaults of ``ParserConfig``
+(``data_model_type`` and the other three) are its classes, the public defaults of the parser. heki judges a class
+body as the module body, so the contract of the module body leaves out this backend and keeps the others; the
+functions of the configuration read none, and the module imports only this backend (``config-backend-import``).
+
+The narrowing (owner 2026-11-26): the contract allows any module-body read of this backend, not exactly the four
+defaults the checker allowed, until heki attributes the body of a class to the class; the contract then names the
+defaults of ``ParserConfig`` alone (a heki request follows)."""
+ENTRYPOINT_PRIVATE_READERS: Final = (
+    "_generation:_build_parser",
+    "_generation:_parse_run",
+)
+"""The entry point code that reaches a private member of a parser class: the JSON Schema parser built from Python type
+expressions (``_from_python_type_expressions``, the one caller of that constructor) and whether a captured parser
+factory reads the API scope (``_supports_api_scope``, a class flag of the parser classes)."""
+
+
+def architecture_contracts(repo: Repo, *, partial: bool = False) -> list[str]:
+    """Return the contracts of what a layer may read of another one, beyond the modules it imports.
+
+    Parser code reads no member only a backend reads and asks the target version for no TypedDict construct
+    (`SEMANTIC_ATTRIBUTES`, `REQUIREMENT_READERS`), names no backend module, by a ``module=`` argument or by the
+    ``__module__`` of a class a backend derives from (the functions of `MODULE_NAME_READERS` read it, and the contract
+    allows them), and selects no output family (``DataModelType``, ``ModelType.PYDANTIC`` and ``ModelType.MSGSPEC``);
+    input model code selects none either; shared model code reads no module of the ``sys.modules`` registry (the
+    functions of `MODULE_REGISTRY_READERS` read it, and the contract allows them); the functions of the configuration
+    read no backend name, and its module body may read the backend of `CONFIG_DEFAULTS_BACKEND`; the entry point
+    reads and calls no private member of a parser, but in the functions of `ENTRYPOINT_PRIVATE_READERS`, and writes
+    none, on a parser it has just built too; no module but the root and ``__main__`` reads a name through the
+    package root, in a function, a class or a module body. Each read counts in the scope that holds it, a class
+    body too, and a read heki cannot tie to a class is reported (``MUT206``, ``MUT207``). A contract names only what the
+    package has: the owners' attributes where the class, a class it derives from or a subclass binds or stores them, and
+    their functions where the class or a subclass defines them, and each module by ``module:*`` where it defines a
+    function or a class, else by its body (``module:<module>``) where that reads a name. A contract no class or
+    module of the package is subject to raises, as in `import_boundary_contracts`, and so does a class or attribute of
+    `SEMANTIC_OWNERS` and `SEMANTIC_ATTRIBUTES` no class has and an allowed function the package does not define;
+    ``partial`` is for a seeded package that holds only some layers.
+    """
+    layers = import_layers(repo)
+    parsers = _everywhere([*layers["parser"], *layers["parser-passes"]])
+    every = [m for found in layers.values() for m in found]
+    backends = [f"{PACKAGE}.model.{root}" for root in sorted(CONCRETE_BACKEND_ROOTS)]
+    classes = _Classes(repo)
+    owners = [f"{PACKAGE}.{owner}" for owner in SEMANTIC_OWNERS if f"{PACKAGE}.{owner}" in classes.bases]
+    semantic_reads = [
+        f"{owner}.{name}" for owner in owners for name in SEMANTIC_ATTRIBUTES if classes.has_attribute(owner, name)
+    ]
+    semantic_calls = [
+        f"{owner}.{name}" for owner in owners for name in SEMANTIC_ATTRIBUTES if classes.defines(owner, name)
+    ]
+    scoped = {
+        module
+        for rel, module in _package_modules(repo).items()
+        if any(scope.kind in {"function", "class"} for scope in repo.model(rel).scopes)
+    }
+    bodies = {
+        module
+        for rel, module in _package_modules(repo).items()
+        if any(reference.context == "load" for reference in repo.model(rel).references)
+    }
+    parser_private = [f"{PACKAGE}.parser.base.Parser._[!_]*"]
+    entry = _everywhere(layers["entrypoint"])
+    entry_allowed = [f"{PACKAGE}.{scope}{{,.*}}" for scope in ENTRYPOINT_PRIVATE_READERS]
+    output_policy = "parser code must query output capabilities instead of selecting concrete backend policy"
+    config = "configuration must receive output implementations through a neutral registry or injection"
+    reads = {"references": "reads"}
+    rows: list[tuple[str, str, list[str], list[str], Mapping[str, object], str]] = [
+        ("read-owners", "backend-semantic-inspection", semantic_reads, parsers, {}, BACKEND_SEMANTIC_MESSAGE),
+        (
+            "call-owners",
+            "backend-semantic-inspection",
+            [
+                *semantic_calls,
+                *(f'{PACKAGE}.{reader}(construct="python.typed_dict_*")' for reader in REQUIREMENT_READERS),
+            ],
+            parsers,
+            {},
+            BACKEND_SEMANTIC_MESSAGE,
+        ),
+        (
+            "call-owners",
+            "backend-module-identity",
+            [f'*(module="{pattern}")' for pattern in _below(*backends)],
+            parsers,
+            {},
+            BACKEND_IDENTITY_MESSAGE,
+        ),
+        (
+            "read-owners",
+            "backend-module-identity",
+            [f"{name}.__module__" for name in _Classes(repo).neutral_bases(backends)],
+            parsers,
+            {"allowed_readers": [f"{PACKAGE}.{scope}{{,.*}}" for scope in MODULE_NAME_READERS]},
+            BACKEND_IDENTITY_MESSAGE,
+        ),
+        ("call-owners", "parser-output-policy", [f"{PACKAGE}.enums.DataModelType"], parsers, reads, output_policy),
+        (
+            "read-owners",
+            "parser-output-policy",
+            [f"{PACKAGE}.reference.ModelType.PYDANTIC", f"{PACKAGE}.reference.ModelType.MSGSPEC"],
+            parsers,
+            {},
+            output_policy,
+        ),
+        (
+            "call-owners",
+            "input-model-output-policy",
+            [f"{PACKAGE}.enums.DataModelType"],
+            _everywhere(layers["input-model"]),
+            reads,
+            "input-model conversion must obtain output-family policy from the output selection registry",
+        ),
+        (
+            "read-owners",
+            "shared-model-backend-module-access",
+            ["sys.modules"],
+            _everywhere(layers["shared-model"]),
+            {"allowed_readers": [f"{PACKAGE}.{scope}{{,.*}}" for scope in MODULE_REGISTRY_READERS]},
+            (
+                "shared model code must not inspect a concrete backend through sys.modules; "
+                "move backend lifecycle or cache management to the backend or composition root"
+            ),
+        ),
+        *(
+            (
+                "call-owners",
+                "config-backend-reference",
+                [f"{backend}{{,.*}}:*" for backend in found],
+                [f"{module}:{scope}" for module in layers["config"]],
+                {**reads, "subclasses": False},
+                config,
+            )
+            for scope, found in (
+                ("[!<]*", backends),
+                ("<module>", [backend for backend in backends if backend != CONFIG_DEFAULTS_BACKEND]),
+            )
+        ),
+        *(
+            (
+                kind,
+                "entrypoint-parser-private-access",
+                parser_private,
+                entry,
+                {"fresh_objects": "report"} if kind == "write-owners" else {f"allowed_{role}": entry_allowed},
+                ENTRYPOINT_PRIVATE_MESSAGE,
+            )
+            for kind, role in (("read-owners", "readers"), ("call-owners", "callers"), ("write-owners", "writers"))
+        ),
+        (
+            "call-owners",
+            "root-import",
+            [f"{PACKAGE}:*"],
+            [
+                f"{module}:*" if module in scoped else f"{module}:<module>"
+                for module in sorted(every)
+                if module in scoped | bodies and module not in {PACKAGE, f"{PACKAGE}.__main__"}
+            ],
+            reads,
+            ROOT_IMPORT_MESSAGE,
+        ),
+    ]
+    if not partial and (
+        empty := [f"{kind}:{name}" for kind, name, targets, scopes, _, _ in rows if not (targets and scopes)]
+    ):
+        msg = f"architecture contracts without a class or module of the package to judge: {', '.join(empty)}"
+        raise ValueError(msg)
+    named = {entry.rpartition(".")[2] for entry in semantic_reads}
+    if not partial and (
+        gone := [
+            *(o for o in SEMANTIC_OWNERS if f"{PACKAGE}.{o}" not in classes.bases),
+            *(a for a in SEMANTIC_ATTRIBUTES if a not in named),
+        ]
+    ):
+        msg = f"architecture contracts name classes or attributes the package does not have: {', '.join(gone)}"
+        raise ValueError(msg)
+    defined = _package_functions(repo)
+    allowed = (*MODULE_NAME_READERS, *MODULE_REGISTRY_READERS, *ENTRYPOINT_PRIVATE_READERS)
+    if not partial and (missing := [name for name in allowed if f"{PACKAGE}.{name.replace(':', '.')}" not in defined]):
+        msg = f"architecture contracts allow functions the package does not define: {', '.join(missing)}"
+        raise ValueError(msg)
+    role = {"read-owners": "readers", "call-owners": "callers", "write-owners": "writers"}
+    return [
+        _table(
+            kind,
+            name=name,
+            targets=targets,
+            **{f"forbidden_{role[kind]}": scopes},
+            **keys,
+            attribution="lexical",
+            **({} if "references" in keys else {"unresolved": "report"}),
+            message=message,
+        )
+        for kind, name, targets, scopes, keys, message in rows
+        if targets and scopes
     ]
 
 
@@ -1395,7 +1703,7 @@ class _TableSteps:
         """Read the tables module and the classes of the package."""
         self.repo = repo
         self.classes = _Classes(repo)
-        self.index = PackageIndex()
+        self.index = PackageIndex(repo.root / PACKAGE_DIR)
         self.model = repo.model(f"{PACKAGE_DIR}{TABLES}")
         self.modules = set(_package_modules(repo).values())
         self.lambdas = {id(scope.node): scope for scope in self.model.scopes if scope.kind == "lambda"}
@@ -1595,6 +1903,7 @@ def generate() -> str:
                 *builder_contracts(repo),
                 *host_contracts(repo),
                 *import_boundary_contracts(repo),
+                *architecture_contracts(repo),
                 *pipeline_contracts(repo),
                 *shared_object_contracts(repo),
                 *environment_contracts(),

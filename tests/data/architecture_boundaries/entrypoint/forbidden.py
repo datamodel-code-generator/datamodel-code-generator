@@ -7,3 +7,11 @@ def mutate_parser(parser, retry_parser, worker_parser_instance):
     parser.__dict__.pop("_formatter_cwd", None)
     worker_parser_instance._formatter_cwd = None
     return getattr(retry_parser, PRIVATE_ATTRIBUTE, None)
+
+
+def build_parser():
+    from datamodel_code_generator.parser.base import Parser
+
+    fresh = Parser()
+    fresh._formatter_cwd = None
+    return fresh

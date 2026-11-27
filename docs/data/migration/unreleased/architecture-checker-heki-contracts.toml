@@ -1,0 +1,30 @@
+[[change]]
+id = "architecture-checker-heki-contracts"
+category = "internal"
+title = "Hold the architecture rules with heki contracts"
+summary = "The architecture checker's read rules moved to heki contracts built from the layers; the checker and its tests are removed and the package writes the same output"
+refs = ["#1"]
+covers = [
+    "architecture_boundaries/architecture_boundary_allowlist_contract_and_file_discovery.txt",
+    "architecture_boundaries/architecture_boundary_cli_checks_the_full_source_tree.txt",
+    "architecture_boundaries/architecture_boundary_cli_reports_actionable_failures.txt",
+    "architecture_boundaries/architecture_boundary_cli_reports_shared_model_backend_access[forbidden].txt",
+    "architecture_boundaries/architecture_boundary_detector_allows_shared_and_composition_model_dependencies.txt",
+    "architecture_boundaries/architecture_boundary_detector_fails_closed_where_the_source_model_cannot_read.txt",
+    "architecture_boundaries/architecture_boundary_detector_refuses_dynamic_imports_heki_cannot_judge[parser].txt",
+    "architecture_boundaries/architecture_boundary_detector_refuses_dynamic_imports_heki_cannot_judge[shared-model].txt",
+    "architecture_boundaries/architecture_boundary_detector_rejects_root_and_main_imports.txt",
+    "architecture_boundaries/architecture_boundary_detector_reports_a_dependency_the_source_model_refuses.txt",
+    "architecture_boundaries/architecture_boundary_detector_reports_cross_layer_dependencies.txt",
+    "architecture_boundaries/architecture_boundary_detector_reports_stale_allowlist_entries.txt",
+    "architecture_boundaries/source_tree_respects_architecture_boundaries.txt",
+    "check_ratchets_script/check_ratchets_against_base[other-kinds].txt",
+    "check_ratchets_script/check_ratchets_counts_one_tree.json.txt",
+    "check_ratchets_script/check_ratchets_counts_one_tree.table.txt",
+    "pre_commit_hooks/a_pattern_without_an_imported_module_misses_it.txt",
+    "pre_commit_hooks/local_hooks_run_when_their_scripts_change.txt",
+    "source_model/a_form_names_only_the_layers_the_guard_has.txt",
+    "source_model/every_rule_states_its_verdicts[architecture-boundaries].txt",
+    "source_model/every_rule_states_its_verdicts[heki-contract-classes].txt",
+    "source_model/every_rule_states_its_verdicts[package-layer-reads].txt",
+]

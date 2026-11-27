@@ -374,12 +374,15 @@ SEEDED_LAYERS = {
     "constraints/forbidden.py": "_constraint_applicability.py",
     "regex/forbidden.py": "_regex_syntax.py",
     "runtime/forbidden.py": "_runtime/seeded.py",
+    "unjudged_dynamic_import/forbidden.py": "parser/dynamic.py",
+    "unreadable/import.py.txt": "parser/unreadable.py",
 }
 """The fixtures of the layers (``tests/data/architecture_boundaries``), each placed at a module of its layer."""
 SEEDED_LAYER_STUBS = (
     "__init__.py",
     "_api_generation.py",
     "_api_types.py",
+    "_format_types.py",
     "_json_schema.py",
     "_runtime/__init__.py",
     "_runtime/client.py",
@@ -407,13 +410,47 @@ SEEDED_LAYER_STUBS = (
     "types.py",
 )
 """The empty modules the fixtures import: heki judges an import of a module the package has."""
+SEEDED_LAYER_DEFINITIONS = {
+    "_format_types.py": (
+        "class PythonVersion:\n    has_typed_dict_closed = True\n    has_typed_dict_non_required = True\n\n"
+        "    def _meets(self, construct):\n        return True\n"
+    ),
+    "_requirements.py": "\n\ndef python_target_meets(construct, version_key):\n    return True\n",
+    "enums.py": "class DataModelType:\n    MsgspecStruct = 'msgspec.Struct'\n",
+    "model/base.py": (
+        "\n\nclass DataModel:\n    PLAIN_PATTERN_ROOT_TYPES = ()\n\n"
+        "    def __init__(self):\n        self._internal_template_data = {}\n\n"
+        "    def _append_internal_template_data(self, key, value):\n        pass\n\n\n"
+        "class DataModelFieldBase:\n    pass\n"
+    ),
+    "model/pydantic_v2/base_model.py": (
+        "from datamodel_code_generator.model.base import DataModel, DataModelFieldBase\n"
+        "from datamodel_code_generator.types import DataTypeManager as NeutralDataTypeManager\n\n\n"
+        "class BaseModel(DataModel):\n    SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH = ''\n\n\n"
+        "class DataModelField(DataModelFieldBase):\n    def is_pydantic_extra_field(self):\n        return False\n\n\n"
+        "class DataTypeManager(NeutralDataTypeManager):\n    pass\n"
+    ),
+    "types.py": "class DataTypeManager:\n    pass\n",
+    "model/typed_dict.py": "class TypedDict:\n    pass\n",
+    "parser/base.py": (
+        "class Parser:\n    _diagnostic_source_path = None\n    _formatter_cwd = None\n\n"
+        "    def _dispose(self):\n        pass\n"
+    ),
+}
+"""The definitions the architecture contracts name, appended to the modules of the seeded package that hold them.
+
+A target names only what a class has, so the classes define each name the contracts list for them.
+"""
 
 
 @needs("heki")
 def test_heki_reports_the_imports_that_cross_a_layer(tmp_path: Path) -> None:
-    """Each import a layer may not make is a finding, however it is written; an import heki cannot name is one too.
+    """Each import or read a layer may not make is a finding, however it is written; one heki cannot name is one too.
 
-    The import boundaries come from the layers of `check_architecture_boundaries._classify_source_path`. An import
+    The import boundaries and the architecture contracts come from the layers of `_package_layers.classify_source_path`.
+    A read of a member only a backend reads, a backend named by module, an output family selected, a module of
+    ``sys.modules`` read by shared model code and a private member of a parser reached from the entry point are
+    findings, through ``getattr`` and ``hasattr`` too, and on a value heki cannot tie to a class by name. An import
     counts in a function, under ``TYPE_CHECKING``, guarded and by name (``importlib.import_module`` with a constant,
     an alias, a relative name and its package, ``__import__``); a by-name import of a name the code does not fix is
     ``IMP202``. The ``allowed.py`` fixtures and the composition root give none; a name bound to ``importlib`` on one
@@ -427,6 +464,7 @@ def test_heki_reports_the_imports_that_cross_a_layer(tmp_path: Path) -> None:
 ROOT_IMPORT_FIXTURES = {
     "__init__.py": "__init__.py",
     "__main__.py": "__main__.py",
+    "body.py": "body.py",
     "errors.py": "errors.py",
     "leaf.py": "_caches.py",
     "shadowed.py": "shadowed.py",
@@ -443,7 +481,8 @@ def test_heki_reports_every_import_of_the_package_root_and_main(tmp_path: Path) 
 
     The fixture is the package of the former checker rule: relative imports two levels up, a star import, a name the
     root binds to shadow a submodule, a name its ``__getattr__`` serves and by-name imports. Each import of a name of
-    the root or of ``__main__`` is ``IMP201`` or ``IMP202``; ``__main__`` and the root's own re-exports give none.
+    the root or of ``__main__`` is ``IMP201`` or ``IMP202``, and a read of a root name through a submodule import
+    ``MUT204``, in a module of only a body too; ``__main__`` and the root's own re-exports give none.
     """
     places = {
         f"root_import/datamodel_code_generator/{fixture}": place for fixture, place in ROOT_IMPORT_FIXTURES.items()
@@ -466,13 +505,51 @@ def test_the_import_boundaries_raise_where_the_layer_table_is_out_of_step(
     ):
         build_heki_contracts.import_boundary_contracts(repo)
     build_heki_contracts.import_boundary_contracts(repo, partial=True)
+    with pytest.raises(
+        ValueError, match=r"^architecture contracts without a class or module of the package to judge: "
+    ):
+        build_heki_contracts.architecture_contracts(repo)
+    build_heki_contracts.architecture_contracts(repo, partial=True)
     monkeypatch.setitem(build_heki_contracts._LEAF_IMPORTS, "no-such-layer", ((), "why"))
     with pytest.raises(ValueError, match=r"classify: no-such-layer$"):
         build_heki_contracts.import_boundary_contracts(repo, partial=True)
 
 
+@pytest.mark.parametrize("table", ["MODULE_NAME_READERS", "MODULE_REGISTRY_READERS", "ENTRYPOINT_PRIVATE_READERS"])
+@pytest.mark.allow_direct_assert("a stale allowance must stop the build, not be stored as an expected output")
+def test_the_architecture_allowances_name_a_function_the_package_defines(
+    table: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An entry of an allowance table names a function the package defines, or its contract allows nothing."""
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+    monkeypatch.setattr(build_heki_contracts, table, (*getattr(build_heki_contracts, table), "parser.base:gone"))
+
+    with pytest.raises(
+        ValueError, match=r"^architecture contracts allow functions the package does not define: parser\.base:gone$"
+    ):
+        build_heki_contracts.architecture_contracts(repo)
+
+
+@pytest.mark.parametrize(
+    ("table", "entry"), [("SEMANTIC_OWNERS", "model.base.Gone"), ("SEMANTIC_ATTRIBUTES", "gone_attribute")]
+)
+@pytest.mark.allow_direct_assert("a stale owner or attribute must stop the build, not be stored as an expected output")
+def test_the_architecture_contracts_name_only_what_a_class_has(
+    table: str, entry: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An owner class or an attribute that no class of the package has is an error, not an entry heki refuses."""
+    repo = build_heki_contracts.Repo(build_heki_contracts.ROOT, build_heki_contracts.Page([], [], [], []))
+    monkeypatch.setattr(build_heki_contracts, table, (*getattr(build_heki_contracts, table), entry))
+
+    with pytest.raises(
+        ValueError,
+        match=rf"^architecture contracts name classes or attributes the package does not have: {re.escape(entry)}$",
+    ):
+        build_heki_contracts.architecture_contracts(repo)
+
+
 def _layer_import_reports(tmp_path: Path, stubs: tuple[str, ...], places: dict[str, str]) -> str:
-    """Place the fixtures at modules of their layers and return the import boundaries' findings as stored text."""
+    """Place the fixtures at modules of their layers and return the findings of the layer contracts as stored text."""
     package = tmp_path / PACKAGE
     for stub in stubs:
         (package / stub).parent.mkdir(parents=True, exist_ok=True)
@@ -480,10 +557,20 @@ def _layer_import_reports(tmp_path: Path, stubs: tuple[str, ...], places: dict[s
     for fixture, place in places.items():
         (package / place).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(LAYER_FIXTURES / fixture, package / place)
+    for place, definitions in SEEDED_LAYER_DEFINITIONS.items():
+        if (package / place).is_file():
+            with (package / place).open("a", encoding="utf-8") as module:
+                module.write(definitions)
     (tmp_path / "scripts").mkdir()
     repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
     contracts = tmp_path / "contracts.toml"
-    _contracts_file(contracts, build_heki_contracts.import_boundary_contracts(repo, partial=True))
+    _contracts_file(
+        contracts,
+        [
+            *build_heki_contracts.import_boundary_contracts(repo, partial=True),
+            *build_heki_contracts.architecture_contracts(repo, partial=True),
+        ],
+    )
 
     result = _heki("--output-format", "json", cwd=tmp_path, config=contracts)
 
