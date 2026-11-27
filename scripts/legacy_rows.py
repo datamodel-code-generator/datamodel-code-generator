@@ -4346,7 +4346,7 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "(`parser/_passes/_import_edges.py:init_load_edges`, "
             "`parser/_passes/imports.py:_class_named_like_submodule`)"
         ),
-        fix=KEEP,
+        fix=7573,
         witness=(
             "--input",
             "tests/data/jsonschema/submodule_named_like_forwarded_class.json",
