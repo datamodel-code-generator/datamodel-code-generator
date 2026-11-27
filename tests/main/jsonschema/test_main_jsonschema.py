@@ -37849,9 +37849,16 @@ def _dataclass_bases_values(cls: type, sample: dict[str, object]) -> dict[str, o
         pytest.param(
             "annotated",
             "pydantic_v2.dataclass",
-            ["--use-annotated", "--field-constraints"],
+            ["--use-annotated", "--field-constraints", "--use-schema-description", "--set-default-enum-member"],
             {"Invoice.home": [{"city": "c"}]},
             id="annotated",
+        ),
+        pytest.param(
+            "annotated",
+            "pydantic_v2.dataclass",
+            ["--field-constraints"],
+            {"Invoice.home": [{"city": "c"}]},
+            id="field_default",
         ),
         pytest.param("chain", "pydantic_v2.dataclass", [], {}, id="chain"),
         pytest.param("from_import", "pydantic_v2.dataclass", [], {}, id="from_import"),
@@ -37865,6 +37872,8 @@ def _dataclass_bases_values(cls: type, sample: dict[str, object]) -> dict[str, o
             marks=needs("type-statements"),
         ),
         pytest.param("no_redeclare", "pydantic_v2.dataclass", [], {}, id="no_redeclare"),
+        pytest.param("own_and_inherited", "pydantic_v2.dataclass", [], {"Place.str": "s"}, id="own_and_inherited"),
+        pytest.param("import_cycle", "pydantic_v2.dataclass", [], {}, id="import_cycle"),
         pytest.param("qualifier_required", "pydantic_v2.dataclass", [], {}, id="required_base"),
         pytest.param("own_field", "pydantic_v2.dataclass", [], {}, id="own_field"),
         pytest.param("from_import", "pydantic_v2.dataclass", ["--no-use-union-operator"], {}, id="optional_form"),
@@ -37907,10 +37916,27 @@ def test_field_name_bindings_of_dataclass_bases(
     assert_output(_dataclass_bases_observations(output_dir, {**_DATACLASS_BASES_SAMPLE, **sample}), suffix=".json")
 
 
-def test_field_name_bindings_of_dataclass_base_of_the_module(output_file: Path) -> None:
-    """Import a module whose dataclass redeclares a field of a base of the same module with a hidden builtin."""
+@pytest.mark.parametrize(
+    ("input_name", "args"),
+    [
+        pytest.param("same_module.json", [], id="same_module"),
+        pytest.param(
+            "renamed_class.json",
+            ["--type-overrides", '{"Item.amount": "decimal.Decimal", "Item.when": "datetime.date"}'],
+            id="renamed_class",
+        ),
+    ],
+)
+def test_field_name_bindings_of_dataclass_base_of_the_module(
+    output_file: Path, input_name: str, args: list[str]
+) -> None:
+    """Import a module whose dataclass redeclares a field of a base of the same module with a hidden builtin.
+
+    ``renamed_class`` has a class that takes the name of an overridden type, so the names the imports hide are bound
+    before the models render, and the inherited ones in the rendered texts after them.
+    """
     run_main_and_assert(
-        input_path=_DATACLASS_BASES_PATH / "same_module.json",
+        input_path=_DATACLASS_BASES_PATH / input_name,
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=[
@@ -37921,6 +37947,7 @@ def test_field_name_bindings_of_dataclass_base_of_the_module(output_file: Path) 
             "--formatters",
             "builtin",
             "--disable-timestamp",
+            *args,
         ],
     )
     with _generated_model(output_file, "dataclass_base_of_the_module", "Concert") as model:

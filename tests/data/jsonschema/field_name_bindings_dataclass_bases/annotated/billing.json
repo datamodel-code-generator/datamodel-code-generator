@@ -17,8 +17,16 @@
           "items": {
             "$ref": "user.json#/$defs/Address"
           }
+        },
+        "status": {
+          "enum": [
+            "open",
+            "paid"
+          ],
+          "default": "open"
         }
       }
     }
-  ]
+  ],
+  "description": "An invoice."
 }

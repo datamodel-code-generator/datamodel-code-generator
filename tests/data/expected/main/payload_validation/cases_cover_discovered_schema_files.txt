@@ -1,5 +1,5 @@
 {
-  "jsonschema": 1181,
+  "jsonschema": 1183,
   "openapi": 2475,
   "openapi generated as a package": 222,
   "openapi skipped for an unresolved internal $ref": 20,

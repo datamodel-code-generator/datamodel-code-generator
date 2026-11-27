@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Annotated
 
 from pydantic import Field
@@ -17,9 +18,19 @@ class Home:
     city: str | None = None
 
 
+class Status(Enum):
+    open = 'open'
+    paid = 'paid'
+
+
 @dataclass
 class Invoice(Account):
+    """
+    An invoice.
+    """
+
     billing_address: user_aliased.Address | None = None
     home: Annotated[list[user_aliased.Address] | Home | None, Field(min_length=1)] = (
         None
     )
+    status: Status | None = Status.open

@@ -19,6 +19,6 @@ class Address:
 
 @dataclass
 class Account:
-    user: str | None = None
+    user: Annotated[str | None, Field(max_length=3)] = None
     home: Address | None = None
     tag: Annotated[str | None, Field(max_length=3)] = None
