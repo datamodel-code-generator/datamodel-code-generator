@@ -1,0 +1,2 @@
+exit: 1
+src/datamodel_code_generator/body_b.py:1: IMP101 <module> datamodel_code_generator.body_a, datamodel_code_generator.body_b

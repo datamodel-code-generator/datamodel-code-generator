@@ -52,109 +52,10 @@ BASELINE = ROOT / "scripts" / "heki_baseline.toml"
 PACKAGE = "src/datamodel_code_generator"
 PACKAGE_NAME = "datamodel_code_generator"
 
-SEEDED_ENVIRONMENT = """\
-import os
-import platform
-import sys
-from importlib import import_module, util
-
-try:
-    import tomllib
-except ImportError:
-    tomllib = None
-try:
-    from yaml import CDumper, CSafeLoader
-except ImportError:
-    CDumper = CSafeLoader = None
-try:
-    import_module("orjson")
-except ModuleNotFoundError:
-    pass
-try:
-    import ujson
-except (ImportError, AttributeError):
-    ujson = None
-try:
-    import tomli
-except ImportError:
-    import tomllib as tomli
-
-HOME = os.environ.get("HOME")
-EDITOR = os.getenv("EDITOR")
-FOUND = util.find_spec("yaml")
-WINDOWS = sys.platform == "win32" or os.name == "nt"
-HEX = sys.hexversion
-SYSTEM = platform.system()
-
-
-def old_python() -> bool:
-    return sys.version_info < (3, 12)
-
-
-class Platform:
-    DARWIN = sys.platform == "darwin"
-
-
-def lazy_import() -> None:
-    try:
-        import csv
-    except Exception:
-        return
-    csv.reader([])
-"""
-"""The forms of reading the environment, in a module body, a function and a class body: 14 sites of ``<module>``.
-
-Guarded imports (an import, a ``from`` import of two names, which are two probes, an ``import_module`` call under
-``ModuleNotFoundError``, an import under a tuple of handlers, one more import whose fallback import in the handler is
-none), ``os.environ``, ``os.getenv``, ``importlib.util.find_spec``, ``sys.platform``, ``os.name``, ``sys.hexversion``,
-``platform.system()``, and ``sys.platform`` in a class body; ``old_python`` reads ``sys.version_info``. The lazy
-import of ``lazy_import`` under ``except Exception`` reads nothing.
-"""
-
-SEEDED_PACKAGE = {
-    "pyproject.toml": '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n',
-    f"{PACKAGE}/__init__.py": "",
-    f"{PACKAGE}/model/__init__.py": "",
-    f"{PACKAGE}/model/base.py": (
-        "class DataModel:\n    def __init__(self) -> None:\n        self.fields: list[str] = []\n"
-        "        self.set_base_class()\n\n"
-        "    def set_base_class(self) -> None:\n        self.fields = []\n"
-    ),
-    f"{PACKAGE}/reference.py": (
-        "class Reference:\n    def __init__(self) -> None:\n"
-        "        self.children: list[object] = []\n        self.loaded = True\n"
-    ),
-    f"{PACKAGE}/parser/__init__.py": "",
-    f"{PACKAGE}/parser/generation.py": (
-        "from datamodel_code_generator.model.base import DataModel\n\n\n"
-        "class GenerationStore:\n"
-        "    def set_fields(self, model: DataModel, fields: list[str]) -> None:\n        model.fields = fields\n\n"
-        "    def reset_base_classes(self, model: DataModel) -> None:\n        model.set_base_class()\n"
-    ),
-    f"{PACKAGE}/parser/base.py": (
-        "class Parser:\n    def __init__(self) -> None:\n        self.results: list[str] = []\n"
-    ),
-    f"{PACKAGE}/parser/seeded.py": (
-        "from datamodel_code_generator.model.base import DataModel\n"
-        "from datamodel_code_generator.parser.base import Parser\n"
-        "from datamodel_code_generator.reference import Reference\n\n\n"
-        'def rename_fields(model: DataModel) -> None:\n    model.fields = ["renamed"]\n\n\n'
-        'def register(parser: Parser) -> None:\n    parser.results.append("model")\n\n\n'
-        "def rebase(model: DataModel) -> None:\n    model.set_base_class()\n\n\n"
-        "def users(reference: Reference) -> list[object]:\n    return reference.children\n\n\n"
-        "def unload(reference: Reference) -> None:\n    reference.loaded = False\n"
-    ),
-    f"{PACKAGE}/parser/seeded_env.py": SEEDED_ENVIRONMENT,
-}
-"""A package whose ``seeded.py`` writes ``DataModel.fields`` and the run-state list ``Parser.results`` outside the
-store operations that their rows name, calls ``DataModel.set_base_class``, which only the store runs, and reads and
-writes the bookkeeping of a ``Reference``.
-
-``GenerationStore.set_fields``, one of those operations, writes ``DataModel.fields`` too, ``Parser.__init__``
-builds ``results``, the store and the model's own initialization call ``set_base_class``, which writes ``fields`` for
-the store, and ``Reference.__init__`` builds its bookkeeping: heki allows them all. ``seeded_env.py`` holds
-`SEEDED_ENVIRONMENT`, which the environment boundary forbids in functions and module bodies.
-"""
+SEEDED_PYPROJECT = '[project]\nname = "seeded"\nrequires-python = ">=3.11"\n'
+"""The project file of a seeded package."""
+HEKI_SEEDED = Path(__file__).parent / "data" / "heki_seeded"
+"""Seeded packages, each a ``src/`` tree whose modules say in their docstrings what the contracts report there."""
 
 
 def _contracts_file(path: Path, contracts: Iterable[str], *, unmatched: bool = False) -> None:
@@ -226,65 +127,6 @@ def test_the_package_has_no_heki_finding_beyond_the_baseline(tmp_path: Path) -> 
     )
 
 
-@needs("heki")
-@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
-def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_reads(tmp_path: Path) -> None:
-    """A write of a fact row's attribute outside the store operations the row names is a finding; theirs is none.
-
-    A call of a method only the store runs (``STORE_MEMBERS``) outside the store and the method's class is a finding,
-    and so are a read and a write of a reference's bookkeeping outside its module.
-
-    A read of the environment the package runs in is a finding too, in a function and in a module body, counted per
-    site.
-    """
-    for name, text in SEEDED_PACKAGE.items():
-        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / name).write_text(text, encoding="utf-8")
-
-    result = _heki("--output-format", "json", cwd=tmp_path, config=_seeded_contracts(tmp_path))
-
-    found = sorted(
-        (Path(item["path"]).as_posix(), item["qualname"], item["rule_code"], item["target"], item.get("sites") or 1)
-        for item in json.loads(result.stdout)
-    )
-    environment = "no-environment-reads:reads-environment"
-    assert (result.returncode, found) == (
-        1,
-        [
-            (
-                f"{PACKAGE}/parser/seeded.py",
-                "rebase",
-                "MUT204",
-                "datamodel_code_generator.model.base.DataModel.set_base_class",
-                1,
-            ),
-            (f"{PACKAGE}/parser/seeded.py", "register", "MUT201", "Parser.results", 1),
-            (f"{PACKAGE}/parser/seeded.py", "rename_fields", "MUT201", "DataModel.fields", 1),
-            (f"{PACKAGE}/parser/seeded.py", "unload", "MUT201", "Reference.loaded", 1),
-            (f"{PACKAGE}/parser/seeded.py", "users", "MUT203", "Reference.children", 1),
-            (f"{PACKAGE}/parser/seeded_env.py", "<module>", "EFF201", environment, 14),
-            (f"{PACKAGE}/parser/seeded_env.py", "old_python", "EFF201", environment, 1),
-        ],
-    ), result.stderr
-
-
-SEEDED_CYCLES = {
-    f"{PACKAGE}/__init__.py": "",
-    f"{PACKAGE}/body_a.py": "from datamodel_code_generator import body_b\n\nVALUE = body_b\n",
-    f"{PACKAGE}/body_b.py": "from datamodel_code_generator import body_a\n\nVALUE = body_a\n",
-    f"{PACKAGE}/function_a.py": "from datamodel_code_generator import function_b\n\nVALUE = function_b\n",
-    f"{PACKAGE}/function_b.py": (
-        "def load() -> object:\n    from datamodel_code_generator import function_a\n\n    return function_a\n"
-    ),
-    f"{PACKAGE}/typing_a.py": "from datamodel_code_generator import typing_b\n\nVALUE = typing_b\n",
-    f"{PACKAGE}/typing_b.py": (
-        "from typing import TYPE_CHECKING\n\nif TYPE_CHECKING:\n    from datamodel_code_generator import typing_a\n"
-    ),
-    f"{PACKAGE}/one_way_a.py": "from datamodel_code_generator import one_way_b\n\nVALUE = one_way_b\n",
-    f"{PACKAGE}/one_way_b.py": "VALUE = 1\n",
-}
-"""Three pairs of modules that import each other, by an import at module level, in a function and under
-``TYPE_CHECKING``, and a pair that imports one way."""
 MODULE_LEVEL_CYCLES = """\
 [lint]
 select = ["IMP101"]
@@ -296,13 +138,6 @@ cycle-edges = ["body"]
 """heki's ``IMP101`` over the imports that run while their modules load, which the package holds to no cycle whatever
 the baseline of the contracts keeps: such a cycle inside a group of modules that already import each other adds no
 report of the contracts, which report a group once."""
-
-
-def _cycle_reports(result: subprocess.CompletedProcess[str]) -> list[tuple[str, str, str]]:
-    """Return the path, rule and target of each report of a heki run with JSON output."""
-    return sorted(
-        (Path(item["path"]).as_posix(), item["rule_code"], item["target"]) for item in json.loads(result.stdout)
-    )
 
 
 @needs("heki")
@@ -320,35 +155,52 @@ def test_the_package_has_no_import_cycle_that_runs_while_its_modules_load(tmp_pa
     )
 
 
-@needs("heki")
-@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
-def test_heki_reports_the_import_cycles_of_every_import(tmp_path: Path) -> None:
-    """A cycle fails the check whether the import that closes it runs while its module loads, in a function or never.
+def _seeded(case: str, path: Path) -> Path:
+    """Copy the seeded package ``case`` of `HEKI_SEEDED` to ``path`` with its project file and an empty baseline."""
+    shutil.copytree(HEKI_SEEDED / case, path, dirs_exist_ok=True)
+    (path / "pyproject.toml").write_text(SEEDED_PYPROJECT, encoding="utf-8")
+    (path / BASELINE.name).write_text("version = 3\n", encoding="utf-8")
+    return path
 
-    Each report names the modules of its cycle, which a baseline entry keeps. The guard of the imports that run while
-    their modules load reports only the first.
-    """
-    for name, text in SEEDED_CYCLES.items():
-        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / name).write_text(text, encoding="utf-8")
-    (tmp_path / BASELINE.name).write_text("version = 3\n", encoding="utf-8")
-    (config := tmp_path / "module_level_cycles.toml").write_text(MODULE_LEVEL_CYCLES, encoding="utf-8")
+
+def _reports(result: subprocess.CompletedProcess[str]) -> str:
+    """Return the exit code and the reports of a heki run with JSON output as stored text, with each site count."""
+    found = sorted(
+        (
+            Path(item["path"]).as_posix(),
+            item["line"],
+            item["rule_code"],
+            item["qualname"],
+            item["target"],
+            item.get("sites"),
+        )
+        for item in json.loads(result.stdout)
+    )
+    return f"exit: {result.returncode}\n" + "".join(
+        f"{path}:{line}: {rule} {qualname} {target}{f' ({sites} sites)' if sites else ''}\n"
+        for path, line, rule, qualname, target, sites in found
+    )
+
+
+@needs("heki")
+@pytest.mark.parametrize("case", sorted(path.name for path in HEKI_SEEDED.iterdir()))
+def test_heki_reports_the_seeded_violations(tmp_path: Path, case: str) -> None:
+    """The contracts of the repository report what the docstrings of each seeded package say, and nothing else."""
+    _seeded(case, tmp_path)
 
     result = _heki(
         "--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path, config=_seeded_contracts(tmp_path)
     )
-    module_level = _heki("--output-format", "json", cwd=tmp_path, config=config)
 
-    body = (f"{PACKAGE}/body_b.py", "IMP101", f"{PACKAGE_NAME}.body_a, {PACKAGE_NAME}.body_b")
-    assert (result.returncode, _cycle_reports(result)) == (
-        1,
-        [
-            body,
-            (f"{PACKAGE}/function_b.py", "IMP101", f"{PACKAGE_NAME}.function_a, {PACKAGE_NAME}.function_b"),
-            (f"{PACKAGE}/typing_b.py", "IMP101", f"{PACKAGE_NAME}.typing_a, {PACKAGE_NAME}.typing_b"),
-        ],
-    ), result.stderr
-    assert (module_level.returncode, _cycle_reports(module_level)) == (1, [body]), module_level.stderr
+    assert_output(_reports(result))
+
+
+@needs("heki")
+def test_the_module_level_guard_reports_only_the_cycle_that_runs_while_its_modules_load(tmp_path: Path) -> None:
+    """The guard of the imports that run while their modules load reports the module-level cycle of the seeded ones."""
+    (config := tmp_path / "module_level_cycles.toml").write_text(MODULE_LEVEL_CYCLES, encoding="utf-8")
+
+    assert_output(_reports(_heki("--output-format", "json", cwd=_seeded("import_cycles", tmp_path), config=config)))
 
 
 LAYER_FIXTURES = Path(__file__).parent / "data" / "architecture_boundaries"
@@ -561,240 +413,6 @@ def _layer_import_reports(tmp_path: Path, stubs: tuple[str, ...], places: dict[s
     return f"exit: {result.returncode}\n" + "".join(
         f"{path}:{line}: {rule} {target}\n" for path, line, rule, target in found
     )
-
-
-SEEDED_SHARED = {
-    f"{PACKAGE}/__init__.py": "",
-    f"{PACKAGE}/parser/__init__.py": "",
-    f"{PACKAGE}/parser/_schema_graph.py": (
-        'class Schema:\n    def __init__(self) -> None:\n        self.title = ""\n\n\n'
-        "class SchemaGraphBuilder:\n    def __init__(self) -> None:\n        self.shared = Schema()\n\n"
-        "    def schema(self) -> Schema:\n        return self.shared\n"
-    ),
-    f"{PACKAGE}/parser/reader.py": (
-        "from datamodel_code_generator.parser._schema_graph import Schema, SchemaGraphBuilder\n\n\n"
-        "def read(graph: SchemaGraphBuilder) -> str:\n    return graph.schema().title\n\n\n"
-        'def write(graph: SchemaGraphBuilder) -> None:\n    graph.schema().title = "written"\n\n\n'
-        "def write_through_a_helper(graph: SchemaGraphBuilder) -> None:\n    _rename(graph.schema())\n\n\n"
-        'def _rename(schema: Schema) -> None:\n    schema.title = "written"\n\n\n'
-        'def write_a_parameter(schema: Schema) -> None:\n    schema.title = "written"\n'
-    ),
-}
-"""A package whose ``reader.py`` reads, and writes, the object that ``SchemaGraphBuilder.schema`` shares.
-
-``write_through_a_helper`` hands the shared object to a function that writes it; ``write_a_parameter`` writes a
-parameter that no call of the package gives the shared object, which heki does not follow.
-"""
-
-
-@needs("heki")
-@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
-def test_heki_reports_a_write_of_an_object_the_schema_graph_shares(tmp_path: Path) -> None:
-    """A function that writes the object ``SchemaGraphBuilder.schema`` returns fails the check; a reader does not.
-
-    The write through a helper that is given the object fails too, as the helper is a function that mutates it.
-    """
-    for name, text in SEEDED_SHARED.items():
-        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / name).write_text(text, encoding="utf-8")
-    (tmp_path / BASELINE.name).write_text("version = 3\n", encoding="utf-8")
-
-    result = _heki(
-        "--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path, config=_seeded_contracts(tmp_path)
-    )
-
-    found = sorted(
-        (Path(item["path"]).as_posix(), item["qualname"], item["rule_code"]) for item in json.loads(result.stdout)
-    )
-    assert (result.returncode, found) == (
-        1,
-        [
-            (f"{PACKAGE}/parser/reader.py", "write", "MUT202"),
-            (f"{PACKAGE}/parser/reader.py", "write_through_a_helper", "MUT202"),
-        ],
-    ), result.stderr
-
-
-SEEDED_WRITE_FORMS = """\
-from copy import deepcopy
-
-from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
-from datamodel_code_generator.parser.generation import GenerationStore
-
-
-def through_the_store(store: GenerationStore, model: DataModel) -> None:
-    store.set_fields(model, list(model.fields))
-
-
-def reorder(model: DataModel) -> None:
-    model.fields.reverse()
-    model.fields[:] = model.fields[::-1]
-    model.fields[0] = model.fields[0]
-    model.fields.insert(0, model.fields.pop())
-    model.fields.sort(reverse=True)
-
-
-def reorder_a_copy(model: DataModel) -> None:
-    copied = deepcopy(model.fields)
-    copied.reverse()
-
-
-def mark_through_an_alias(field: DataModelFieldBase) -> None:
-    extras = field.extras
-    extras["seen"] = True
-
-
-def rebase_in_a_callback(models: list[DataModel]) -> list[None]:
-    return list(map(lambda owner: owner.set_base_class(), models))
-
-
-def set_base_class(model: DataModel) -> None:
-    model.fields = []
-
-
-def clear_untyped(models):
-    for model in models:
-        model.fields = []
-"""
-"""Writes of fact rows by a pass: through a store operation, by every list mutator, to a deep copy, through a container
-alias, by a store-only method that a callback calls on an untyped receiver, by a function that only shares the name
-of such a method, and through a receiver whose class heki cannot tell."""
-SEEDED_FIELD_CLASS = """
-
-class DataModelFieldBase:
-    def __init__(self) -> None:
-        self.extras: dict[str, object] = {}
-"""
-"""A field class for the seeded ``model/base.py``, whose ``extras`` a write form aliases."""
-
-
-@needs("heki")
-@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
-def test_heki_reports_every_form_of_a_fact_write_outside_the_store(tmp_path: Path) -> None:
-    """Each list mutator, a write through an alias and a store-only call in a callback are findings, once per call.
-
-    The write of the store operation and the copy, which no graph object holds, are none, though a pass that calls the
-    operation itself, not through the store's builder, is; a function named like a method only the store runs is
-    judged by the attribute it writes, and a write through a receiver heki cannot resolve is ``MUT205``.
-    """
-    package = {
-        **SEEDED_PACKAGE,
-        f"{PACKAGE}/model/base.py": SEEDED_PACKAGE[f"{PACKAGE}/model/base.py"] + SEEDED_FIELD_CLASS,
-        f"{PACKAGE}/parser/forms.py": SEEDED_WRITE_FORMS,
-    }
-    for name, text in package.items():
-        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / name).write_text(text, encoding="utf-8")
-
-    result = _heki("--output-format", "json", cwd=tmp_path, config=_seeded_contracts(tmp_path))
-
-    found = [
-        (item["qualname"], item["rule_code"], item["target"], item["line"])
-        for item in json.loads(result.stdout)
-        if Path(item["path"]).name == "forms.py"
-    ]
-    assert (result.returncode, found) == (
-        1,
-        [
-            ("through_the_store", "MUT204", f"{PACKAGE_NAME}.parser.generation:GenerationStore.set_fields", 8),
-            ("reorder", "MUT201", "DataModel.fields", 12),
-            ("reorder", "MUT201", "DataModel.fields", 13),
-            ("reorder", "MUT201", "DataModel.fields", 14),
-            ("reorder", "MUT201", "DataModel.fields", 15),
-            ("reorder", "MUT201", "DataModel.fields", 15),
-            ("reorder", "MUT201", "DataModel.fields", 16),
-            ("mark_through_an_alias", "MUT201", "DataModelFieldBase.extras", 26),
-            ("rebase_in_a_callback", "MUT207", "set_base_class", 30),
-            ("set_base_class", "MUT201", "DataModel.fields", 34),
-            ("clear_untyped", "MUT205", "fields", 39),
-        ],
-    ), result.stderr
-
-
-SEEDED_CACHED_PROPERTIES = """\
-from functools import cached_property
-
-from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
-from datamodel_code_generator.reference import Reference
-from datamodel_code_generator.types import DataType
-
-
-class Model(DataModel):
-    @cached_property
-    def label(self) -> str:
-        return ""
-
-
-class Type(DataType):
-    @cached_property
-    def label(self) -> str:
-        return ""
-
-
-class Field(DataModelFieldBase):
-    @cached_property
-    def label(self) -> str:
-        return ""
-
-
-class Link(Reference):
-    @cached_property
-    def label(self) -> str:
-        return ""
-
-
-class Helper:
-    @cached_property
-    def label(self) -> str:
-        return ""
-"""
-"""Cached properties of classes deriving from owners of fact rows, and of a class the table does not describe."""
-SEEDED_CACHES = {
-    "pyproject.toml": SEEDED_PACKAGE["pyproject.toml"],
-    f"{PACKAGE}/__init__.py": "",
-    f"{PACKAGE}/model/__init__.py": "",
-    f"{PACKAGE}/model/base.py": (
-        "from functools import cached_property\n\n\n"
-        'class DataModel:\n    @cached_property\n    def path(self) -> str:\n        return ""\n\n\n'
-        "class DataModelFieldBase:\n    pass\n"
-    ),
-    f"{PACKAGE}/types.py": "class DataType:\n    pass\n",
-    f"{PACKAGE}/reference.py": "class Reference:\n    pass\n",
-    f"{PACKAGE}/model/cached.py": SEEDED_CACHED_PROPERTIES,
-}
-"""A package whose ``DataModel`` has the cached property of the cache row ``DataModel.path``, and whose
-``model/cached.py`` holds `SEEDED_CACHED_PROPERTIES`; ``DataType``, ``DataModelFieldBase`` and ``Reference`` own rows
-of other kinds."""
-
-
-@needs("heki")
-@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
-def test_heki_reports_a_cached_property_on_a_class_the_table_describes(tmp_path: Path) -> None:
-    """A ``cached_property`` on an owner of a fact row or a class deriving from one is a finding, a cache row's too.
-
-    A cached property writes its own name outside the store, so the baseline holds the ones of today's cache rows; the
-    one of a class the table does not describe is none.
-    """
-    for name, text in SEEDED_CACHES.items():
-        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / name).write_text(text, encoding="utf-8")
-
-    result = _heki("--output-format", "json", cwd=tmp_path, config=_seeded_contracts(tmp_path))
-
-    found = [
-        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["line"])
-        for item in json.loads(result.stdout)
-    ]
-    assert (result.returncode, found) == (
-        1,
-        [
-            ("base.py", "DataModel.path", "MUT201", 5),
-            ("cached.py", "Model.label", "MUT201", 9),
-            ("cached.py", "Type.label", "MUT201", 15),
-            ("cached.py", "Field.label", "MUT201", 21),
-            ("cached.py", "Link.label", "MUT201", 27),
-        ],
-    ), result.stderr
 
 
 SEEDED_KEY_WRITES = """\
@@ -1013,7 +631,7 @@ pop through an alias, an alias of an alias, aliases of ``vars`` and ``getattr``,
 name rebound by a loop, a call result, a computed key and calls that write no key, mutations of an entry, and the
 namespaces of a callable, a schema object and a class no row describes."""
 SEEDED_KEYS = {
-    "pyproject.toml": SEEDED_PACKAGE["pyproject.toml"],
+    "pyproject.toml": SEEDED_PYPROJECT,
     f"{PACKAGE}/__init__.py": "",
     f"{PACKAGE}/types.py": (
         '_LISTED_KEY = "_listed"\n_BOOKKEEPING_KEY = "_bookkeeping"\n_GONE_KEY = "_gone"\n'

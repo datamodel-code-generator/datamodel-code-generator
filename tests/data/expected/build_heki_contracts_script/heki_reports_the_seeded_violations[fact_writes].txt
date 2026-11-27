@@ -1,0 +1,19 @@
+exit: 1
+src/datamodel_code_generator/parser/forms.py:16: MUT204 through_the_store datamodel_code_generator.parser.generation:GenerationStore.set_fields
+src/datamodel_code_generator/parser/forms.py:20: MUT201 reorder DataModel.fields
+src/datamodel_code_generator/parser/forms.py:21: MUT201 reorder DataModel.fields
+src/datamodel_code_generator/parser/forms.py:22: MUT201 reorder DataModel.fields
+src/datamodel_code_generator/parser/forms.py:23: MUT201 reorder DataModel.fields
+src/datamodel_code_generator/parser/forms.py:23: MUT201 reorder DataModel.fields
+src/datamodel_code_generator/parser/forms.py:24: MUT201 reorder DataModel.fields
+src/datamodel_code_generator/parser/forms.py:34: MUT201 mark_through_an_alias DataModelFieldBase.extras
+src/datamodel_code_generator/parser/forms.py:38: MUT207 rebase_in_a_callback set_base_class
+src/datamodel_code_generator/parser/forms.py:42: MUT201 set_base_class DataModel.fields
+src/datamodel_code_generator/parser/forms.py:47: MUT205 clear_untyped fields
+src/datamodel_code_generator/parser/seeded.py:16: MUT201 rename_fields DataModel.fields
+src/datamodel_code_generator/parser/seeded.py:20: MUT201 register Parser.results
+src/datamodel_code_generator/parser/seeded.py:24: MUT204 rebase datamodel_code_generator.model.base.DataModel.set_base_class
+src/datamodel_code_generator/parser/seeded.py:28: MUT203 users Reference.children
+src/datamodel_code_generator/parser/seeded.py:32: MUT201 unload Reference.loaded
+src/datamodel_code_generator/parser/seeded_env.py:24: EFF201 <module> no-environment-reads:reads-environment (14 sites)
+src/datamodel_code_generator/parser/seeded_env.py:45: EFF201 old_python no-environment-reads:reads-environment

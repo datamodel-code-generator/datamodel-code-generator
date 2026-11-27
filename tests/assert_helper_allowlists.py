@@ -59,6 +59,7 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/data/architecture_boundaries/parser/forbidden.py",
         "private-import:tests/data/architecture_boundaries/shared/forbidden.py",
         "private-import:tests/data/architecture_boundaries/target/forbidden.py",
+        "private-import:tests/data/heki_seeded/shared_objects/src/datamodel_code_generator/parser/reader.py",
         "private-import:tests/data/python/unique_model_sets/opaque_generator.py",
         "private-import:tests/data/templates_dependencies/plugin.py",
     ),

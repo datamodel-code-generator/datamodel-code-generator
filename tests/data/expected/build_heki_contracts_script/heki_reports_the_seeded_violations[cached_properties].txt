@@ -1,0 +1,6 @@
+exit: 1
+src/datamodel_code_generator/model/base.py:5: MUT201 DataModel.path DataModel.path
+src/datamodel_code_generator/model/cached.py:17: MUT201 Model.label Model.label
+src/datamodel_code_generator/model/cached.py:23: MUT201 Type.label Type.label
+src/datamodel_code_generator/model/cached.py:29: MUT201 Field.label Field.label
+src/datamodel_code_generator/model/cached.py:35: MUT201 Link.label Link.label

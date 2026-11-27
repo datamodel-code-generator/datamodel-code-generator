@@ -1,0 +1,4 @@
+exit: 1
+src/datamodel_code_generator/body_b.py:1: IMP101 <module> datamodel_code_generator.body_a, datamodel_code_generator.body_b
+src/datamodel_code_generator/function_b.py:2: IMP101 load datamodel_code_generator.function_a, datamodel_code_generator.function_b
+src/datamodel_code_generator/typing_b.py:4: IMP101 <module> datamodel_code_generator.typing_a, datamodel_code_generator.typing_b

@@ -1,0 +1,3 @@
+exit: 1
+src/datamodel_code_generator/parser/reader.py:15: MUT202 write datamodel_code_generator.parser._schema_graph.SchemaGraphBuilder.schema
+src/datamodel_code_generator/parser/reader.py:19: MUT202 write_through_a_helper datamodel_code_generator.parser._schema_graph.SchemaGraphBuilder.schema
