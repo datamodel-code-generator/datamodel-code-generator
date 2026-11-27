@@ -7,6 +7,7 @@ import ast
 import asyncio
 import importlib
 import importlib.util
+import inspect
 import itertools
 import json
 import operator
@@ -22,7 +23,8 @@ from collections.abc import Callable as ABCCallable
 from collections.abc import Iterator, Sequence
 from contextlib import AbstractContextManager, ExitStack, nullcontext, suppress
 from dataclasses import Field as DataclassField
-from dataclasses import is_dataclass
+from dataclasses import asdict, is_dataclass
+from dataclasses import fields as dataclass_fields
 from decimal import Decimal
 from functools import partial
 from http.server import ThreadingHTTPServer
@@ -37983,6 +37985,193 @@ def test_field_name_bindings(
         assert_output(
             json.dumps(observations, ensure_ascii=False, indent=2) + "\n",
             name="runtime",
+        )
+
+
+_DATACLASS_BASES_PATH = JSON_SCHEMA_DATA_PATH / "field_name_bindings_dataclass_bases"
+_DATACLASS_BASES_SAMPLE = {
+    "user": "u",
+    "home": {"city": "c"},
+    "billing_address": {"city": "b"},
+    "level": 1,
+    "date": "2026-01-02",
+    "when": "2026-01-03",
+    "name": "n",
+    "label": "7",
+    "str": 1,
+    "tag": "abc",
+}
+_SLOTS = ["--dataclass-arguments", '{"slots": true}']
+
+
+def _dataclass_bases_observations(output_dir: Path, sample: dict[str, object]) -> str:
+    """Import every module of the package and describe the dataclasses it defines and a value of each."""
+    observations: dict[str, dict[str, object]] = {}
+    for path in sorted(output_dir.glob("*.py")):
+        if path.stem == "__init__":
+            continue
+        with _generated_package_module(output_dir, path.stem) as module:
+            observations[path.stem] = {
+                cls.__name__: {
+                    "signature": str(inspect.signature(cls)),
+                    "value": asdict(TypeAdapter(cls).validate_python(_dataclass_bases_values(cls, sample)))
+                    if hasattr(cls, "__pydantic_validator__")
+                    else None,
+                }
+                for cls in vars(module).values()
+                if is_dataclass(cls) and isinstance(cls, type) and cls.__module__ == module.__name__
+            }
+    return json.dumps(observations, indent=2, default=str) + "\n"
+
+
+def _dataclass_bases_values(cls: type, sample: dict[str, object]) -> dict[str, object]:
+    """Return the values of ``sample`` for the fields of a dataclass, by ``Class.field`` first."""
+    return {
+        field.name: sample.get(f"{cls.__name__}.{field.name}", sample.get(field.name))
+        for field in dataclass_fields(cls)
+        if f"{cls.__name__}.{field.name}" in sample or field.name in sample
+    }
+
+
+@pytest.mark.parametrize(
+    ("case", "backend", "args", "sample"),
+    [
+        pytest.param("qualifier", "pydantic_v2.dataclass", [], {}, id="qualifier"),
+        pytest.param("qualifier", "pydantic_v2.dataclass", ["--no-use-union-operator"], {}, id="qualifier_optional"),
+        pytest.param(
+            "qualifier",
+            "pydantic_v2.dataclass",
+            ["--preset", "standard-py312-20261125"],
+            {},
+            id="preset",
+            marks=needs("type-statements"),
+        ),
+        pytest.param("qualifier", "pydantic_v2.dataclass", _SLOTS, {}, id="slots"),
+        pytest.param("qualifier_required", "pydantic_v2.dataclass", _SLOTS, {}, id="slots_required"),
+        pytest.param(
+            "annotated",
+            "pydantic_v2.dataclass",
+            ["--use-annotated", "--field-constraints", "--use-schema-description", "--set-default-enum-member"],
+            {"Invoice.home": [{"city": "c"}]},
+            id="annotated",
+        ),
+        pytest.param(
+            "annotated",
+            "pydantic_v2.dataclass",
+            ["--field-constraints"],
+            {"Invoice.home": [{"city": "c"}]},
+            id="field_default",
+        ),
+        pytest.param("chain", "pydantic_v2.dataclass", [], {}, id="chain"),
+        pytest.param("from_import", "pydantic_v2.dataclass", [], {}, id="from_import"),
+        pytest.param("builtin_other_module", "pydantic_v2.dataclass", [], {}, id="builtin_other_module"),
+        pytest.param(
+            "qualifier",
+            "pydantic_v2.dataclass",
+            ["--target-python-version", "3.14"],
+            {},
+            id="py314",
+            marks=needs("type-statements"),
+        ),
+        pytest.param("no_redeclare", "pydantic_v2.dataclass", [], {}, id="no_redeclare"),
+        pytest.param("own_and_inherited", "pydantic_v2.dataclass", [], {"Place.str": "s"}, id="own_and_inherited"),
+        pytest.param("import_cycle", "pydantic_v2.dataclass", [], {}, id="import_cycle"),
+        pytest.param("qualifier_required", "pydantic_v2.dataclass", [], {}, id="required_base"),
+        pytest.param("own_field", "pydantic_v2.dataclass", [], {}, id="own_field"),
+        pytest.param("from_import", "pydantic_v2.dataclass", ["--no-use-union-operator"], {}, id="optional_form"),
+        pytest.param(
+            "double_collision",
+            "pydantic_v2.dataclass",
+            ["--use-tuple-for-fixed-items"],
+            {"pair": ["2026-01-02", "x"]},
+            id="double_collision",
+        ),
+        pytest.param(
+            "alias_of_builtin",
+            "pydantic_v2.dataclass",
+            ["--type-overrides", '{"Item.amount": "decimal.Decimal"}'],
+            {},
+            id="alias_of_builtin",
+        ),
+        pytest.param(
+            "alias_of_import",
+            "pydantic_v2.dataclass",
+            ["--type-overrides", '{"Item.amount": "decimal.Decimal", "Concert.label": "decimal.Decimal"}'],
+            {},
+            id="alias_of_import",
+        ),
+        *(
+            pytest.param("qualifier", backend, [], {}, id=f"qualifier-{backend}")
+            for backend in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict")
+        ),
+    ],
+)
+def test_field_name_bindings_of_dataclass_bases(
+    output_dir: Path, case: str, backend: str, args: list[str], sample: dict[str, object]
+) -> None:
+    """Import every module where a redeclared field's annotation loads a name that a dataclass base binds.
+
+    Pydantic evaluates the string annotation of such a field in the namespace of the base too, where the class body
+    binds the name of a field of the base (``None`` for a default of ``None``, a ``member_descriptor`` for a field of a
+    class with slots): the module that holds the redeclaring class imports the name under an alias. In the
+    ``alias_of_*`` cases a base declares a field named like the alias that the names a class hides were given before,
+    so the alias is renamed again and the annotations write the last one.
+    """
+    run_main_and_assert(
+        input_path=_DATACLASS_BASES_PATH / case,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            backend,
+            *(() if "--preset" in args or "--target-python-version" in args else ("--target-python-version", "3.10")),
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *args,
+        ],
+    )
+    assert_output(_dataclass_bases_observations(output_dir, {**_DATACLASS_BASES_SAMPLE, **sample}), suffix=".json")
+
+
+@pytest.mark.parametrize(
+    ("input_name", "args"),
+    [
+        pytest.param("same_module.json", [], id="same_module"),
+        pytest.param(
+            "renamed_class.json",
+            ["--type-overrides", '{"Item.amount": "decimal.Decimal", "Item.when": "datetime.date"}'],
+            id="renamed_class",
+        ),
+    ],
+)
+def test_field_name_bindings_of_dataclass_base_of_the_module(
+    output_file: Path, input_name: str, args: list[str]
+) -> None:
+    """Import a module whose dataclass redeclares a field of a base of the same module with a hidden builtin.
+
+    ``renamed_class`` has a class that takes the name of an overridden type, so the names the imports hide are bound
+    before the models render, and the inherited ones in the rendered texts after them.
+    """
+    run_main_and_assert(
+        input_path=_DATACLASS_BASES_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *args,
+        ],
+    )
+    with _generated_model(output_file, "dataclass_base_of_the_module", "Concert") as model:
+        assert_output(
+            json.dumps(asdict(TypeAdapter(model).validate_python({"str": 1, "label": "7"})), indent=2) + "\n",
+            suffix=".json",
         )
 
 

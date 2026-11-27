@@ -1,0 +1,6 @@
+[[change]]
+id = "fix-7561"
+extends = "dataclass-subclass-inherited-patterns-input-count"
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Event": {
+      "type": "object",
+      "properties": {
+        "str_aliased": {
+          "type": "integer"
+        },
+        "label": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
