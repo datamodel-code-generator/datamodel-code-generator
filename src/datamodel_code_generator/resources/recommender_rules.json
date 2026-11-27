@@ -972,6 +972,10 @@
       "not_recommended": "preset",
       "reason": "typing.TypedDict output only: set by the 20261125 presets; the recommendation starts from a preset."
     },
+    "keep_inherited_dataclass_config": {
+      "not_recommended": "preset",
+      "reason": "pydantic_v2.dataclass output only: set by the 20261127 presets; the recommendation starts from a preset."
+    },
     "keep_content_parameter_refs": {
       "not_recommended": "preset",
       "reason": "OpenAPI parameters scope only: set by the 20261106 presets; the recommendation starts from a preset."

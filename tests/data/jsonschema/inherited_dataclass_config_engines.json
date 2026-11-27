@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Serial": {
+      "type": "object",
+      "properties": {"serial": {"type": "string", "pattern": "^(?!0)[0-9]+$"}}
+    },
+    "Labelled": {
+      "type": "object",
+      "properties": {"serial": {"$ref": "#/$defs/Serial"}}
+    },
+    "Named": {
+      "allOf": [
+        {"$ref": "#/$defs/Labelled"},
+        {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string", "pattern": "^\\p{L}+$"},
+            "tail": {"type": "string", "pattern": "^[a-z]+$"}
+          }
+        }
+      ]
+    },
+    "Stamp": {
+      "type": "object",
+      "properties": {"stamp": {"type": "string", "pattern": "^(?!0)[0-9]+$"}}
+    },
+    "Sealed": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {"stamp": {"$ref": "#/$defs/Stamp"}}
+    },
+    "Lettered": {
+      "type": "object",
+      "properties": {"letters": {"type": "string", "pattern": "^\\p{L}+$"}}
+    },
+    "Both": {
+      "allOf": [
+        {"$ref": "#/$defs/Sealed"},
+        {"$ref": "#/$defs/Lettered"},
+        {"type": "object", "properties": {"count": {"type": "integer"}}}
+      ]
+    }
+  }
+}

@@ -1,0 +1,24 @@
+default
+Named
+valid: valid
+digits: string_pattern_mismatch
+newline: string_pattern_mismatch
+Lettered
+valid: valid
+digits: string_pattern_mismatch
+Both
+valid: valid
+extra: valid
+option
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Named.name is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Lettered.letters is generated without this constraint.
+Named
+valid: valid
+digits: valid
+newline: valid
+Lettered
+valid: valid
+digits: valid
+Both
+valid: valid
+extra: unexpected_keyword_argument

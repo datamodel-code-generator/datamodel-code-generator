@@ -197,6 +197,7 @@ the ``id`` of the type (``GenerationStore.record_hint_body_types``)."""
 _USE_TYPED_DICT_BACKPORT_TEMPLATE_DATA_KEY = "use_typeddict_backport"
 _USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY = "use_closed_typed_dict"
 _KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY = "keep_false_dataclass_arguments"
+_KEEP_INHERITED_DATACLASS_CONFIG_TEMPLATE_DATA_KEY = "keep_inherited_dataclass_config"
 _MODULE_NAME_INVALID_CHAR_PATTERN = re.compile(r"[^0-9a-zA-Z_]")
 _MODULE_NAME_INVALID_CHAR_WITH_DOTS_PATTERN = re.compile(r"[^0-9a-zA-Z_.]")
 _MAX_MISSING_CUSTOM_TEMPLATE_SUBDIRS = 128
@@ -1856,6 +1857,11 @@ def _nested_model_factory(field: DataModelFieldBase, model_cls: type[DataModel])
                 case _:
                     return _NestedModelFactory(data_type, source, builds_by_name=False)
     return None
+
+
+def _keep_inherited_dataclass_config(extra_template_data: defaultdict[str, dict[str, object]]) -> None:
+    """Record ``--keep-inherited-dataclass-config`` for every model, which a Pydantic dataclass reads."""
+    extra_template_data[ALL_MODEL][_KEEP_INHERITED_DATACLASS_CONFIG_TEMPLATE_DATA_KEY] = True
 
 
 def _set_nested_model_default_factory_order(models: list[DataModel], metadata: NestedFactoryMetadata) -> None:

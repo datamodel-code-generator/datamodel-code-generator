@@ -241,6 +241,7 @@ class ParserConfig(BaseModel):
     use_generic_base_class: bool = False
     keep_bases_beside_generic_base_class: bool = False
     keep_bases_of_typed_dicts_listed_before_their_parents: bool = False
+    keep_inherited_dataclass_config: bool = False
     force_optional_for_required_fields: bool = False
     class_name: str | None = None
     allow_leading_underscore_class_name: bool = False

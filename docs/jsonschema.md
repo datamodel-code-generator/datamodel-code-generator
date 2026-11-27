@@ -324,6 +324,14 @@ example `$` also matches before a trailing newline. Python's `re` is a backtrack
 linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they
 validate untrusted input.
 
+A Pydantic model merges the config of its bases into its own. A Pydantic dataclass applies only its own config, or
+the config of its first dataclass base when it has none, so a dataclass that writes a config of its own, such as the
+engine its own patterns select or `populate_by_name=True`, stops applying its base's, such as `extra='forbid'`. By
+default that config holds only the dataclass's own items, as 0.103.0 writes it, and
+[`--keep-inherited-dataclass-config`](cli-reference/model-customization.md#keep-inherited-dataclass-config) also
+writes the items of the base that the dataclass does not set. A dataclass without a config of its own keeps them
+either way where the patterns of its bases select the engine.
+
 ## Limitations
 
 JSON Schema input generates Python model definitions. It does not perform runtime validation by itself, and some
