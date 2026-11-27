@@ -1393,8 +1393,8 @@ allowed-callers = ["datamodel_code_generator.parser._init_exports:*", "datamodel
 targets-call-each-other = "report"
 
 [[call-owners]]
-name = "home:parser/_passes/_import_edges.py:_written_package +3"
-targets = ["datamodel_code_generator.parser._passes._import_edges._written_package", "datamodel_code_generator.parser._passes._import_edges.init_loads", "datamodel_code_generator.parser._passes._import_edges.module_import_edges", "datamodel_code_generator.parser._passes._import_edges.relative_import_targets"]
+name = "home:parser/_passes/_import_edges.py:_written_package +4"
+targets = ["datamodel_code_generator.parser._passes._import_edges._written_package", "datamodel_code_generator.parser._passes._import_edges.init_load_edges", "datamodel_code_generator.parser._passes._import_edges.init_loads", "datamodel_code_generator.parser._passes._import_edges.module_import_edges", "datamodel_code_generator.parser._passes._import_edges.relative_import_targets"]
 allowed-callers = ["datamodel_code_generator.parser._passes._import_edges:*", "datamodel_code_generator.parser._passes.imports:_class_named_like_submodule{,.*}", "datamodel_code_generator.parser._passes.imports:_loaded_modules{,.*}", "datamodel_code_generator.parser._passes.imports:reject_class_named_like_submodule{,.*}", "datamodel_code_generator.parser._passes.imports:reject_unimportable_imports{,.*}", "datamodel_code_generator.parser._passes.imports:submodules_hidden_by_packages{,.*}", "datamodel_code_generator:*"]
 targets-call-each-other = "report"
 

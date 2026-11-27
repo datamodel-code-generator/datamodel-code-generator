@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.Warn": {
+      "type": "object",
+      "properties": {"count": {"type": "integer"}, "order": {"$ref": "#/$defs/pkg.api.Order"}}
+    },
+    "pkg.Warn.Detail": {"type": "object", "properties": {"message": {"type": "string"}}},
+    "pkg.Warn.Kind": {"type": "string", "enum": ["low", "high"]},
+    "pkg.Warn.deep.Trace": {"type": "object", "properties": {"line": {"type": "integer"}}},
+    "pkg.api.Order": {
+      "type": "object",
+      "properties": {
+        "detail": {"$ref": "#/$defs/pkg.Warn.Detail"},
+        "warn": {"$ref": "#/$defs/pkg.Warn"},
+        "kind": {"$ref": "#/$defs/pkg.Warn.Kind"},
+        "trace": {"$ref": "#/$defs/pkg.Warn.deep.Trace"},
+        "shipment": {"$ref": "#/$defs/pkg.sub.shipment.Shipment"}
+      }
+    },
+    "pkg.report.Report": {
+      "type": "object",
+      "properties": {
+        "detail": {"$ref": "#/$defs/pkg.Warn.Detail"},
+        "warn": {"$ref": "#/$defs/pkg.Warn"},
+        "details": {"type": "array", "items": {"$ref": "#/$defs/pkg.Warn.Detail"}},
+        "either": {"anyOf": [{"$ref": "#/$defs/pkg.Warn.Detail"}, {"type": "string"}]},
+        "by_code": {"type": "object", "additionalProperties": {"$ref": "#/$defs/pkg.Warn.Detail"}},
+        "kind": {"$ref": "#/$defs/pkg.Warn.Kind", "default": "low"},
+        "trace": {"$ref": "#/$defs/pkg.Warn.deep.Trace"}
+      }
+    },
+    "pkg.sub.shipment.Shipment": {"type": "object", "properties": {"weight": {"type": "integer"}}},
+    "pkg.sub.leaf.Leaf": {"type": "object", "properties": {"detail": {"$ref": "#/$defs/pkg.Warn.Detail"}}},
+    "pkg.extended.Extended": {
+      "allOf": [{"$ref": "#/$defs/pkg.Warn.Detail"}],
+      "type": "object",
+      "properties": {"code": {"type": "string"}}
+    },
+    "other.Other": {"type": "object", "properties": {"detail": {"$ref": "#/$defs/pkg.Warn.Detail"}}}
+  }
+}

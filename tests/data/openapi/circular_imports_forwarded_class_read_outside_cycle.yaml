@@ -1,0 +1,40 @@
+openapi: 3.0.3
+info:
+  title: Forwarded class read outside the cycle
+  version: "1"
+paths: {}
+components:
+  schemas:
+    pkg.Warn:
+      type: object
+      properties:
+        count:
+          type: integer
+        order:
+          $ref: '#/components/schemas/pkg.api.Order'
+    pkg.Warn.Detail:
+      type: object
+      properties:
+        message:
+          type: string
+    pkg.api.Order:
+      type: object
+      properties:
+        detail:
+          $ref: '#/components/schemas/pkg.Warn.Detail'
+        warn:
+          $ref: '#/components/schemas/pkg.Warn'
+    pkg.report.Report:
+      type: object
+      properties:
+        detail:
+          $ref: '#/components/schemas/pkg.Warn.Detail'
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/pkg.Warn.Detail'
+    other.Other:
+      type: object
+      properties:
+        detail:
+          $ref: '#/components/schemas/pkg.Warn.Detail'

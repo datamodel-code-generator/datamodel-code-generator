@@ -24,7 +24,7 @@ from datamodel_code_generator.parser._phases import DecisionOutcome
 from datamodel_code_generator.reference import _UNMATCHED_MODEL_NAME_KEYS_REPORTED
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Generator, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator._requirements import PydanticFloor
@@ -557,7 +557,7 @@ class _FinalizeState(Generic[ContextT]):
     unused_models: list[DataModel]
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]]
     module_to_import: dict[ModulePath, Imports]
-    forwarder_modules: Collection[ModulePath]
+    forwarder_map: ForwarderMap
     with_import: bool
     config: ParseConfigView
     internal_modules: set[ModulePath]
