@@ -57,7 +57,7 @@ class _StructuredImportAliasState:
             if base_import.alias:
                 self.base_bindings.setdefault(base_import.alias, key)
                 self.used_names.add(base_import.alias)
-        elif base_name := base_class.type_hint:
+        if base_import is None and (base_name := base_class.type_hint):
             self.reserved_names.add(base_name.partition(".")[0])
             self.used_names.add(base_name.partition(".")[0])
 
