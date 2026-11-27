@@ -406,3 +406,5 @@ new_inline_value	behaviour_diff_script/without_option[new_inline_value].txt
 new_preset_value	behaviour_diff_script/without_option[new_preset_value].txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
 new_value_of_known_option	behaviour_diff_script/without_option[new_value_of_known_option].txt
 new_valued_option	behaviour_diff_script/without_option[new_valued_option].txt	= behaviour_diff_script/without_option[new_inline_value].txt
+[test_write_tree_writes_back_the_bytes_an_output_was_read_with]
+	behaviour_diff_script/write_tree_writes_back_the_bytes_an_output_was_read_with.written.txt

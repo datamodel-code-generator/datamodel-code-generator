@@ -6,4 +6,5 @@ summary = "Stored test output of the behaviour gate, which lists the 20261127 pr
 refs = ["#7565"]
 covers = [
     "behaviour_diff_script/gate_shards_judge_the_stale_entries_of_an_unsharded_run.txt",
+    "behaviour_diff_script/write_tree_writes_back_the_bytes_an_output_was_read_with.written.txt",
 ]

@@ -4806,4 +4806,4 @@ def test_write_tree_writes_back_the_bytes_an_output_was_read_with(tmp_path: Path
     raw = b'PATTERN = "\x8f"\n'
     text = raw.decode("utf-8", errors="surrogateescape")
     behaviour_diff._write_tree({"model.py": text}, tmp_path)
-    assert (tmp_path / "model.py").read_bytes() == raw
+    assert_output(repr((tmp_path / "model.py").read_bytes()), name="written")
