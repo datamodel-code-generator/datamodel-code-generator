@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payload",
+  "allOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/B"}],
+  "$defs": {
+    "M": {"allOf": [{"$ref": "#/$defs/N"}]},
+    "N": {"allOf": [{"$ref": "#/$defs/M"}]},
+    "Y": {"type": "object", "properties": {"y": {"type": "string"}}},
+    "Z": {"type": "object", "properties": {"z": {"type": "string"}}},
+    "A": {"allOf": [{"$ref": "#/$defs/Y"}, {"$ref": "#/$defs/M"}], "properties": {"a": {"type": "string"}}},
+    "B": {"allOf": [{"$ref": "#/$defs/Z"}, {"$ref": "#/$defs/M"}], "properties": {"b": {"type": "string"}}}
+  }
+}

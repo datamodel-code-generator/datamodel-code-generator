@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payload",
+  "allOf": [
+    {
+      "$ref": "#/$defs/A"
+    },
+    {
+      "$ref": "#/$defs/B"
+    }
+  ],
+  "$defs": {
+    "A": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "customBasePath": "msgspec.inspect.Type"
+    },
+    "B": {
+      "type": "object",
+      "properties": {
+        "b": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

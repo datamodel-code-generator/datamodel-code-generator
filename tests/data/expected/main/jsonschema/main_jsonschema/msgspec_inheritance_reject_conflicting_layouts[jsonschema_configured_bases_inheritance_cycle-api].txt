@@ -1,0 +1,1 @@
+Generated model inheritance cycle: M (jsonschema_configured_bases_inheritance_cycle.json#/$defs/M) -> N (jsonschema_configured_bases_inheritance_cycle.json#/$defs/N) -> M (jsonschema_configured_bases_inheritance_cycle.json#/$defs/M)

@@ -1,0 +1,23 @@
+{
+  "convert": {
+    "k": 1
+  },
+  "decode": {
+    "k": 1
+  },
+  "fields": [
+    "k"
+  ],
+  "bases": [
+    "Type",
+    "K"
+  ],
+  "mro": [
+    "Payload",
+    "Type",
+    "K",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

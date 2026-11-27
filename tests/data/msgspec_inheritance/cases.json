@@ -947,7 +947,13 @@
       "--type-overrides",
       "{\"Z\": \"msgspec.inspect.Type\"}"
     ],
-    "error": true
+    "payload": {
+      "a": "a",
+      "x": 1
+    },
+    "invalid": {
+      "x": "s"
+    }
   },
   {
     "name": "jsonschema_overridden_ancestor",
@@ -962,7 +968,13 @@
       "--type-overrides",
       "{\"Z\": \"msgspec.inspect.Type\"}"
     ],
-    "error": true
+    "payload": {
+      "a": "a",
+      "x": 1
+    },
+    "invalid": {
+      "x": "s"
+    }
   },
   {
     "name": "jsonschema_overridden_direct_base",
@@ -979,7 +991,13 @@
       "--type-overrides",
       "{\"Z\": \"msgspec.inspect.Type\"}"
     ],
-    "error": true
+    "payload": {
+      "a": "a",
+      "b": 1
+    },
+    "invalid": {
+      "b": "s"
+    }
   },
   {
     "name": "jsonschema_overridden_indirect_base",
@@ -1042,7 +1060,15 @@
       "--type-overrides",
       "{\"Y\": \"msgspec.inspect.Type\"}"
     ],
-    "error": true
+    "payload": {
+      "a": "a",
+      "x": 1,
+      "y": "y",
+      "d": 2
+    },
+    "invalid": {
+      "x": "s"
+    }
   },
   {
     "name": "jsonschema_reuse_configured_indirect_base",
@@ -1059,7 +1085,15 @@
       "--base-class-map",
       "{\"Y\": \"msgspec.inspect.Type\"}"
     ],
-    "error": true
+    "payload": {
+      "a": "a",
+      "x": 1,
+      "y": "y",
+      "d": 2
+    },
+    "invalid": {
+      "x": "s"
+    }
   },
   {
     "name": "jsonschema_reuse_imported_ancestor",
@@ -1070,6 +1104,393 @@
     },
     "cli": [
       "--reuse-model"
+    ],
+    "error": true
+  },
+  {
+    "name": "jsonschema_configured_one_parent",
+    "schema": "jsonschema_independent.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "A": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"A\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "c": 3
+    },
+    "invalid": {
+      "b": "s"
+    }
+  },
+  {
+    "name": "jsonschema_configured_generic_base",
+    "schema": "jsonschema_independent.json",
+    "format": "jsonschema",
+    "options": {
+      "use_generic_base_class": true,
+      "base_class_map": {
+        "A": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--use-generic-base-class",
+      "--base-class-map",
+      "{\"A\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "c": 3
+    },
+    "invalid": {
+      "b": "s"
+    }
+  },
+  {
+    "name": "jsonschema_configured_field_base",
+    "schema": "jsonschema_independent.json",
+    "format": "jsonschema",
+    "options": {
+      "keyword_only": true,
+      "base_class_map": {
+        "A": "msgspec.inspect.IntType"
+      }
+    },
+    "cli": [
+      "--keyword-only",
+      "--base-class-map",
+      "{\"A\": \"msgspec.inspect.IntType\"}"
+    ],
+    "payload": {
+      "a": "a",
+      "b": 2,
+      "c": 3
+    },
+    "invalid": {
+      "b": "s"
+    }
+  },
+  {
+    "name": "jsonschema_configured_grandparent",
+    "schema": "jsonschema_reuse_type_differs.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "Z": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"Z\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "a": "a",
+      "x": 1
+    },
+    "invalid": {
+      "x": "s"
+    }
+  },
+  {
+    "name": "jsonschema_custom_base_path_one_parent",
+    "schema": "jsonschema_custom_base_path_one_parent.json",
+    "format": "jsonschema",
+    "options": {},
+    "cli": [],
+    "payload": {
+      "a": "a",
+      "b": 1
+    },
+    "invalid": {
+      "b": "s"
+    }
+  },
+  {
+    "name": "jsonschema_configured_parent_defaults",
+    "schema": "jsonschema_configured_parent_defaults.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "J": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"J\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "r": "r",
+      "k": 1
+    },
+    "invalid": {
+      "r": 1
+    }
+  },
+  {
+    "name": "jsonschema_configured_parent_defaults_annotated",
+    "schema": "jsonschema_configured_parent_defaults.json",
+    "format": "jsonschema",
+    "options": {
+      "use_annotated": true,
+      "base_class_map": {
+        "J": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--use-annotated",
+      "--base-class-map",
+      "{\"J\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "r": "r",
+      "k": 1
+    },
+    "invalid": {
+      "r": 1
+    }
+  },
+  {
+    "name": "jsonschema_configured_first_of_three",
+    "schema": "jsonschema_overridden_direct_base.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "Z": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"Z\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "z": "z",
+      "a": "a",
+      "b": 1
+    },
+    "invalid": {
+      "b": "s"
+    }
+  },
+  {
+    "name": "jsonschema_configured_last_of_three",
+    "schema": "jsonschema_overridden_direct_base.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "B": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"B\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "z": "z",
+      "a": "a",
+      "b": 1
+    },
+    "invalid": {
+      "b": "s"
+    }
+  },
+  {
+    "name": "jsonschema_configured_two_of_three",
+    "schema": "jsonschema_overridden_direct_base.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "Z": "msgspec.inspect.Type",
+        "A": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"Z\": \"msgspec.inspect.Type\", \"A\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "z": "z",
+      "a": "a",
+      "b": 1
+    },
+    "invalid": {
+      "b": "s"
+    }
+  },
+  {
+    "name": "jsonschema_configured_fieldless_parent",
+    "schema": "jsonschema_empty.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "A": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"A\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "a": "a",
+      "c": 1
+    },
+    "invalid": {
+      "c": "s"
+    }
+  },
+  {
+    "name": "jsonschema_overridden_first_of_three",
+    "schema": "jsonschema_overridden_direct_base.json",
+    "format": "jsonschema",
+    "options": {
+      "type_overrides": {
+        "Z": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--type-overrides",
+      "{\"Z\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "a": "a",
+      "b": 1
+    },
+    "invalid": {
+      "b": "s"
+    }
+  },
+  {
+    "name": "jsonschema_overridden_and_configured_bases",
+    "schema": "jsonschema_overridden_direct_base.json",
+    "format": "jsonschema",
+    "options": {
+      "type_overrides": {
+        "Z": "msgspec.inspect.Type"
+      },
+      "base_class_map": {
+        "A": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--type-overrides",
+      "{\"Z\": \"msgspec.inspect.Type\"}",
+      "--base-class-map",
+      "{\"A\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "a": "a",
+      "b": 1
+    },
+    "invalid": {
+      "b": "s"
+    }
+  },
+  {
+    "name": "jsonschema_overridden_ancestor_configured_base",
+    "schema": "jsonschema_reuse_type_differs.json",
+    "format": "jsonschema",
+    "options": {
+      "type_overrides": {
+        "Z": "msgspec.inspect.Type"
+      },
+      "base_class_map": {
+        "B": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--type-overrides",
+      "{\"Z\": \"msgspec.inspect.Type\"}",
+      "--base-class-map",
+      "{\"B\": \"msgspec.inspect.Type\"}"
+    ],
+    "error": true
+  },
+  {
+    "name": "jsonschema_configured_beside_shared_ancestor",
+    "schema": "jsonschema_dry_shared.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "LeftInner": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"LeftInner\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "left1": 1,
+      "left2": 2,
+      "right1": 3,
+      "right2": 4
+    },
+    "invalid": {
+      "left1": "x"
+    }
+  },
+  {
+    "name": "jsonschema_overridden_fieldless_with_generated_parent",
+    "schema": "jsonschema_overridden_fieldless_with_generated_parent.json",
+    "format": "jsonschema",
+    "options": {
+      "type_overrides": {
+        "J": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--type-overrides",
+      "{\"J\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "k": 1,
+      "g": 2
+    },
+    "invalid": {
+      "k": "s"
+    }
+  },
+  {
+    "name": "jsonschema_reuse_overridden_fieldless_with_generated_parent",
+    "schema": "jsonschema_overridden_fieldless_with_generated_parent.json",
+    "format": "jsonschema",
+    "options": {
+      "type_overrides": {
+        "J": "msgspec.inspect.Type"
+      },
+      "reuse_model": true
+    },
+    "cli": [
+      "--reuse-model",
+      "--type-overrides",
+      "{\"J\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "k": 1,
+      "g": 2
+    },
+    "invalid": {
+      "k": "s"
+    }
+  },
+  {
+    "name": "jsonschema_configured_bases_inheritance_cycle",
+    "schema": "jsonschema_configured_bases_inheritance_cycle.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "Y": "msgspec.inspect.Type",
+        "Z": "msgspec.inspect.Metadata"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"Y\": \"msgspec.inspect.Type\", \"Z\": \"msgspec.inspect.Metadata\"}"
     ],
     "error": true
   }

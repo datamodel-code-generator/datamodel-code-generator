@@ -21,7 +21,6 @@ from datamodel_code_generator.model.base import (
     BaseLayoutView,
     DataModel,
     _find_base_classes,
-    _has_opaque_custom_base,
     _is_instance_field,
     _same_model,
     _walk_bases_first,
@@ -247,30 +246,21 @@ def flatten_conflicting_final_layouts(parser: FinalLayoutsHost, run: CrossModule
     reuse merges, which it cannot know before it runs. A model it left whole, on the prediction that a base duplicates
     another, that the processing then left conflicting would fail the final check of the output; here the layouts
     are final, so it declares the fields of its generated bases itself (``_flattener``), the models with fewer
-    ancestors first. Only a msgspec Struct decides to. A model whose layout, or that of a model it inherits from
-    however far, the generator does not know is left as it is, whichever of its bases conflict, which the final check
-    of the output refuses: a configured base hides it (``_has_opaque_custom_base``), and so does a base that the output
-    imports in place of a generated model, which a model-level type override or ``x-python-import`` replaced once a
-    module was processed (``modules.apply_base_class_type_overrides``, ``modules.apply_base_stand_in_imports``) and
-    which keeps that model as its stand-in: the fields of such a base are not ones the flattening could copy.
+    ancestors first. Only a msgspec Struct decides to. A base that the output imports in place of a generated model,
+    which a model-level type override or ``x-python-import`` replaced once a module was processed
+    (``modules.apply_base_class_type_overrides``, ``modules.apply_base_stand_in_imports``) and which keeps that model as
+    its stand-in, is a class whose layout the generator does not read, as a configured base class is: a conflict counts
+    only where it is certain whatever such a class holds (``Struct._find_layout_conflict``), and a model it leaves
+    conflicting is left as it is, which the final check of the output refuses where the stand-ins hold no slot.
     """
     stand_ins = _stand_ins_of(parser, "stand-ins")
 
-    def has_unknown_layout(model: DataModel) -> bool:
-        return any(
-            _has_opaque_custom_base(ancestor, ancestor.BASE_CLASS)
-            or any(id(base) in stand_ins for base in ancestor.base_classes)
-            for ancestor in linearize_data_models([model])
-        )
+    def holds_stand_in(model: DataModel) -> bool:
+        return any(id(base) in stand_ins for base in model.base_classes)
 
     flatten = _flattener(parser, run, "flatten-conflicting-final-layouts")
-    view = BaseLayoutView(_is_instance_field, _same_model, has_unknown_layout)
-    joins = (
-        model
-        for ctx in run.contexts
-        for model in ctx.models
-        if len(model.base_classes) > 1 and not view.is_opaque(model)
-    )
+    view = BaseLayoutView(_is_instance_field, _same_model, holds_stand_in)
+    joins = (model for ctx in run.contexts for model in ctx.models if len(model.base_classes) > 1)
     for model in sorted(joins, key=lambda model: len(linearize_data_models([model]))):
         model.flatten_conflicting_base_layouts(view, flatten)
 

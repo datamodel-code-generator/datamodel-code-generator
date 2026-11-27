@@ -1,0 +1,4 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Payload","allOf":[{"$ref":"#/$defs/J"},{"$ref":"#/$defs/K"}],"$defs":{
+"G":{"type":"object","properties":{"g":{"type":"integer"}}},
+"J":{"allOf":[{"$ref":"#/$defs/G"},{"type":"object","properties":{"j":{"type":"integer"}}}]},
+"K":{"type":"object","properties":{"k":{"type":"integer"}}}}}

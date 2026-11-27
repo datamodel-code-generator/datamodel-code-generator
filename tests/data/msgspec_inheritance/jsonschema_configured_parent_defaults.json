@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payload",
+  "allOf": [
+    {
+      "$ref": "#/$defs/J"
+    },
+    {
+      "$ref": "#/$defs/K"
+    }
+  ],
+  "$defs": {
+    "N": {
+      "type": "object",
+      "properties": {
+        "n": {
+          "type": "integer"
+        }
+      }
+    },
+    "J": {
+      "type": "object",
+      "required": [
+        "r"
+      ],
+      "properties": {
+        "r": {
+          "type": "string"
+        },
+        "j": {
+          "type": "integer",
+          "default": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "a"
+          ]
+        },
+        "nested": {
+          "$ref": "#/$defs/N",
+          "default": {
+            "n": 2
+          }
+        }
+      }
+    },
+    "K": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

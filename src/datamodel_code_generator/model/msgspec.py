@@ -8,6 +8,7 @@ from __future__ import annotations
 from ast import literal_eval
 from fractions import Fraction
 from functools import partial, wraps
+from itertools import chain
 from operator import is_not, itemgetter
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, TypeVar, cast
@@ -630,7 +631,11 @@ def _union_leaves(data_type: DataType) -> Sequence[DataType]:
 
 
 def _is_never_opaque(model: DataModel) -> bool:  # noqa: ARG001
-    """Return that only a configured base, which the layout check finds itself, hides the slots of a model."""
+    """Return that a rendered model holds no class the layout check does not read but its configured bases.
+
+    The check finds those itself; a base the output imports in place of a generated model is read as a class
+    without slots.
+    """
     return False
 
 
@@ -805,17 +810,53 @@ class Struct(DataModel):
 
     @staticmethod
     def _layout_parents(model: DataModel, view: BaseLayoutView) -> list[DataModel]:
-        """Return the generated Struct bases of a model as the view of the layouts sees them."""
+        """Return the generated Struct bases of a model as the view of the layouts sees them.
+
+        A model that the output replaces whole by an imported class has none: its generated bases are not read.
+        """
+        if view.is_replaced is not None and view.is_replaced(model):
+            return []
         return [view.layout_model(parent) for parent in _struct_bases(model)]
 
     @staticmethod
     def _has_unknown_layout(model: DataModel, view: BaseLayoutView) -> bool:
-        """Return whether a configured base or the view hides the slots a model has."""
+        """Return whether a model is, or holds beside its generated bases, a class the generator does not read.
+
+        A configured base class may hold any slot and declare any field; the view names the others.
+        """
         return _has_opaque_custom_base(model, Struct.BASE_CLASS) or view.is_opaque(model)
+
+    @staticmethod
+    def _has_known_line(model: DataModel, view: BaseLayoutView) -> bool:
+        """Return whether the generator reads the layout of a model and of every model it inherits from."""
+        pending, keys = [model], _ModelKeys()
+        while pending:
+            if keys.first(ancestor := pending.pop()):
+                if Struct._has_unknown_layout(ancestor, view):
+                    return False
+                pending.extend(Struct._layout_parents(ancestor, view))
+        return True
 
     @staticmethod
     def _find_layout_conflict(
         bases: Sequence[DataModel], view: BaseLayoutView = _FINAL_LAYOUT_VIEW
+    ) -> tuple[DataModel, DataModel] | None:
+        """Find two slot owners of the bases that cannot combine whatever the classes the generator does not read hold.
+
+        The walk reads such a class as one without slots (``_find_compact_layout_conflict``). A conflict it finds is
+        certain where one of its two owners inherits from no such class (``_has_known_line``): the slots of that owner
+        are its own and lie on no line of the other, so the other conflicts with them whatever its unread classes
+        hold, as it declares a slot that its line holds, itself or in such a class. Where the conflict found first is
+        not certain, every pair of slot owners is searched for a certain one (``_find_certain_layout_conflict``).
+        """
+        conflict = Struct._find_compact_layout_conflict(bases, view)
+        if conflict is None or any(Struct._has_known_line(owner, view) for owner in conflict):
+            return conflict
+        return Struct._find_certain_layout_conflict(bases, view)
+
+    @staticmethod
+    def _find_compact_layout_conflict(
+        bases: Sequence[DataModel], view: BaseLayoutView
     ) -> tuple[DataModel, DataModel] | None:
         """Find independent slot owners with linear storage for compatible graphs.
 
@@ -838,8 +879,6 @@ class Struct(DataModel):
             parents = Struct._layout_parents(base, view)
             if not complete:
                 visited[keys.of(base)] = len(visited)
-                if Struct._has_unknown_layout(base, view):
-                    return None
                 pending.append((base, True))
                 pending.extend((parent, False) for parent in reversed(parents))
                 continue
@@ -874,8 +913,7 @@ class Struct(DataModel):
         """Prefer an earlier active slot owner without repeating the layout proof.
 
         The compact witness establishes incompatibility. An active descendant
-        may occur earlier in the emitted bases' preorder, or inherit an opaque
-        layout that prevents diagnosing the generated class at all.
+        may occur earlier in the emitted bases' preorder.
         """
         for base, complete in reversed(pending):
             if not complete:
@@ -888,8 +926,6 @@ class Struct(DataModel):
                 parent = parents.pop()
                 if (parent_key := keys.of(parent)) in ancestor_keys:
                     continue
-                if Struct._has_unknown_layout(parent, view):
-                    return None
                 ancestor_keys.add(parent_key)
                 parent_depth = max(parent_depth, owner_depths.get(parent_key, 0))
                 inherited_names.update(field.name for field in parent.fields if view.is_slot(field))
@@ -900,6 +936,46 @@ class Struct(DataModel):
                 other = min(owners[parent_depth:], key=lambda owner: encounter_ranks[keys.of(owner)])
                 conflict = other, base
         return conflict
+
+    @staticmethod
+    def _find_certain_layout_conflict(
+        bases: Sequence[DataModel], view: BaseLayoutView
+    ) -> tuple[DataModel, DataModel] | None:
+        """Find two slot owners, neither inheriting from the other, one of which has a line the generator reads whole.
+
+        A slot owner declares a slot field that no model it inherits from declares. The models are taken bases first,
+        in the order of the compact walk, and each owner is paired with the owners taken before it. A model is walked
+        once; a base it reaches again while it is still on the walk is an inheritance cycle, which the generated module
+        check rejects, and is left out of its parents.
+        """
+        keys = _ModelKeys()
+        ancestors: dict[ModelKey, frozenset[ModelKey]] = {}
+        slots: dict[ModelKey, frozenset[str | None]] = {}
+        known: dict[ModelKey, bool] = {}
+        owners: list[DataModel] = []
+        pending = [(view.layout_model(base), False) for base in bases]
+        while pending:
+            model, complete = pending.pop()
+            if not complete and not keys.first(model):
+                continue
+            parent_models = Struct._layout_parents(model, view)
+            if not complete:
+                pending.append((model, True))
+                pending.extend((parent, False) for parent in reversed(parent_models))
+                continue
+            key = keys.of(model)
+            parents = [parent for parent in map(keys.of, parent_models) if parent in known]
+            ancestors[key] = frozenset(chain(parents, chain.from_iterable(ancestors[parent] for parent in parents)))
+            inherited = frozenset(chain.from_iterable(slots[parent] for parent in parents))
+            own = frozenset(field.name for field in model.fields if view.is_slot(field))
+            slots[key] = inherited | own
+            known[key] = not Struct._has_unknown_layout(model, view) and all(known[parent] for parent in parents)
+            if own - inherited:
+                for other in owners:
+                    if (other_key := keys.of(other)) not in ancestors[key] and (known[key] or known[other_key]):
+                        return other, model
+                owners.append(model)
+        return None
 
     def _generated_layout_bases(self) -> list[Struct]:
         """Return the generated Struct bases in the order the layout of the bases is diagnosed in."""
