@@ -141,6 +141,7 @@
   "keep_false_dataclass_arguments",
   "keep_field_defaults_off_branch_roots",
   "keep_first_character_of_path_keys",
+  "keep_inherited_dataclass_config",
   "keep_model_order",
   "keep_null_of_nullable_items",
   "keep_reference_null_on_collapsed_root_models",
@@ -148,6 +149,7 @@
   "keep_self_referencing_array_items",
   "keep_shared_members_on_collapsed_root_models",
   "keep_string_keywords_beside_formats",
+  "keep_typed_input_model_root_python_types",
   "keyword_only",
   "locked",
   "lockfile",
@@ -988,6 +990,12 @@
    ],
    "choices": null
   },
+  "--keep-inherited-dataclass-config": {
+   "aliases": [
+    "--no-keep-inherited-dataclass-config"
+   ],
+   "choices": null
+  },
   "--keep-model-order": {
    "aliases": [],
    "choices": null
@@ -1025,6 +1033,12 @@
   "--keep-string-keywords-beside-formats": {
    "aliases": [
     "--no-keep-string-keywords-beside-formats"
+   ],
+   "choices": null
+  },
+  "--keep-typed-input-model-root-python-types": {
+   "aliases": [
+    "--no-keep-typed-input-model-root-python-types"
    ],
    "choices": null
   },
@@ -1282,6 +1296,7 @@
     "practical-py310-20261123",
     "practical-py310-20261124",
     "practical-py310-20261125",
+    "practical-py310-20261127",
     "practical-py311-20260619",
     "practical-py311-20260826",
     "practical-py311-20260909",
@@ -1298,6 +1313,7 @@
     "practical-py311-20261123",
     "practical-py311-20261124",
     "practical-py311-20261125",
+    "practical-py311-20261127",
     "practical-py312-20260619",
     "practical-py312-20260826",
     "practical-py312-20260909",
@@ -1314,6 +1330,7 @@
     "practical-py312-20261123",
     "practical-py312-20261124",
     "practical-py312-20261125",
+    "practical-py312-20261127",
     "practical-py313-20260619",
     "practical-py313-20260826",
     "practical-py313-20260909",
@@ -1330,6 +1347,7 @@
     "practical-py313-20261123",
     "practical-py313-20261124",
     "practical-py313-20261125",
+    "practical-py313-20261127",
     "practical-py314-20260619",
     "practical-py314-20260826",
     "practical-py314-20260909",
@@ -1346,6 +1364,7 @@
     "practical-py314-20261123",
     "practical-py314-20261124",
     "practical-py314-20261125",
+    "practical-py314-20261127",
     "practical-py315-20261015",
     "practical-py315-20261017",
     "practical-py315-20261027",
@@ -1359,6 +1378,7 @@
     "practical-py315-20261123",
     "practical-py315-20261124",
     "practical-py315-20261125",
+    "practical-py315-20261127",
     "standard-py310-20260619",
     "standard-py310-20260826",
     "standard-py310-20260909",
@@ -1375,6 +1395,7 @@
     "standard-py310-20261123",
     "standard-py310-20261124",
     "standard-py310-20261125",
+    "standard-py310-20261127",
     "standard-py311-20260619",
     "standard-py311-20260826",
     "standard-py311-20260909",
@@ -1391,6 +1412,7 @@
     "standard-py311-20261123",
     "standard-py311-20261124",
     "standard-py311-20261125",
+    "standard-py311-20261127",
     "standard-py312-20260619",
     "standard-py312-20260826",
     "standard-py312-20260909",
@@ -1407,6 +1429,7 @@
     "standard-py312-20261123",
     "standard-py312-20261124",
     "standard-py312-20261125",
+    "standard-py312-20261127",
     "standard-py313-20260619",
     "standard-py313-20260826",
     "standard-py313-20260909",
@@ -1423,6 +1446,7 @@
     "standard-py313-20261123",
     "standard-py313-20261124",
     "standard-py313-20261125",
+    "standard-py313-20261127",
     "standard-py314-20260619",
     "standard-py314-20260826",
     "standard-py314-20260909",
@@ -1439,6 +1463,7 @@
     "standard-py314-20261123",
     "standard-py314-20261124",
     "standard-py314-20261125",
+    "standard-py314-20261127",
     "standard-py315-20261015",
     "standard-py315-20261017",
     "standard-py315-20261027",
@@ -1451,7 +1476,8 @@
     "standard-py315-20261120",
     "standard-py315-20261123",
     "standard-py315-20261124",
-    "standard-py315-20261125"
+    "standard-py315-20261125",
+    "standard-py315-20261127"
    ]
   },
   "--profile": {
@@ -2512,6 +2538,20 @@
    "standard-py313-20261125": "7b2ef8b12d2c4c96",
    "standard-py314-20261125": "7b2ef8b12d2c4c96",
    "standard-py315-20261125": "7b2ef8b12d2c4c96"
+  },
+  "20261127": {
+   "practical-py310-20261127": "ee95238ed6dca420",
+   "practical-py311-20261127": "225435e29fa61c23",
+   "practical-py312-20261127": "225435e29fa61c23",
+   "practical-py313-20261127": "225435e29fa61c23",
+   "practical-py314-20261127": "225435e29fa61c23",
+   "practical-py315-20261127": "225435e29fa61c23",
+   "standard-py310-20261127": "7ab54162678daa8a",
+   "standard-py311-20261127": "cf4abe8828859f6c",
+   "standard-py312-20261127": "cf4abe8828859f6c",
+   "standard-py313-20261127": "cf4abe8828859f6c",
+   "standard-py314-20261127": "cf4abe8828859f6c",
+   "standard-py315-20261127": "cf4abe8828859f6c"
   }
  },
  "python_api": [
