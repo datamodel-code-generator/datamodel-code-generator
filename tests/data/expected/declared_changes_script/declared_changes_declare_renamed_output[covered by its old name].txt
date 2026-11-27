@@ -36,3 +36,8 @@ refs = ["#42"]
 covers = [
     "models/renamed.py",
 ]
+
+[[change.cells]]
+input = ["a.json"]
+backends = "*"
+options = "*"
