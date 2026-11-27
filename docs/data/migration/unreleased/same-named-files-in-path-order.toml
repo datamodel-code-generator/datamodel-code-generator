@@ -26,13 +26,13 @@ covers = [
 input = ["tests/data/jsonschema/nested_resources"]
 backends = "*"
 options = "*"
-aspects = ["name-added", "name-removed", "numbered-name-removed", "type", "warning"]
+aspects = ["exit", "message", "name-added", "name-removed", "numbered-name-removed", "type", "warning"]
 
 [[change.cells]]
 input = ["tests/data/jsonschema/merged_copy_duplicates"]
 backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
 options = "*"
-aspects = ["name-added", "name-removed", "numbered-name-removed", "type", "warning"]
+aspects = ["exit", "message", "name-added", "name-removed", "numbered-name-removed", "type", "warning"]
 
 [[change.cells]]
 input = ["project:openmetadata/schema"]
