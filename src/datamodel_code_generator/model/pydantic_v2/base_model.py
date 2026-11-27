@@ -82,6 +82,7 @@ from datamodel_code_generator.model.base import (
     _find_base_classes,
     _get_template_with_custom_dir,
     _has_opaque_custom_base,
+    _library_base_class,
     _model_written,
     _ModelKeys,
     _uses_original_template_loader,
@@ -2354,22 +2355,31 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         return module_plan
 
     @classmethod
+    def _is_generated_generic_base_class(cls, model: DataModel) -> bool:
+        """Return whether ``model`` is the generic base class, named ``BaseModel``, whatever its base is spelled.
+
+        The class is told by the import of its first base, the library's ``BaseModel``, and its name; a generic base
+        class renamed beside a kept class of its name (``BaseModelModel``) is not, so helpers keep inheriting the kept
+        class.
+        """
+        return (
+            model.class_name == cls.BASE_CLASS_NAME
+            and bool(model.base_classes)
+            and (base_import := model.base_classes[0].import_) is not None
+            and (base_import.from_, base_import.import_) == (IMPORT_BASE_MODEL.from_, IMPORT_BASE_MODEL.import_)
+        )
+
+    @classmethod
     def _has_local_generated_generic_base_class(cls, models: list[DataModel]) -> bool:
         """Return whether this module renders its configured ``BaseModel`` before helpers."""
-        if not models or models[0].class_name != cls.BASE_CLASS_NAME:
-            return False
-        return models[0].base_class == cls.BASE_CLASS_ALIAS
+        return bool(models) and cls._is_generated_generic_base_class(models[0])
 
     @classmethod
     def _has_generated_generic_base_class(cls, models: list[DataModel]) -> bool:
         """Return whether local helpers can inherit a generated generic ``BaseModel``."""
         if cls._has_local_generated_generic_base_class(models):
             return True
-        return any(
-            base.class_name == cls.BASE_CLASS_NAME and base.base_class == cls.BASE_CLASS_ALIAS
-            for model in models
-            for base in _find_base_classes(model)
-        )
+        return any(cls._is_generated_generic_base_class(base) for model in models for base in _find_base_classes(model))
 
     @classmethod
     @override
@@ -3051,15 +3061,14 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             treat_dot_as_module=treat_dot_as_module,
         )
 
-        base_model.base_classes = [BaseClassDataType(type=cls.BASE_CLASS_ALIAS)]
+        base, base_import = _library_base_class(IMPORT_BASE_MODEL, cls.BASE_CLASS_ALIAS)
+        base_model.base_classes = [base]
         base_model._additional_imports = [
             imp
             for imp in base_model._additional_imports
             if not (imp.from_ == IMPORT_BASE_MODEL.from_ and imp.import_ == IMPORT_BASE_MODEL.import_)
         ]
-        base_model._additional_imports.append(
-            Import(from_=IMPORT_BASE_MODEL.from_, import_=IMPORT_BASE_MODEL.import_, alias=cls.BASE_CLASS_ALIAS)
-        )
+        base_model._additional_imports.append(base_import)
 
         return base_model
 

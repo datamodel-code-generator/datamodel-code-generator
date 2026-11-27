@@ -67,8 +67,9 @@ def _apply_structured_import_aliases(
     builder: GraphBuilder,
     models: list[DataModel],
     aliased_imports: dict[_ImportKey, Import],
+    kept_base_bindings: frozenset[tuple[_ImportKey, str]] = frozenset(),
 ) -> None:
-    """Rewrite every identity-carrying structured consumer of selected imports."""
+    """Rewrite every identity-carrying structured consumer of selected imports, the kept base bindings aside."""
     for model in models:
         for field in model.fields:
             _alias_field_runtime_expressions(builder, field, aliased_imports)
@@ -76,7 +77,7 @@ def _apply_structured_import_aliases(
                 _alias_data_type_structured_imports(builder, data_type, aliased_imports)
         _alias_additional_imports(model, aliased_imports)
     for model in models:
-        _alias_base_class_imports(builder, model, aliased_imports)
+        _alias_base_class_imports(builder, model, aliased_imports, kept_base_bindings)
 
 
 def _alias_field_runtime_expressions(
@@ -135,10 +136,16 @@ def _alias_base_class_imports(
     builder: GraphBuilder,
     model: DataModel,
     aliased_imports: dict[tuple[str | None, str], Import],
+    kept_base_bindings: frozenset[tuple[_ImportKey, str]] = frozenset(),
 ) -> None:
-    """Apply aliased imports to a model's base classes."""
+    """Apply aliased imports to a model's base classes, those whose identity and alias are kept aside."""
     for base_class in model.base_classes:
-        if (aliased_import := _aliased_import(base_class.import_, aliased_imports)) is not None:
+        if (base_import := base_class.import_) is not None and (
+            _import_key(base_import),
+            base_import.alias,
+        ) in kept_base_bindings:
+            continue
+        if (aliased_import := _aliased_import(base_import, aliased_imports)) is not None:
             builder.set_type_expressions(base_class, type_=aliased_import.alias, import_=aliased_import)
 
 
@@ -178,15 +185,15 @@ def alias_shadowed_imports(
     )
 
     data_types = (data_type for _, _, data_type in iter_models_field_data_types(models))
-    aliased_imports = resolve_structured_import_aliases(
+    aliases = resolve_structured_import_aliases(
         data_types,
         models,
         all_model_field_names,
         (host.imports,) if module_imports is None else (host.imports, module_imports),
     )
-    if not aliased_imports:
+    if not aliases.imports:
         return
-    _apply_structured_import_aliases(host._graph_builder, models, aliased_imports)
+    _apply_structured_import_aliases(host._graph_builder, models, aliases.imports, aliases.kept_base_bindings)
     if module_imports is not None:
-        for aliased_import in aliased_imports.values():
+        for aliased_import in aliases.imports.values():
             host._import_ledger.apply_alias(module_imports, aliased_import, _SHADOWED_IMPORTS)

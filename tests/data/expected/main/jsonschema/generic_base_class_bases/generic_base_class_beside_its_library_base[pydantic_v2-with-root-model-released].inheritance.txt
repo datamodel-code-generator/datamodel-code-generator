@@ -1,0 +1,4 @@
+BaseModel(pydantic.main.BaseModel)
+Item(BaseModel)
+    x: pydantic.main.BaseModel, builtins.NoneType
+    y: pydantic.root_model.RootModel, builtins.NoneType

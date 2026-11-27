@@ -1,0 +1,3 @@
+BaseModel(pydantic.main.BaseModel)
+Item(zpkg.base._BaseModel, BaseModel)
+    x: pydantic.main.BaseModel, builtins.NoneType

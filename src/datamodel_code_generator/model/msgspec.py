@@ -69,7 +69,6 @@ from datamodel_code_generator.model._render_plan import (
 )
 from datamodel_code_generator.model.base import (
     UNDEFINED,
-    BaseClassDataType,
     BaseLayoutView,
     _apply_literal_default,
     _base_walk,
@@ -81,6 +80,7 @@ from datamodel_code_generator.model.base import (
     _has_opaque_custom_base,
     _is_instance_field,
     _keeps_stripped_place,
+    _library_base_class,
     _ModelKeys,
     _nested_model_factory,
     _NestedModelFactory,
@@ -1192,14 +1192,13 @@ class Struct(DataModel):
             treat_dot_as_module=treat_dot_as_module,
         )
 
-        base_model.base_classes = [BaseClassDataType(type=cls.BASE_CLASS_ALIAS)]
+        base, base_import = _library_base_class(IMPORT_MSGSPEC_STRUCT, cls.BASE_CLASS_ALIAS)
+        base_model.base_classes = [base]
 
         for mapped_key, mapped_value in cls._mapped_struct_options(config):
             base_model.add_base_class_kwarg(mapped_key, str(mapped_value))
 
-        base_model._additional_imports.append(
-            Import(from_=IMPORT_MSGSPEC_STRUCT.from_, import_=IMPORT_MSGSPEC_STRUCT.import_, alias=cls.BASE_CLASS_ALIAS)
-        )
+        base_model._additional_imports.append(base_import)
 
         return base_model
 

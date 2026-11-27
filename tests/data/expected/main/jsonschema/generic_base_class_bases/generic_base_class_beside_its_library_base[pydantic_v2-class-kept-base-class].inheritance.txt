@@ -1,0 +1,3 @@
+BaseModel(pydantic.main.BaseModel)
+Item(mypkg.base.Mine, BaseModel)
+    x: pydantic.main.BaseModel, builtins.NoneType
