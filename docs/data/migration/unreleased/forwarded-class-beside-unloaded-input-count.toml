@@ -1,7 +1,9 @@
 [[change]]
 id = "forwarded-class-beside-unloaded-input-count"
-extends = "dataclass-subclass-inherited-patterns-input-count"
-refs = ["#7596"]
+category = "docs-text"
+title = "The payload suite counts the forwarded-class inputs"
+summary = "The payload suite lists the schema inputs this change adds; the package writes the same output for every input it had."
+refs = ["#7596", "#7573"]
 covers = [
     "main/payload_validation/cases_cover_discovered_schema_files.txt",
 ]

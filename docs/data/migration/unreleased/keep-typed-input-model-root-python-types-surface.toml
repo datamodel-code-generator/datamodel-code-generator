@@ -1,8 +1,0 @@
-[[change]]
-id = "keep-typed-input-model-root-python-types-surface"
-extends = "keep-typed-input-model-root-python-types"
-covers = [
-    "input_model/config_class.txt",
-    "main/main_general/show_help[False].txt",
-    "main/main_general/show_help[True].txt",
-]

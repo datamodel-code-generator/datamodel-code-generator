@@ -1,7 +1,0 @@
-[[change]]
-id = "generic-base-names-input-count"
-extends = "dataclass-subclass-inherited-patterns-input-count"
-refs = ["#7577"]
-covers = [
-    "main/payload_validation/cases_cover_discovered_schema_files.txt",
-]

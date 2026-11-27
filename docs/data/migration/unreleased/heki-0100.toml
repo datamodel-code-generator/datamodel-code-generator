@@ -1,7 +1,0 @@
-[[change]]
-id = "heki-0100"
-extends = "heki-080-hook-pin"
-refs = ["#7578"]
-covers = [
-    "pre_commit_hooks/hook_dependency_pins_are_locked_versions.txt",
-]
