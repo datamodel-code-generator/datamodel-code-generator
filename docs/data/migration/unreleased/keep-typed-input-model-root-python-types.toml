@@ -2,7 +2,7 @@
 id = "keep-typed-input-model-root-python-types"
 category = "new-surface"
 title = "Keep the Python types of typed input model roots under an option"
-summary = "--keep-typed-input-model-root-python-types writes a dataclass or TypedDict --input-model root as a Pydantic model root is written: a union keeps the branches Pydantic's standard JSON Schema drops (Callable in int | Callable) and a type[X] field keeps its Python type instead of Any, also where reuse imports the classes it holds. Without it such a root keeps the forms that standard JSON Schema spells (int, Any), as before; the default output is unchanged."
+summary = "--keep-typed-input-model-root-python-types writes a dataclass or TypedDict --input-model root as a Pydantic model root is written: a union keeps the branches Pydantic's standard JSON Schema drops (Callable in int | Callable) and a type[X] field keeps its Python type instead of Any, also where reuse imports the classes it holds. Without it such a root keeps the forms it had (int, or int | str on the reuse path, and Any), as before; the default output is unchanged."
 refs = ["#7565"]
 surface = ["--keep-typed-input-model-root-python-types"]
 covers = [
