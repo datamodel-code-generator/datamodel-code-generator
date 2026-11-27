@@ -129,6 +129,7 @@ from datamodel_code_generator.model._rendered_names import (
     FieldNameBindings,
     _bind_bare_loads,
     _bind_field_expressions,
+    _composed_aliases,
 )
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
@@ -3881,11 +3882,14 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Set the aliases of the names the module's field names hide, which the rendered text writes.
 
         The aliases an earlier call set stay: the pass that binds them before the models render and the one that
-        binds the names a base hides in the rendered texts both set them.
+        binds the names a base hides in the rendered texts both set them. The second pass reads texts that already
+        write the aliases of the first, so it can alias an alias again; the rendered template writes the original
+        name, which the merged bindings map to the last alias.
         """
         if (earlier := self._field_name_bindings) is not None:
             bindings = FieldNameBindings(
-                {**earlier.expressions, **bindings.expressions}, {**earlier.loads, **bindings.loads}
+                _composed_aliases(earlier.expressions, bindings.expressions),
+                _composed_aliases(earlier.loads, bindings.loads),
             )
         self._field_name_bindings = bindings
         self.invalidate_render_caches()

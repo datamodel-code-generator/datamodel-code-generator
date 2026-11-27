@@ -1764,6 +1764,8 @@ INPUT_TREES = (
     "jsonschema/dynamic_ref_partial_binding",
     "jsonschema/external_ref_mapping_whole_document",
     "jsonschema/external_reference",
+    "jsonschema/field_name_bindings_dataclass_bases/alias_of_builtin",
+    "jsonschema/field_name_bindings_dataclass_bases/alias_of_import",
     "jsonschema/field_name_bindings_dataclass_bases/annotated",
     "jsonschema/field_name_bindings_dataclass_bases/builtin_other_module",
     "jsonschema/field_name_bindings_dataclass_bases/chain",

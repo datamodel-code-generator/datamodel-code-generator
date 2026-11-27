@@ -38060,6 +38060,20 @@ def _dataclass_bases_values(cls: type, sample: dict[str, object]) -> dict[str, o
             {"pair": ["2026-01-02", "x"]},
             id="double_collision",
         ),
+        pytest.param(
+            "alias_of_builtin",
+            "pydantic_v2.dataclass",
+            ["--type-overrides", '{"Item.amount": "decimal.Decimal"}'],
+            {},
+            id="alias_of_builtin",
+        ),
+        pytest.param(
+            "alias_of_import",
+            "pydantic_v2.dataclass",
+            ["--type-overrides", '{"Item.amount": "decimal.Decimal", "Concert.label": "decimal.Decimal"}'],
+            {},
+            id="alias_of_import",
+        ),
         *(
             pytest.param("qualifier", backend, [], {}, id=f"qualifier-{backend}")
             for backend in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict")
@@ -38073,7 +38087,9 @@ def test_field_name_bindings_of_dataclass_bases(
 
     Pydantic evaluates the string annotation of such a field in the namespace of the base too, where the class body
     binds the name of a field of the base (``None`` for a default of ``None``, a ``member_descriptor`` for a field of a
-    class with slots): the module that holds the redeclaring class imports the name under an alias.
+    class with slots): the module that holds the redeclaring class imports the name under an alias. In the
+    ``alias_of_*`` cases a base declares a field named like the alias that the names a class hides were given before,
+    so the alias is renamed again and the annotations write the last one.
     """
     run_main_and_assert(
         input_path=_DATACLASS_BASES_PATH / case,

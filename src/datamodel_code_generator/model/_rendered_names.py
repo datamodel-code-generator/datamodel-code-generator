@@ -68,6 +68,18 @@ class FieldNameBindings(NamedTuple):
     loads: Mapping[str, str]
 
 
+def _composed_aliases(earlier: Mapping[str, str], later: Mapping[str, str]) -> dict[str, str]:
+    """Return the aliases of two passes as the rendered template meets them: each name to its last alias.
+
+    The later pass bound the names the earlier aliases give, as it read texts that write them, so an alias the later
+    pass renames is replaced in the earlier entry and the later entry that names it is dropped.
+    """
+    return {
+        **{name: later.get(alias, alias) for name, alias in earlier.items()},
+        **{name: alias for name, alias in later.items() if name not in earlier.values()},
+    }
+
+
 def _names_of(tree: ast.AST, *, loads_only: bool = False) -> Iterator[ast.Name]:
     """Yield the name nodes of ``tree`` in ``ast.walk`` order: every one, or only those it loads."""
     return (
