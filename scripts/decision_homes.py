@@ -7604,6 +7604,24 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
     ),
     DecisionHome(
         decision=(
+            "the JSON Schema a root class of an input model is written to, and the generator that writes it: a "
+            "Pydantic model, a dataclass or a TypedDict, with the Python types JSON Schema cannot express added"
+        ),
+        homes=(Home("input_model.py", "_model_schema_with_python_types"),),
+        core="`input_model.py:_model_schema_with_python_types`",
+        adapters=(
+            "the roots a load writes (`_load_model_schema`, `_load_single_model_schema`, which takes the one root of a "
+            "single `--input-model` whatever its kind) and the parents of a model whose inheritance a load rewrites "
+            "(`_transform_single_model_to_inheritance`); a Pydantic model takes the generator of the input model, as "
+            "does a dataclass or TypedDict on the reuse path (which keeps the forms it was released with), and any "
+            "other dataclass or TypedDict takes Pydantic's standard generator, and the generator of a Pydantic model "
+            "only where the standard one cannot write it (a `Callable` field or an arbitrary class), which also "
+            "names the definitions Pydantic merged while it wrote the schema"
+        ),
+        sites=(),
+    ),
+    DecisionHome(
+        decision=(
             "the typed fields of a class of an input model: the fields Pydantic holds for it (the `model_fields` of a "
             "Pydantic model, asked of `_model_class`: an attribute of that name on another class is a field of its "
             "own; under `--read-input-model-dataclass-fields-by-alias` also those of a Pydantic dataclass) and the "

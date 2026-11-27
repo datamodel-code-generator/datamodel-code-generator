@@ -1,0 +1,26 @@
+[[change]]
+id = "input-model-typed-root-reused-unserializable-fields"
+category = "default-fix"
+title = "--input-model keeps the Python type of a Callable field of a dataclass or TypedDict root, or a class it holds, on the reuse path"
+summary = "A dataclass or TypedDict root, or a dataclass or TypedDict it holds that is generated, on the reuse path (--input-model-ref-strategy reuse-all with held classes, reuse-foreign with a Pydantic generic) wrote a Callable field str (hook: str, or str | None for an Optional one), which refused every valid value: a callable such as abs was rejected and a string such as 'abc' accepted. With --field-include-all-keys the id() of a schema reached the output as x-python-unserializable, a different number on every run. The field now keeps its type (hook: Callable[[int], int]), and --field-include-all-keys writes json_schema_extra={'x-python-type': 'Callable[[int], int]'} as a Pydantic root does, so the model_json_schema() of the generated model holds that key in place of the number. None still parses to None. With --field-include-all-keys a Pydantic dataclass field whose alias is another field's name no longer carries the internal x-datamodel-code-generator-field-name key in its json_schema_extra, as a Pydantic root clears it. Class names, field names and structure stay. A union with another branch keeps int | str there and type[int] keeps Any, and a root the standard schema generator writes keeps its output (value: int for Union[int, Callable], kind: Any for type[int]); the stored outputs of those forms pin them."
+refs = ["#7566", "#7435"]
+decision = ["#7566"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "input_model/unserializable_fields_of_typed_roots[reuse-all-field-name-marker].txt",
+    "input_model/unserializable_fields_of_typed_roots[reuse-all-optional].txt",
+    "input_model/unserializable_fields_of_typed_roots[reuse-all-root-field-dataclasses.dataclass].txt",
+    "input_model/unserializable_fields_of_typed_roots[reuse-all-root-field-msgspec.Struct].txt",
+    "input_model/unserializable_fields_of_typed_roots[reuse-all-root-field-pydantic_v2.dataclass].txt",
+    "input_model/unserializable_fields_of_typed_roots[reuse-all-root-field-typing.TypedDict].txt",
+    "input_model/unserializable_fields_of_typed_roots[reuse-all-root-field].txt",
+    "input_model/unserializable_fields_of_typed_roots[reuse-all-type-kept].txt",
+    "input_model/unserializable_fields_of_typed_roots[reuse-all-union].txt",
+    "input_model/unserializable_fields_of_typed_roots[reuse-foreign-generic].txt",
+    "input_model/unserializable_fields_of_typed_roots[reuse-foreign-held-class].txt",
+    "input_model/unserializable_fields_of_typed_roots[working-type].txt",
+    "input_model/unserializable_fields_of_typed_roots[working-union-typeddict].txt",
+    "input_model/unserializable_fields_of_typed_roots[working-union].txt",
+]
