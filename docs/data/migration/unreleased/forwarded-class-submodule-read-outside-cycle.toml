@@ -1,0 +1,55 @@
+[[change]]
+id = "forwarded-class-submodule-read-outside-cycle"
+category = "default-fix"
+title = "A module outside an import cycle imports the models of a submodule that its package's forwarded class hides"
+summary = "Where an import cycle merge moves a class into _internal.py and the package __init__.py only re-exports it (from ._internal import Warn), and _internal.py loads the submodule of the same name (pkg/Warn.py) while the __init__.py runs, a module that runs after the package wrote from . import Warn with Warn.Detail, which read the class: the module failed to import with AttributeError, and with dataclasses, msgspec or TypedDict every decode or get_type_hints failed. Such a module now imports the model from the submodule (from .Warn import Detail), as --use-exact-imports does and as 0.89.0 does for a package __init__.py that defines the class. Only those modules change; a module the package loads while it runs keeps its import, and the module attribute report.Warn, which only the import bound, goes away."
+refs = ["#1", "#7443"]
+decision = ["#1"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-recursive].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-recursive]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[dataclasses.dataclass].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[dataclasses.dataclass]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory-all-exports-children].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory-all-exports-children]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory-treat-dot-as-module].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory-treat-dot-as-module]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[enum-default].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[enum-default]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[exact-imports].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[exact-imports]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[msgspec.Struct].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[msgspec.Struct]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[nested].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[nested]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[preset].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[preset]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[py314].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[py314]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[pydantic_v2.BaseModel].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[pydantic_v2.BaseModel]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[pydantic_v2.dataclass].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[pydantic_v2.dataclass]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[root].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[root]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[typing.TypedDict].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[typing.TypedDict]/",
+    "main/openapi/circular_imports_package_modules/circular_imports_forwarded_class_read_outside_cycle.payloads.txt",
+    "main/openapi/circular_imports_package_modules/circular_imports_forwarded_class_read_outside_cycle/",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_submodule~cd5c9e96.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_circular_imp~93d0f16a.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_circular_imp~d1591d8e.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_circular_imp~df414af3.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_submodule_nam~eea4d00c.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_circular_imports~18fa7f11.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_circular_imports~96949ff3.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_circular_imports~ef7608c1.errors.txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_circular_imports_forwarded_class_read_outside_cycle.yaml].txt",
+]

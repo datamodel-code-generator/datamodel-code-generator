@@ -1,0 +1,12 @@
+{"detail": {"message": "m"}, "warn": {"count": 1}, "details": [{"message": "a"}], "either": "s", "by_code": {"x": {"message": "b"}}, "kind": "high", "trace": {"line": 3}}: accepted Report(detail=Detail(message='m'), warn=Warn(count=1, order=None), details=[Detail(message='a')], either='s', by_code={'x': Detail(message='b')}, kind=<Kind.high: 'high'>, trace=Trace(line=3))
+{"details": [{"message": 1}]}: rejected ValidationError
+{"detail": {"message": "m"}}: accepted Other(detail=Detail(message='m'))
+{"detail": {"message": 1}}: rejected ValidationError
+{"detail": {"message": "m"}}: accepted Leaf(detail=Detail(message='m'))
+{"detail": {"message": 1}}: rejected ValidationError
+{"message": "m", "code": "c"}: accepted Extended(message='m', code='c')
+{"message": 1}: rejected ValidationError
+{"detail": {"message": "m"}, "kind": "low", "trace": {"line": 1}, "shipment": {"weight": 2}}: accepted Order(detail=Detail(message='m'), warn=None, kind=<Kind.low: 'low'>, trace=Trace(line=1), shipment=Shipment(weight=2))
+{"kind": "mid"}: rejected ValidationError
+{"count": 1, "order": {"detail": {"message": "m"}}}: accepted Warn(count=1, order=Order(detail=Detail(message='m'), warn=None, kind=None, trace=None, shipment=None))
+{"count": "x"}: rejected ValidationError

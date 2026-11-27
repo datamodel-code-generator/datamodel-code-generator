@@ -4683,6 +4683,157 @@ def test_main_jsonschema_forwarded_class_beside_loaded_submodule(output_dir: Pat
     assert_output(_decoded_package_verdicts(output_dir, output_model_type, decoded), name="payloads")
 
 
+_FORWARDED_READ_OUTSIDE_CYCLE = "submodule_named_like_forwarded_class_read_outside_cycle.json"
+_FORWARDED_READ_OUTSIDE_CYCLE_DECODED = [
+    (
+        "pkg.report",
+        "Report",
+        [
+            (
+                '{"detail": {"message": "m"}, "warn": {"count": 1}, "details": [{"message": "a"}], "either": "s", '
+                '"by_code": {"x": {"message": "b"}}, "kind": "high", "trace": {"line": 3}}'
+            ),
+            '{"details": [{"message": 1}]}',
+        ],
+    ),
+    ("other", "Other", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+    ("pkg.sub.leaf", "Leaf", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+    ("pkg.extended", "Extended", ['{"message": "m", "code": "c"}', '{"message": 1}']),
+    (
+        "pkg.api",
+        "Order",
+        [
+            '{"detail": {"message": "m"}, "kind": "low", "trace": {"line": 1}, "shipment": {"weight": 2}}',
+            '{"kind": "mid"}',
+        ],
+    ),
+    ("pkg", "Warn", ['{"count": 1, "order": {"detail": {"message": "m"}}}', '{"count": "x"}']),
+]
+_FORWARDED_READ_OUTSIDE_CYCLE_FILES_DECODED = [
+    ("pkg.report", "Report", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+    ("pkg", "Warn", ['{"count": 1, "order": {"detail": {"message": "m"}}}', '{"count": "x"}']),
+]
+
+
+@pytest.mark.parametrize(
+    ("input_name", "output_model_type", "extra_args", "decoded"),
+    [
+        *(
+            pytest.param(
+                _FORWARDED_READ_OUTSIDE_CYCLE,
+                output_model_type,
+                [],
+                _FORWARDED_READ_OUTSIDE_CYCLE_DECODED,
+                id=output_model_type,
+            )
+            for output_model_type in (
+                "pydantic_v2.BaseModel",
+                "dataclasses.dataclass",
+                "msgspec.Struct",
+                "typing.TypedDict",
+                "pydantic_v2.dataclass",
+            )
+        ),
+        *(
+            pytest.param(
+                _FORWARDED_READ_OUTSIDE_CYCLE,
+                "pydantic_v2.BaseModel",
+                extra_args,
+                _FORWARDED_READ_OUTSIDE_CYCLE_DECODED,
+                id=param_id,
+            )
+            for extra_args, param_id in (
+                (["--all-exports-scope", "children"], "all-exports-children"),
+                (["--all-exports-scope", "recursive"], "all-exports-recursive"),
+                (["--use-exact-imports"], "exact-imports"),
+                (["--preset", "standard-py310-20261125"], "preset"),
+                (["--target-python-version", "3.14"], "py314"),
+                (["--set-default-enum-member"], "enum-default"),
+            )
+        ),
+        pytest.param(
+            "submodule_named_like_nested_forwarded_class_read_outside_cycle.json",
+            "pydantic_v2.BaseModel",
+            [],
+            [
+                ("a.b.report", "Report", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                ("a.c", "Other", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                ("a.b.sub.deep", "Leaf", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                ("a.b", "Warn", ['{"count": 1, "order": {"detail": {"message": "m"}}}', '{"count": "x"}']),
+            ],
+            id="nested",
+        ),
+        pytest.param(
+            "submodule_named_like_root_forwarded_class_read_outside_cycle.json",
+            "pydantic_v2.BaseModel",
+            [],
+            [
+                (
+                    "report",
+                    "Report",
+                    ['{"detail": {"message": "m"}, "warn": {"count": 1}}', '{"detail": {"message": 1}}'],
+                ),
+                ("", "Warn", ['{"count": 1, "order": {"detail": {"message": "m"}}}', '{"count": "x"}']),
+            ],
+            id="root",
+        ),
+        *(
+            pytest.param(
+                "submodule_named_like_forwarded_class_files",
+                "pydantic_v2.BaseModel",
+                extra_args,
+                _FORWARDED_READ_OUTSIDE_CYCLE_FILES_DECODED,
+                id=param_id,
+            )
+            for extra_args, param_id in (
+                ([], "directory"),
+                (["--treat-dot-as-module"], "directory-treat-dot-as-module"),
+                (["--treat-dot-as-module", "--all-exports-scope", "children"], "directory-all-exports-children"),
+            )
+        ),
+    ],
+)
+def test_main_jsonschema_forwarded_class_read_outside_cycle(
+    output_dir: Path,
+    input_name: str,
+    output_model_type: str,
+    extra_args: list[str],
+    decoded: list[tuple[str, str, list[str]]],
+) -> None:
+    """Import a model of a submodule from it in a module outside the cycle where ``__init__.py`` forwards its class.
+
+    An import cycle merge moves ``pkg.Warn`` and ``pkg.api.Order`` into ``pkg/_internal.py``, which imports
+    ``pkg/Warn.py`` for ``Order.detail`` while ``pkg/__init__.py`` (``from ._internal import Warn``) runs, so the class
+    takes the name after the module. ``pkg.report``, ``other`` and ``pkg.sub.leaf`` run after the package and wrote
+    ``from . import Warn`` with ``Warn.Detail``, which read the class: the module failed to import, or with a
+    dataclass, a Struct or a TypedDict to decode (#7443). They now import ``Detail`` from ``pkg/Warn.py``, in a list, a
+    union, a dict and an enum default as well, and so does a module that reads ``pkg/Warn/deep.py``, a module below
+    the submodule as a package. A module that the package loads while it runs keeps the module form: ``_internal``
+    and, under ``--all-exports-scope``, ``pkg.sub.leaf``, which the export imports of the empty package ``pkg.sub``
+    load. A base class was imported from the submodule already, and so was every model under ``--use-exact-imports``,
+    or where the preset renames the submodule; the same holds for a root package that forwards the class, a nested
+    package, whose merge takes the module along, and a directory input. The package is imported as Python imports it,
+    a package before its modules.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        skip_code_validation=True,
+    )
+    assert_output(_decoded_package_verdicts(output_dir, output_model_type, decoded), name="payloads")
+
+
 def test_main_jsonschema_submodule_hidden_by_package_loaded_through_module(output_dir: Path) -> None:
     """Import a model of a submodule from it where the package's ``__init__.py`` loads it through another module.
 

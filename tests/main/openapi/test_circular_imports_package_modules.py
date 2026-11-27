@@ -84,6 +84,13 @@ CHILD_IMPORTS_PACKAGE_MODELS = {
     "pkg.sub.Holder": ("pkg.sub", "Holder"),
     "pkg.sub.api.Order": ("pkg.sub.api", "Order"),
 }
+FORWARDED_READ_OUTSIDE_CYCLE = "circular_imports_forwarded_class_read_outside_cycle"
+FORWARDED_READ_OUTSIDE_CYCLE_MODELS = {
+    "pkg.report.Report": ("pkg.report", "Report"),
+    "other.Other": ("other", "Other"),
+    "pkg.api.Order": ("pkg.api", "Order"),
+    "pkg.Warn": ("pkg", "Warn"),
+}
 DOTTED_MODULES = "circular_imports_exports_scope_dotted_modules"
 DOTTED_MODULES_PATH = JSON_SCHEMA_DATA_PATH / "circular_imports_exports_scope_dotted"
 DOTTED_MODULES_MODELS = {
@@ -291,6 +298,26 @@ def test_circular_imports_exports_scope_child_imports_package_model(output_dir: 
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--all-exports-scope", scope],
     )
     assert_output(_open_api_verdicts(output_dir, CHILD_IMPORTS_PACKAGE, CHILD_IMPORTS_PACKAGE_MODELS))
+
+
+def test_circular_imports_forwarded_class_read_outside_cycle(output_dir: Path) -> None:
+    """Import a model of ``pkg/Warn.py`` from it in the modules that run after ``pkg``, which forwards ``Warn`` (#7443).
+
+    ``pkg.Warn`` and ``pkg.api.Order`` merge into ``pkg/_internal.py``, which loads ``pkg/Warn.py`` while
+    ``pkg/__init__.py`` runs, before it binds the class ``Warn``. ``pkg.report`` and ``other`` wrote
+    ``from . import Warn`` with ``Warn.Detail``, which read the class and failed to import; they now import ``Detail``
+    from the submodule. Every module imports, and the models accept and reject the payloads as the schema does.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{FORWARDED_READ_OUTSIDE_CYCLE}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_output(
+        _open_api_verdicts(output_dir, FORWARDED_READ_OUTSIDE_CYCLE, FORWARDED_READ_OUTSIDE_CYCLE_MODELS),
+        name="payloads",
+    )
 
 
 def test_circular_imports_exports_scope_dotted_modules(output_dir: Path) -> None:

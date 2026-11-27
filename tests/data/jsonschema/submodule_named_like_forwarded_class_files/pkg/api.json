@@ -1,0 +1,2 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Order", "type": "object",
+ "properties": {"detail": {"$ref": "Warn.json"}, "warn": {"$ref": "../pkg.json"}}}

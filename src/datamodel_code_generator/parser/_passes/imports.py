@@ -85,6 +85,7 @@ from datamodel_code_generator.parser._passes._import_edges import (
     failing_import_reads,
     import_cycle_seeds,
     import_plan,
+    init_load_edges,
     init_loads,
     module_import_edges,
     relative_import_targets,
@@ -2083,7 +2084,7 @@ def _alias_builtins_hidden_by_submodules(
 def alias_builtins_hidden_by_submodules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
     """Import the builtins that each package's submodules hide, and that the package writes bare, under aliases."""
     submodule_names = _package_submodule_names(
-        state.contexts, state.forwarder_modules, treat_dot_as_module=parser.treat_dot_as_module
+        state.contexts, state.forwarder_map, treat_dot_as_module=parser.treat_dot_as_module
     )
     for ctx in state.contexts:
         if (package := _written_package(ctx, treat_dot_as_module=parser.treat_dot_as_module)) is not None and (
@@ -2118,6 +2119,7 @@ def submodules_hidden_by_packages(
     contexts: Sequence[ModuleContextView],
     naming: ModuleNamesView,
     config: ParseConfigView,
+    forwarder_map: ForwarderMap,
 ) -> dict[ModulePath, frozenset[tuple[str, ...]]]:
     """Return, by the file of each module, the modules it imports models from that their package hides from it.
 
@@ -2129,9 +2131,16 @@ def submodules_hidden_by_packages(
     submodule from every module but the ``__init__.py`` itself, and only where the ``__init__.py`` imports from the
     submodule, for a type or for the class of an enum member literal, or loads it as it runs (``init_loads``: an
     import, a module it imports, ``--all-exports-scope``): the submodule is then loaded before the class takes the
-    name, and no later import of it replaces the class. A module that the ``__init__.py`` loads as it runs reads the
-    submodule under its name before the class exists, so a load of that kind hides it only from the other modules.
-    A module names the hidden modules by their module names, as ``reference_import_target`` reads them.
+    name, and no later import of it replaces the class. A class that an import cycle merge moved into ``_internal``
+    and the ``__init__.py`` re-exports binds the name alike (``_package_bindings``, of the models the internal module
+    still defines), where the forwarder loads the submodule through the modules it re-exports from
+    (``init_load_edges``). A module that the ``__init__.py`` loads as it runs reads the submodule under its name before
+    the class exists, so a load of that kind hides it only from the other modules. A module names the hidden modules
+    by their module names, as ``reference_import_target`` reads them. The forwarders are read before render adds to
+    the forwarder of a module that a grown merge moved the names it imported before (``_released_name_imports``):
+    such a forwarder loads only its internal module, and a submodule loaded through that module is below a package of
+    the merge, which the growth merges too, so it writes no model a module could import from it. ``forwarder_map``
+    holds the forwarders of the models that the internal modules still define (``_forward_defined_models``).
     """
     treat_dot_as_module, module_names = parser.treat_dot_as_module, naming.model_path_to_module_name
 
@@ -2145,31 +2154,34 @@ def submodules_hidden_by_packages(
 
     shared_future = shared_future_bindings(parser.imports)
     inits = {
-        package: ctx
-        for ctx in contexts
-        if ctx.models and (package := _written_package(ctx, treat_dot_as_module=treat_dot_as_module)) is not None
+        path[:-1]: (ctx, frozenset(names))
+        for path, ctx, names in _package_bindings(contexts, forwarder_map, treat_dot_as_module=treat_dot_as_module)
     }
 
     @cache
     def import_edges() -> dict[str, set[str]]:
-        return module_import_edges(
-            contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=config.all_exports_scope
+        return init_load_edges(
+            contexts, forwarder_map, treat_dot_as_module=treat_dot_as_module, all_exports_scope=config.all_exports_scope
         )
 
     hidden: dict[ModulePath, tuple[set[tuple[str, ...]], set[tuple[str, ...]]]] = {}
     unloaded: dict[ModulePath, tuple[set[tuple[str, ...]], set[str]]] = {}
     for ctx in contexts:
         parts = module_parts(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
-        if not (ctx.models and parts and (init := inits.get(package := parts[:-1])) is not None):
+        init, names = inits.get(package := parts[:-1], (None, frozenset()))
+        if not (ctx.models and parts and init is not None):
             continue
-        name = parts[-1]
         modules = {tuple(_get_model_module_name(model, module_names).split(".")) for model in ctx.models}
-        if name in shared_future or (
-            name == IMPORT_ANNOTATIONS.import_ and parser._writes_module_future_annotations(init.models, config)
+        if init.models and (
+            parts[-1] in shared_future
+            or (
+                parts[-1] == IMPORT_ANNOTATIONS.import_
+                and parser._writes_module_future_annotations(init.models, config)
+            )
         ):
             for found in hidden.setdefault(package, (set(), set())):
                 found.update(modules)
-        elif any(model.class_name == name for model in init.models):
+        elif parts[-1] in names:
             if any(
                 is_within(named, module)
                 for named in named_modules(init.models, literals=False) | named_modules(init.models, literals=True)
@@ -2177,9 +2189,9 @@ def submodules_hidden_by_packages(
             ):
                 hidden.setdefault(package, (set(), set()))[1].update(modules)
             elif loaded := init_loads(import_edges(), package, modules):
-                late_modules, late_loaded = unloaded.setdefault(package, (set(), set()))
-                late_modules.update(modules)
-                late_loaded.update(loaded)
+                late = unloaded.setdefault(package, (set(), set()))
+                late[0].update(modules)
+                late[1].update(loaded)
     if not hidden and not unloaded:
         return {}
     result: dict[ModulePath, frozenset[tuple[str, ...]]] = {}
@@ -2287,7 +2299,7 @@ def _alias_imports_hidden_by_loaded_submodules(parser: ImportsHost[Any], state: 
     """
     treat_dot_as_module = parser.treat_dot_as_module
     submodule_names = _package_submodule_names(
-        state.contexts, state.forwarder_modules, treat_dot_as_module=treat_dot_as_module
+        state.contexts, state.forwarder_map, treat_dot_as_module=treat_dot_as_module
     )
     loaded: set[str] | None = None
     for ctx in state.contexts:
@@ -2346,7 +2358,9 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
     where the import binds it, as the field render plans froze it written.
     """
     _alias_imports_hidden_by_loaded_submodules(parser, state)
-    by_packages = submodules_hidden_by_packages(parser, state.contexts, state, state.config)
+    by_packages = submodules_hidden_by_packages(
+        parser, state.contexts, state, state.config, _forward_defined_models(state.contexts, state.forwarder_map)
+    )
     by_imports = _submodules_hidden_by_imports(state.contexts, state.model_path_to_module_name)
     if not (
         hidden := {
@@ -2629,13 +2643,15 @@ def _class_named_like_submodule(
 
     The module replaces the class where the ``__init__.py`` does not load it while its imports run, before its classes
     are defined (``reject_class_named_like_submodule``); a forwarder loads the modules it re-exports from
-    (``Forwarder.names``) and what they load. 0.90.0 to 0.100.0 took the imports of an ancestor package, which has
-    started before the ``__init__.py``, as loads too (``init_loads`` row ``legacy-running-packages-load``) and wrote
-    such output: the ancestor runs first and its import of the module's name gets the class, so a model it reads of
-    the module through that name fails where its class evaluates its annotations, and the ancestor fails at import
-    with every module below it; each class comes with whether that reading loads the module, which keeps the output
-    where the classes do not evaluate their annotations as they are defined (``_evaluates_class_annotations``). The
-    class comes with the written path of the ``__init__.py``, the module's parts and the path of its file.
+    (``Forwarder.names``) and what they load, and is read with the ``--all-exports-scope`` re-exports it does not
+    write, as from 0.90.0 on (``init_load_edges`` row ``legacy-forwarder-export-loads``). 0.90.0 to 0.100.0 took the
+    imports of an ancestor package, which has started before the ``__init__.py``, as loads too (``init_loads`` row
+    ``legacy-running-packages-load``) and wrote such output: the ancestor runs first and its import of the module's
+    name gets the class, so a model it reads of the module through that name fails where its class evaluates its
+    annotations, and the ancestor fails at import with every module below it; each class comes with whether that
+    reading loads the module, which keeps the output where the classes do not evaluate their annotations as they are
+    defined (``_evaluates_class_annotations``). The class comes with the written path of the ``__init__.py``, the
+    module's parts and the path of its file.
     """
     written = sorted(
         ((written_path(ctx.module, treat_dot_as_module=treat_dot_as_module), ctx) for ctx in contexts if ctx.models),
@@ -2654,15 +2670,13 @@ def _class_named_like_submodule(
     ]
     if not clashes:
         return
-    edges = module_import_edges(contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope)
-    written_modules = {
-        ctx.module_key: written_module_name(ctx.module, treat_dot_as_module=treat_dot_as_module) for ctx in contexts
-    }
-    for ctx in contexts:
-        if not ctx.models and (forwarder := forwarder_map.get(ctx.module_key)) is not None:
-            edges.setdefault(written_modules[ctx.module_key], set()).update(
-                written_modules[source] for source, _, _ in forwarder.names
-            )
+    edges = init_load_edges(
+        contexts,
+        forwarder_map,
+        treat_dot_as_module=treat_dot_as_module,
+        all_exports_scope=all_exports_scope,
+        row="legacy-forwarder-export-loads",
+    )
     for path, name, module, file in clashes:
         if not init_loads(edges, path[:-1], [module]):
             released = bool(init_loads(edges, path[:-1], [module], row="legacy-running-packages-load"))

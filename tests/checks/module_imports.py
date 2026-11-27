@@ -348,9 +348,15 @@ def _plan_module_imports(imports_mode: Mode, parser: Any, run: Any) -> None:
     from datamodel_code_generator._model_keys import model_key_of
     from datamodel_code_generator._module_paths import dotted_module
     from datamodel_code_generator.parser._graph_ids import keyed_models
-    from datamodel_code_generator.parser._passes.imports import submodules_hidden_by_packages
+    from datamodel_code_generator.parser._passes.imports import _forward_defined_models, submodules_hidden_by_packages
 
-    hidden = submodules_hidden_by_packages(parser, run.contexts, run, run.config) if run.args.with_import else {}
+    hidden = (
+        submodules_hidden_by_packages(
+            parser, run.contexts, run, run.config, _forward_defined_models(run.contexts, run.forwarder_map)
+        )
+        if run.args.with_import
+        else {}
+    )
     emitted = keyed_models((model for ctx in run.contexts for model in ctx.models), "module import plan")
     names = NameTable({
         model_key_of(model.reference): FinalName(model.reference.short_name, dotted_module(ctx.module_key), ctx.module)

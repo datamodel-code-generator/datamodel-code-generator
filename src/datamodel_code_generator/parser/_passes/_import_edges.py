@@ -41,6 +41,7 @@ from datamodel_code_generator._module_paths import (
     module_parts,
     package_path,
     relative_level,
+    written_module_name,
     written_path,
 )
 from datamodel_code_generator._records import record
@@ -58,7 +59,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import AllExportsScope
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModel
-    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath
+    from datamodel_code_generator.parser._passes._state import ForwarderMap, ModuleContextView, ModulePath
     from datamodel_code_generator.parser.generation import GenerationIndex
 
 __all__ = [
@@ -69,12 +70,14 @@ __all__ = [
     "ImportCycleSeeds",
     "ImportLine",
     "ImportPlan",
+    "InitLoadEdgesRow",
     "InitLoadsRow",
     "failing_import_reads",
     "generic_base_class_module",
     "import_cycle_seeds",
     "import_plan",
     "inherits_one_of",
+    "init_load_edges",
     "init_loads",
     "module_dependency_graph",
     "module_import_edges",
@@ -89,6 +92,8 @@ ImportBlock: TypeAlias = tuple[str, tuple[ImportLine, ...]]
 """The dotted name of the module that a relative import block names, and its import lines in written order."""
 InitLoadsRow: TypeAlias = Literal["init", "legacy-running-packages-load"]
 """How ``init_loads`` reads the imports of the packages above: as loading nothing, or as 0.90.0 to 0.100.0 did."""
+InitLoadEdgesRow: TypeAlias = Literal["written", "legacy-forwarder-export-loads"]
+"""How ``init_load_edges`` reads a forwarder: by the imports it writes, or with the export imports of 0.90.0 on."""
 
 
 @record(eq=False)
@@ -212,6 +217,39 @@ def module_import_edges(
     return edges
 
 
+def init_load_edges(
+    contexts: Sequence[ModuleContextView],
+    forwarder_map: ForwarderMap,
+    *,
+    treat_dot_as_module: bool | None,
+    all_exports_scope: AllExportsScope | None,
+    row: InitLoadEdgesRow = "written",
+) -> dict[str, set[str]]:
+    """Return the modules that each written module loads as it runs, by dotted name, a forwarder's included.
+
+    A module that writes models imports what its import plan names (``module_import_edges``). An import cycle merge
+    leaves a forwarder in the place of a module whose models it moved (``Forwarder.names``, of the models the internal
+    module still defines): it writes nothing but the imports of the names it re-exports, so it loads the modules they
+    come from, and a forwarder ``__init__.py`` writes no ``--all-exports-scope`` re-exports. ``init_loads`` walks these
+    edges. ``row="legacy-forwarder-export-loads"`` adds those modules to the re-exports instead, the reading of the
+    refusal of a class beside a module of its name from 0.90.0 on, for the output that the refusal keeps
+    (``_class_named_like_submodule``).
+    """
+    edges = module_import_edges(contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope)
+    written = {
+        ctx.module_key: written_module_name(ctx.module, treat_dot_as_module=treat_dot_as_module) for ctx in contexts
+    }
+    for ctx in contexts:
+        if ctx.models or (forwarder := forwarder_map.get(ctx.module_key)) is None:
+            continue
+        sources = {written[source] for source, _, _ in forwarder.names}
+        if row == "legacy-forwarder-export-loads":
+            edges.setdefault(written[ctx.module_key], set()).update(sources)
+        else:
+            edges[written[ctx.module_key]] = sources
+    return edges
+
+
 def init_loads(
     edges: Mapping[str, set[str]],
     package: ModulePath,
@@ -222,7 +260,7 @@ def init_loads(
     """Return the modules the ``__init__.py`` of ``package`` loads, by dotted name, or none if it loads no ``modules``.
 
     Its imports run before its classes are defined, so a module it loads, or one that a module it imports loads
-    (``edges``, from ``module_import_edges``), binds its name in the package first and the class then takes the name.
+    (``edges``, from ``init_load_edges``), binds its name in the package first and the class then takes the name.
     A module that the ``__init__.py`` loads runs before the class exists, so it reads the module under the name; any
     other module runs after it and reads the class. An ancestor package of ``package`` has started running before the
     ``__init__.py`` does, so an import of it loads nothing: the walk neither takes it nor follows its edges (its
