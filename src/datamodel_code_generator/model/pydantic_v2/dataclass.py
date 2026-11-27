@@ -207,6 +207,17 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
 
         self._lookaround_regex_engine_checked = False
 
+    @classmethod
+    @override
+    def config_left_without_generic_base_class(cls, config: dict[str, object]) -> Mapping[str, object]:
+        """Return the ``ConfigDict`` items ``__init__`` writes from the run-level ``config``."""
+        return build_base_config_parameters(
+            extra_template_data=config,
+            all_data_types=(),
+            config_attributes_v2=cls._CONFIG_ATTRIBUTES_V2,
+            config_attributes_v2_11=cls._CONFIG_ATTRIBUTES_V2_11,
+        )
+
     @override
     def orders_required_assignments_before_defaults(self) -> bool:
         """Order required ``= Field(...)`` fields first only for an explicit target that needs it.

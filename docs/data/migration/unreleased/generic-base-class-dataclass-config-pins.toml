@@ -1,0 +1,40 @@
+[[change]]
+id = "generic-base-class-dataclass-config-pins"
+category = "output-text"
+title = "The modules of a pydantic dataclass run with --use-generic-base-class are unchanged"
+kind = "output-text"
+action = "none"
+source = "release-note"
+summary = "The modules of a pydantic_v2.dataclass run with --use-generic-base-class are the ones written before: the run only warns about the model configuration it leaves out."
+refs = ["#7588", "#7549"]
+covers = [
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[attr-docstrings].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[base-model-extra-forbid].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[enum-only-extra-forbid].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-allow].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-forbid].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-ignore].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[forbid-and-populate].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[forbid-msgspec-forbid-unknown-fields].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[frozen].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[inheritance-extra-forbid].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[own-config-extra-forbid].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[populate-by-name].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[preset].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[target-pydantic-version-only].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[typed-dict-extra-forbid].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[validate-by-name-2.11].py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass_extra_template_data.py",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass_package/",
+]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/extra_fields.json",
+    "tests/data/jsonschema/use_generic_base_class_enum_only.json",
+    "tests/data/jsonschema/use_generic_base_class_simple.json",
+    "tests/data/jsonschema/use_generic_base_class_with_inheritance.json",
+]
+backends = ["pydantic_v2.dataclass"]
+options = "*"
