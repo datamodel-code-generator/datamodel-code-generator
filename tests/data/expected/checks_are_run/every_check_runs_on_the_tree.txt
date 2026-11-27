@@ -1,4 +1,3 @@
-scripts/check_architecture_boundaries.py: hook .pre-commit-config.yaml
 scripts/check_fact_finality.py: test tests/parser/test_fact_finality.py::test_known_violations_are_made_by_their_witnesses
 scripts/check_generation_store_usage.py: hook .pre-commit-config.yaml
 scripts/check_overview_sync.py: tox docs-check-all (run by .github/workflows/llms-txt.yaml), tox generated-docs (run by .github/workflows/generated-docs-sync.yaml)

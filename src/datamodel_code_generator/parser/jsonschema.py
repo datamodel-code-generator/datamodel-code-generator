@@ -4139,7 +4139,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         discriminator expanded a ``$ref`` branch to (``_expanded_variants``), numbering the models in union order.
         """
         if obj.allOf and "legacy-ref-branch-without-site-parts" not in self._legacy_intersection:
-            member = branch.model_copy()
+            member: JsonSchemaObject = branch.model_copy()
             member.__dict__[_BRANCH_REFERENCE_KEY] = reference
             data_type = self.parse_all_of(
                 name,
@@ -4920,7 +4920,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         The site is read within the unions ``within`` and the site itself; an allOf without a union gives its one model.
         """
         within = within.union(filter(None, (site.schema_location,)))
-        marked = site.model_copy()
+        marked: JsonSchemaObject = site.model_copy()
         marked.__dict__[_UNION_VARIANTS_KEY] = True
         variants = self.parse_all_of(name, _inherited_schemas.read_within(marked, within), path)
         return [member.reference for member in (variants.data_types or [variants]) if member.reference]

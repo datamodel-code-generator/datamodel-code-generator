@@ -1,0 +1,11 @@
+verdict problems: none
+undeclared questions: none
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:14: A
+bindings/class_bases_and_parameter_annotations: class_bases_and_parameter_annotations.py:18: B
+bindings/host_private_access_binding_forms: host_private_access_binding_forms.py:9: FixtureHost
+bindings/host_private_access_concern: host_private_access_concern.py:15: FixtureBaseHost
+bindings/host_private_access_concern: host_private_access_concern.py:19: FixtureHost
+bindings/host_private_access_concern: host_private_access_concern.py:26: FixtureView
+bindings/host_private_access_receivers: host_private_access_receivers.py:9: FixtureHost
+bindings/host_private_access_unions: host_private_access_unions.py:12: FixtureHost
+references/reexport_chain_across_modules: reexport_chain_across_modules/loop.py:3: datamodel_code_generator.reexport_chain_across_modules.loop.first

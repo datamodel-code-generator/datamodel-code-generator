@@ -62,12 +62,6 @@ repos:
     language: python
     files: ^(src/datamodel_code_generator/parser/.*\.py|scripts/check_generation_store_usage\.py|scripts/fact_tables\.py|scripts/_source_model\.py|src/datamodel_code_generator/model/.*\.py|src/datamodel_code_generator/types\.py)$
     pass_filenames: false
-  - id: architecture-boundaries
-    name: Check architecture boundaries
-    entry: python scripts/check_architecture_boundaries.py
-    language: python
-    files: ^(src/datamodel_code_generator/.*\.py|scripts/check_architecture_boundaries\.py|scripts/host_private_access_baseline\.toml|scripts/_import_cycles\.py|scripts/_source_model\.py)$
-    pass_filenames: false
   - id: source-rules
     name: Check source rules
     entry: python scripts/check_source_rules.py
@@ -84,13 +78,13 @@ repos:
     name: Check the heki contracts are written from the records
     entry: bash -c 'test -x .tox/dev/bin/python || test -x .tox/dev/Scripts/python || tox run -e dev --notest -qq; [ -x .tox/dev/bin/python ] && PYTHON=.tox/dev/bin/python || PYTHON=.tox/dev/Scripts/python; "$PYTHON" scripts/build_heki_contracts.py --check'
     language: system
-    files: ^(scripts/(build_heki_contracts|fact_tables|decision_homes|_decision_home_reads|check_architecture_boundaries|check_generation_store_usage|check_ratchets|check_source_rules|where|_source_model|_ci_lanes|_import_cycles|pass_decls|related_tests)\.py|scripts/heki\.toml|tests/units\.py|src/datamodel_code_generator/.*\.py)$
+    files: ^(scripts/(build_heki_contracts|fact_tables|decision_homes|_decision_home_reads|_package_layers|check_generation_store_usage|check_ratchets|check_source_rules|where|_source_model|_ci_lanes|_import_cycles|pass_decls|related_tests)\.py|scripts/heki\.toml|tests/units\.py|src/datamodel_code_generator/.*\.py)$
     pass_filenames: false
   - id: heki
     name: Check the package against the heki contracts
     entry: heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src
     language: python
-    additional_dependencies: [heki==0.8.0]
+    additional_dependencies: [heki==0.9.0]
     files: ^(src/datamodel_code_generator/.*\.py|scripts/heki\.toml|scripts/heki_baseline\.toml)$
     pass_filenames: false
   - id: zizmor

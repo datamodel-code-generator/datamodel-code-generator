@@ -1,9 +1,0 @@
-clean exit: 0
-clean stdout: ''
-clean stderr: ''
-failure exit: 1
-Architecture boundary violations found:
-src/datamodel_code_generator/config.py: [config-backend-reference] datamodel_code_generator.model.pydantic_v2.RootModel: configuration must receive output implementations through a neutral registry or injection (in ParserConfig)
-entrypoint exit: 0
-entrypoint stdout: ''
-entrypoint stderr: ''

@@ -2,7 +2,7 @@
 # package that make a platform effect directly (file system, processes, time, signals, standard streams, path
 # semantics). `os_selection.py cover` keeps a test of each of their arcs on Windows and macOS. The calls heki 0.7 does
 # not tag under its own kinds (blocking-fs, blocking-subprocess, reads-environment) are named here.
-required-version = ">=0.8"
+required-version = ">=0.9"
 
 [lint]
 select = ["EFF201"]

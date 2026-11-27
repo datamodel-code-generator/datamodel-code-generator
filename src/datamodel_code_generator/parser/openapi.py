@@ -974,7 +974,7 @@ class OpenAPIParser(JsonSchemaParser):
                     continue
                 normalized_discriminator = self._normalize_discriminator(discriminator)
                 origin = field_obj.__dict__.get(FIELD_ORIGIN_KEY)
-                field_obj = self.data_model_field_type(**{  # noqa: PLW2901
+                field_obj: DataModelFieldBase = self.data_model_field_type(**{  # noqa: PLW2901
                     **field_obj.__dict__,
                     "data_type": _with_type_origin(new_field_type, field.schema_location),
                     "extras": {**field_obj.extras, "discriminator": normalized_discriminator},

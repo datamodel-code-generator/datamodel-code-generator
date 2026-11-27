@@ -3,7 +3,6 @@ Escape hatches: base (merge-base <commit>) -> working tree
 
 key                                             base    head  change
 abnormal-path@tests                                0       1      +1
-allowlist:DEFAULT_ALLOWLIST                        0       1      +1
 allowlist:FROZEN_EXEMPT_FILES                      0       1      +1
 allowlist:JUSTIFIED_VIOLATIONS                     0       1      +1
 cast@src                                           0       1      +1
@@ -40,9 +39,6 @@ type-ignore:return-value@src                       0       1      +1
 
 abnormal-path@tests rose by 1 (0 -> 1). Reach the path end to end through the public entry points instead of marking it abnormal.
   tests/test_d.py: 0 -> 1 (lines 6)
-
-allowlist:DEFAULT_ALLOWLIST rose by 1 (0 -> 1). Allowlist entries only shrink: fix the violation instead of listing it.
-  scripts/check_architecture_boundaries.py: 0 -> 1 (lines 1)
 
 allowlist:FROZEN_EXEMPT_FILES rose by 1 (0 -> 1). Allowlist entries only shrink: fix the violation instead of listing it.
   tests/assert_helper_allowlists.py: 0 -> 1 (lines 6)

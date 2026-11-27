@@ -564,13 +564,12 @@ Before adding a dependency between layers, check `docs/architecture.md` and run:
 
 ```bash
 heki check --config scripts/heki.toml --baseline scripts/heki_baseline.toml src
-python scripts/check_architecture_boundaries.py
 ```
 
 heki's import boundaries (`scripts/heki.toml`) reject concrete output-backend imports in parsers, configuration and
-shared model modules, private `parser._*` imports from shared code and parser imports from configuration. The guard
-rejects backend-name inspection in parsers, `sys.modules` lookups from shared model modules, backend references from
-configuration, and local output-family mappings in `input_model.py`. Move
+shared model modules, private `parser._*` imports from shared code and parser imports from configuration. Its
+architecture contracts reject backend-name inspection in parsers, `sys.modules` lookups from shared model modules,
+backend references from configuration, and local output-family mappings in `input_model.py`. Move
 output behavior to a neutral capability on `DataModel` or `DataModelFieldBase`,
 keep backend lifecycle and cache management with its backend or the model
 composition root, and move reusable helpers to a neutral package module. Do not
@@ -711,11 +710,11 @@ the tree, each with arguments that run it on the tree (read with the check's own
 parser). A mention, such as a `paths:` filter or a hook `files:` pattern, is no
 run, and neither is a lookup such as `check_ratchets.py --ruff-pin`.
 
-Tests for the checker use source fixtures and expected reports under
-`tests/data/architecture_boundaries/` and
-`tests/data/expected/architecture_boundaries/`. Keep diagnostics specific enough
-that a contributor or coding agent can identify the owning layer and the expected
-remediation without reading the checker implementation.
+The tests of the layer contracts place the source fixtures of
+`tests/data/architecture_boundaries/` at modules of their layers and run heki on
+them (`tests/test_build_heki_contracts_script.py`). Keep the `message` of each
+contract specific enough that a contributor or coding agent can identify the
+owning layer and the expected remediation without reading the builder.
 
 ## Decision homes
 
@@ -792,12 +791,12 @@ heki cannot tell, such as an unannotated parameter or a callback), and a read of
 
 The local pre-commit hook `generation-store-usage` runs
 `scripts/check_generation_store_usage.py`, which checks the table itself: a new
-attribute on `DataType`, a field or a model, and a new `__dict__` key that
-`parser/`, `model/` or `types.py` writes, needs a row in `ATTRIBUTE_FACTS`, and
-a row that names nothing the sources declare or write fails. heki can judge a
-write only of an attribute or key that a row names. The hook runs when a parser
-file changes; after editing `model/`, `types.py` or the table, run the script
-yourself (the test suite runs it too).
+attribute on `DataType`, a field or a model needs a row in `ATTRIBUTE_FACTS`,
+and an attribute row that names nothing the classes declare fails. A new
+`__dict__` key needs a row too: heki reports a write of a key no row names, and
+a row whose attribute or key the package no longer has. The hook runs when a
+parser file changes; after editing `model/`, `types.py` or the table, run the
+script yourself (the test suite runs it too).
 
 If a new mutation helper is needed, add the method to `SITE_EFFECTS` or
 `NO_SITE_EFFECT` (which make up `GENERATION_STORE_MUTATION_METHODS`), name it in

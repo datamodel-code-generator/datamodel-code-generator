@@ -1,3 +1,0 @@
-Architecture boundary violations found:
-tests/data/architecture_boundaries/root_import/datamodel_code_generator/leaf.py:41:9: [root-import] datamodel_code_generator.Error: no module of the package imports the package root, and none but __main__ imports __main__: import the name from the module that defines it (the root only re-exports it for users) (in attribute_reads)
-tests/data/architecture_boundaries/root_import/datamodel_code_generator/leaf.py:43:9: [root-import] datamodel_code_generator.__main__: no module of the package imports the package root, and none but __main__ imports __main__: import the name from the module that defines it (the root only re-exports it for users) (in attribute_reads)
