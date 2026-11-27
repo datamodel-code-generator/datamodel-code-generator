@@ -1759,6 +1759,7 @@ INPUT_TREES = (
     "config/external_ref_mapping_round_trip",
     "generation_platform/client/cli/json-files",
     "generation_platform/targets/spec",
+    "jsonschema/custom_type_path_later_base/modules",
     "jsonschema/dotted_module_exports_reuse",
     "jsonschema/dynamic_ref_merged_generic",
     "jsonschema/dynamic_ref_partial_binding",

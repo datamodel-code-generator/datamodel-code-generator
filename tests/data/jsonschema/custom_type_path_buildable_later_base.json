@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Handle": {
+      "type": "object",
+      "properties": {
+        "d": {
+          "type": "string",
+          "customTypePath": "datetime.date"
+        }
+      }
+    },
+    "Both": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "$ref": "#/$defs/Handle"
+        }
+      ]
+    }
+  }
+}

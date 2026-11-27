@@ -1,0 +1,4 @@
+Both
+valid: valid
+date: valid
+not a date: date_from_datetime_parsing

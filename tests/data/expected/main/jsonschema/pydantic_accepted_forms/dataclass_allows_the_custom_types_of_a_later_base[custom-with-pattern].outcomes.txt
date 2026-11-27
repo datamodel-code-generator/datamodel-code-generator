@@ -1,0 +1,3 @@
+Both
+valid: valid
+word: needs_python_object

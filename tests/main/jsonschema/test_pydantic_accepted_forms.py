@@ -1377,3 +1377,221 @@ def test_escapes_the_rust_engine_rejects_are_counted(
     the model selects. A plain pattern is kept.
     """
     assert_output(_pattern_lines(output_file, recwarn, "rust_rejected_escapes", "Escapes", extra_args), name="patterns")
+
+
+LATER_BASE_PATH = JSON_SCHEMA_DATA_PATH / "custom_type_path_later_base"
+BOTH_CASES: dict[str, object] = {"valid": {"a": "x"}, "extra": {"a": "x", "z": 1}, "queue": {"queue": "x"}}
+BOTH_PAYLOADS: dict[str, dict[str, object]] = {"Both": BOTH_CASES}
+
+
+def _later_base_case(
+    case_id: str,
+    document: Path,
+    payloads: dict[str, dict[str, object]] = BOTH_PAYLOADS,
+    *extra_args: str,
+    template_data: dict[str, object] | None = None,
+    output_model_type: str = "pydantic_v2.dataclass",
+) -> object:
+    """Return a case of ``test_dataclass_allows_the_custom_types_of_a_later_base``."""
+    return pytest.param(
+        document, [*extra_args, "--output-model-type", output_model_type], template_data, payloads, id=case_id
+    )
+
+
+@pytest.mark.parametrize(
+    ("document", "extra_args", "template_data", "payloads"),
+    [
+        _later_base_case("issue", LATER_BASE_PATH / "closed_base_then_handle.json"),
+        _later_base_case("plain-first", LATER_BASE_PATH / "plain_base_then_handle.json"),
+        _later_base_case(
+            "required",
+            LATER_BASE_PATH / "required_fields.json",
+            {"Both": {"missing": {}, "strings": {"a": "x", "queue": "y"}}},
+        ),
+        _later_base_case(
+            "own-config",
+            LATER_BASE_PATH / "own_config.json",
+            {"Both": {"valid": {"a": "x", "b": 1}, "extra": {"a": "x", "z": 1}}},
+        ),
+        _later_base_case("third-base", LATER_BASE_PATH / "third_base.json"),
+        _later_base_case(
+            "through-a-base",
+            LATER_BASE_PATH / "through_a_base.json",
+            {"Mid": BOTH_CASES, "Both": BOTH_CASES},
+        ),
+        _later_base_case(
+            "nested",
+            LATER_BASE_PATH / "nested_bases.json",
+            {"Mid": BOTH_CASES, "Both": BOTH_CASES},
+        ),
+        _later_base_case(
+            "subclass",
+            LATER_BASE_PATH / "subclass.json",
+            {"Sub": {"valid": {"a": "x", "s": 1}, "extra": {"a": "x", "z": 1}, "queue": {"queue": "x"}}},
+        ),
+        _later_base_case(
+            "later-subclass",
+            LATER_BASE_PATH / "later_subclass.json",
+            {"Both": BOTH_CASES, "Sub": BOTH_CASES},
+        ),
+        _later_base_case(
+            "list",
+            LATER_BASE_PATH / "list_of_class.json",
+            {"Both": {"valid": {"a": "x"}, "queues": {"queues": ["x"]}}},
+        ),
+        _later_base_case(
+            "union",
+            LATER_BASE_PATH / "union_with_class.json",
+            {"Both": {"integer": {"queue": 1}, "text": {"queue": "x"}}},
+        ),
+        _later_base_case(
+            "map",
+            LATER_BASE_PATH / "map_of_class.json",
+            {"Both": {"valid": {"a": "x"}, "queues": {"queues": {"k": "x"}}}},
+        ),
+        _later_base_case(
+            "engine",
+            LATER_BASE_PATH / "python_engine.json",
+            {"Both": {"valid": {"tag": "a"}, "lookahead": {"tag": "b"}, "extra": {"z": 1}}},
+        ),
+        _later_base_case(
+            "custom-with-pattern",
+            LATER_BASE_PATH / "custom_type_with_pattern.json",
+            {"Both": {"valid": {"a": "x"}, "word": {"word": "a"}}},
+        ),
+        _later_base_case(
+            "alias-generator",
+            LATER_BASE_PATH / "closed_base_then_handle.json",
+            BOTH_PAYLOADS,
+            template_data={"Base": {"config": {"alias_generator": "to_camel"}}},
+        ),
+        _later_base_case(
+            "keep-issue",
+            LATER_BASE_PATH / "closed_base_then_handle.json",
+            BOTH_PAYLOADS,
+            KEEP_INHERITED_DATACLASS_CONFIG,
+        ),
+        _later_base_case(
+            "keep-own-config",
+            LATER_BASE_PATH / "own_config.json",
+            {"Both": {"valid": {"a": "x", "b": 1}, "extra": {"a": "x", "z": 1}}},
+            KEEP_INHERITED_DATACLASS_CONFIG,
+        ),
+        _later_base_case(
+            "keep-subclass",
+            LATER_BASE_PATH / "subclass.json",
+            {"Sub": {"valid": {"a": "x", "s": 1}, "extra": {"a": "x", "z": 1}, "queue": {"queue": "x"}}},
+            KEEP_INHERITED_DATACLASS_CONFIG,
+        ),
+        _later_base_case(
+            "keep-alias-generator",
+            LATER_BASE_PATH / "own_config.json",
+            {"Both": {"valid": {"a": "x", "b": 1}, "extra": {"a": "x", "z": 1}}},
+            KEEP_INHERITED_DATACLASS_CONFIG,
+            template_data={"Base": {"config": {"alias_generator": "to_camel"}}},
+        ),
+        _later_base_case(
+            "extra-fields",
+            LATER_BASE_PATH / "plain_base_then_handle.json",
+            BOTH_PAYLOADS,
+            "--extra-fields",
+            "forbid",
+        ),
+        _later_base_case(
+            "frozen", LATER_BASE_PATH / "plain_base_then_handle.json", BOTH_PAYLOADS, "--frozen-dataclasses"
+        ),
+        _later_base_case(
+            "generic-base", LATER_BASE_PATH / "closed_base_then_handle.json", BOTH_PAYLOADS, "--use-generic-base-class"
+        ),
+        _later_base_case("modules", LATER_BASE_PATH / "modules", {"Model": BOTH_CASES}),
+        _later_base_case("openapi", OPEN_API_DATA_PATH / "custom_type_path_later_base.json"),
+        _later_base_case(
+            "own-config-first-base",
+            LATER_BASE_PATH / "own_config_first_base.json",
+            {"Both": {"valid": {"a": "x", "b": 1}, "extra": {"a": "x", "z": 1}, "queue": {"queue": "x"}}},
+        ),
+        _later_base_case(
+            "own-open-config",
+            LATER_BASE_PATH / "own_open_config.json",
+            {"Both": {"valid": {"a": "x", "c": "y"}, "extra": {"a": "x", "z": 1}, "queue": {"queue": "x"}}},
+        ),
+        _later_base_case(
+            "buildable-class",
+            JSON_SCHEMA_DATA_PATH / "custom_type_path_buildable_later_base.json",
+            {"Both": {"valid": {"a": "x"}, "date": {"d": "2026-01-02"}, "not a date": {"d": "x"}}},
+        ),
+        _later_base_case(
+            "type-override",
+            LATER_BASE_PATH / "closed_base_then_handle.json",
+            {"Both": {"text": {"queue": "x"}, "integer": {"queue": 1}}},
+            "--type-overrides",
+            '{"Handle.queue": "builtins.str"}',
+        ),
+        _later_base_case("handle-first", LATER_BASE_PATH / "handle_then_base.json"),
+        _later_base_case(
+            "redeclared",
+            LATER_BASE_PATH / "redeclared_field.json",
+            {"Both": {"text": {"queue": "x"}, "integer": {"queue": 1}}},
+        ),
+        _later_base_case(
+            "own-custom-field",
+            LATER_BASE_PATH / "own_custom_field.json",
+            {"Both": {"valid": {"a": "x"}, "own queue": {"q": "x"}, "queue": {"queue": "x"}}},
+        ),
+        _later_base_case(
+            "own-config-first-base-keep",
+            LATER_BASE_PATH / "own_config_first_base.json",
+            {"Both": {"valid": {"a": "x", "b": 1}, "extra": {"a": "x", "z": 1}, "queue": {"queue": "x"}}},
+            KEEP_INHERITED_DATACLASS_CONFIG,
+        ),
+        _later_base_case(
+            "base-model",
+            LATER_BASE_PATH / "closed_base_then_handle.json",
+            output_model_type="pydantic_v2.BaseModel",
+        ),
+    ],
+)
+def test_dataclass_allows_the_custom_types_of_a_later_base(
+    tmp_path: Path,
+    document: Path,
+    extra_args: list[str],
+    template_data: dict[str, object] | None,
+    payloads: dict[str, dict[str, object]],
+) -> None:
+    """Import a dataclass that builds a ``customTypePath`` class that the config it applies does not allow (#7592).
+
+    ``Both(Base, Handle)`` takes the config of ``Base`` and builds the ``queue`` field of ``Handle`` with it, so the
+    config needs ``arbitrary_types_allowed`` for the class that ``Handle``'s own config allowed: the module failed at
+    import with ``PydanticSchemaGenerationError``. ``Both`` gets a config of its own that keeps the items it applied
+    (``own-config``, ``engine``, ``alias-generator`` and the ``keep-*`` cases show them kept), whichever base
+    declares the field (``third-base``, ``through-a-base``, ``nested``) and whichever form it has (``list``, ``union``,
+    ``map``); a subclass takes it. ``own-config-first-base`` and ``own-open-config`` have a config of their own
+    that drops, or never takes, the config that allows the class. ``buildable-class`` and ``type-override`` name a
+    class that Pydantic builds anyway, so the key only repeats what the module accepts. The controls stay as they are:
+    ``handle-first`` takes the config that has the key, ``redeclared`` builds its own field, ``own-custom-field`` has
+    the key from its own field, and a BaseModel merges every base's config.
+    """
+    is_package = document.is_dir()
+    output_path = tmp_path / ("models" if is_package else "model.py")
+    arguments = list(extra_args)
+    if template_data:
+        template_data_path = tmp_path / "extra-template-data.json"
+        template_data_path.write_text(json.dumps(template_data), encoding="utf-8")
+        arguments += ["--extra-template-data", str(template_data_path)]
+    run_main_and_assert(
+        input_path=document,
+        output_path=output_path,
+        input_file_type="openapi" if document.parent == OPEN_API_DATA_PATH else "jsonschema",
+        extra_args=[*arguments, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    outcomes = ""
+    for model_name, cases in payloads.items():
+        with (
+            _generated_package_module(output_path, "both")
+            if is_package
+            else _generated_model(output_path, "model", model_name)
+        ) as generated:
+            model = getattr(generated, model_name) if is_package else generated
+            outcomes += f"{model_name}\n{_outcomes(model, cases)}"
+    assert_output(outcomes, name="outcomes")

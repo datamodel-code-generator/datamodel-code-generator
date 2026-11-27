@@ -1,0 +1,9 @@
+[[change]]
+id = "dataclass-later-base-input-count"
+category = "docs-text"
+title = "Schema files the payload test discovers after the later base custom type cases"
+summary = "The count of discovered schema files grows by the inputs of the pydantic dataclass later base custom type cases; the package writes the same output."
+refs = ["#1", "#7592"]
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]
