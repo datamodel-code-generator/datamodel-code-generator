@@ -2299,12 +2299,14 @@ class BaseLayoutView(NamedTuple):
 
     ``is_slot`` accepts the fields that keep a slot whatever that processing does, ``layout_model`` gives the model
     whose layout a model may take from it, and ``is_opaque`` tells the models that are, or hold beside their generated
-    bases, a class whose layout the generator does not read.
+    bases, a class whose layout the generator does not read. ``is_replaced``, where given, tells the models that the
+    output replaces whole by an imported class: their generated bases are not read, they stay unread leaves.
     """
 
     is_slot: Callable[[DataModelFieldBase], bool]
     layout_model: Callable[[DataModel], DataModel]
     is_opaque: Callable[[DataModel], bool]
+    is_replaced: Callable[[DataModel], bool] | None = None
 
 
 def _is_instance_field(field: DataModelFieldBase) -> bool:

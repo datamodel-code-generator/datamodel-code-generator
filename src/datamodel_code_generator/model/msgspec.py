@@ -810,7 +810,12 @@ class Struct(DataModel):
 
     @staticmethod
     def _layout_parents(model: DataModel, view: BaseLayoutView) -> list[DataModel]:
-        """Return the generated Struct bases of a model as the view of the layouts sees them."""
+        """Return the generated Struct bases of a model as the view of the layouts sees them.
+
+        A model that the output replaces whole by an imported class has none: its generated bases are not read.
+        """
+        if view.is_replaced is not None and view.is_replaced(model):
+            return []
         return [view.layout_model(parent) for parent in _struct_bases(model)]
 
     @staticmethod

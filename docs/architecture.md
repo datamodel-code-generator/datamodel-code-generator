@@ -2017,7 +2017,8 @@ right one.
   field that stayed a slot), is flattened once every module is processed
   (`parser/_passes/cross_module.py:flatten_conflicting_final_layouts`, with the layouts as the output has them, bases
   with fewer ancestors first). A class whose layout the generator does not read may hold any slot: a configured base,
-  a model that a type override replaces (at L4, whose fields then take no slot), or a base that the output imports in
+  a model that a type override replaces (at L4, whose fields then take no slot and whose generated bases it
+  does not inherit), or a base that the output imports in
   place of a generated model (at L6: a type override, `x-python-import` or `--external-ref-mapping`, recorded with
   its stand-in; L4 reads an `x-python-import` or `--external-ref-mapping` base as the generated stand-in it still is
   then). Both passes flatten only a conflict that is certain whatever such classes hold: one of its two slot owners

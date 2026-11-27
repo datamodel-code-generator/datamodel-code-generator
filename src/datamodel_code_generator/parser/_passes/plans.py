@@ -155,8 +155,8 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
     layout it then has. A model that this processing leaves conflicting is flattened once every module is
     processed (``cross_module.flatten_conflicting_final_layouts``). A model that a type override replaces is a class
     whose layout the generator does not read, as a configured base class is: its fields take no slot the layout
-    reads, and a conflict counts only where it is certain whatever such a class holds
-    (``Struct._find_layout_conflict``).
+    reads, its generated bases are not walked (it is replaced whole, an unread leaf), and a conflict counts only
+    where it is certain whatever such a class holds (``Struct._find_layout_conflict``).
     """
     models = [model for _, models in module_models for model in models]
     if not (joins := [model for model in models if len(model.base_classes) > 1]):
@@ -189,7 +189,7 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
             and ((parent := field.parent) is None or not is_overridden(parent))
         )
 
-    view = BaseLayoutView(is_slot, lambda model: duplicates.get(id(model), model), is_overridden)
+    view = BaseLayoutView(is_slot, lambda model: duplicates.get(id(model), model), is_overridden, is_overridden)
     for model in _walk_bases_first(joins):
         if len(model.base_classes) > 1:
             model.flatten_conflicting_base_layouts(view, partial(flatten_base_layouts, parser))

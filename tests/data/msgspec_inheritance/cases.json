@@ -1433,5 +1433,49 @@
     "invalid": {
       "left1": "x"
     }
+  },
+  {
+    "name": "jsonschema_overridden_fieldless_with_generated_parent",
+    "schema": "jsonschema_overridden_fieldless_with_generated_parent.json",
+    "format": "jsonschema",
+    "options": {
+      "type_overrides": {
+        "J": "msgspec.inspect.Type"
+      }
+    },
+    "cli": [
+      "--type-overrides",
+      "{\"J\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "k": 1,
+      "g": 2
+    },
+    "invalid": {
+      "k": "s"
+    }
+  },
+  {
+    "name": "jsonschema_reuse_overridden_fieldless_with_generated_parent",
+    "schema": "jsonschema_overridden_fieldless_with_generated_parent.json",
+    "format": "jsonschema",
+    "options": {
+      "type_overrides": {
+        "J": "msgspec.inspect.Type"
+      },
+      "reuse_model": true
+    },
+    "cli": [
+      "--reuse-model",
+      "--type-overrides",
+      "{\"J\": \"msgspec.inspect.Type\"}"
+    ],
+    "payload": {
+      "k": 1,
+      "g": 2
+    },
+    "invalid": {
+      "k": "s"
+    }
   }
 ]
