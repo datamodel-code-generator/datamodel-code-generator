@@ -455,7 +455,8 @@ _COMMENT_ONLY_HEADER_FAST_PATH_LIMIT = 4096
 def get_first_file(path: Path, encoding: str = "utf-8") -> Path:
     """Find and return the first file in a path: the path itself unless it is a directory, else its first file.
 
-    The hidden files of a directory are read as text in ``encoding`` (``is_hidden_binary``).
+    A directory is read in file-name order (files of one name in path order); its hidden files are read as text in
+    ``encoding`` (``is_hidden_binary``).
     """
     if path.is_dir():
         if (first := next(iter_input_files(path, encoding=encoding), None)) is not None:

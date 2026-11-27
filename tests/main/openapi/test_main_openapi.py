@@ -96,6 +96,9 @@ from tests.main.conftest import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from contextlib import AbstractContextManager
+
     from _pytest.recwarn import WarningsRecorder
     from pytest_mock import MockerFixture
 
@@ -18211,3 +18214,46 @@ paths:
         capsys=capsys,
         expected_stderr_contains="[type=model_type, input_value='foo', input_type=str]",
     )
+
+
+@pytest.mark.parametrize(
+    "directories",
+    [
+        pytest.param(("orders", "users"), id="two"),
+        pytest.param(("billing", "orders", "users"), id="three"),
+        pytest.param(("v1/orders", "v1/users", "v2/orders", "v2/users"), id="nested"),
+    ],
+)
+def test_directory_input_same_named_files_order(
+    tmp_path: Path, directories: tuple[str, ...], directory_listing: Callable[..., AbstractContextManager[None]]
+) -> None:
+    """Files of one name in different subdirectories get the same numbered class names whatever the listing order."""
+    specs = tmp_path / "specs"
+    for directory in directories:
+        (specs / directory).mkdir(parents=True)
+        (specs / directory / "openapi.yaml").write_text(
+            yaml.safe_dump({
+                "openapi": "3.0.3",
+                "info": {"title": directory.replace("/", "_").title(), "version": "1.0.0"},
+                "paths": {},
+                "components": {
+                    "schemas": {
+                        "Order": {
+                            "type": "object",
+                            "properties": {"status": {"type": "object", "properties": {"code": {"type": "integer"}}}},
+                        },
+                        "Status": {"type": "string", "enum": ["open", "closed"]},
+                    }
+                },
+            }),
+            encoding="utf-8",
+        )
+    for reverse in (False, True):
+        with directory_listing(reverse=reverse):
+            run_main_and_assert(
+                input_path=specs,
+                output_path=tmp_path / f"model-{reverse}",
+                input_file_type="openapi",
+                extra_args=["--disable-timestamp", "--formatters", "builtin"],
+                name="model",
+            )

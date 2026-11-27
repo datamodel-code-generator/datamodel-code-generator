@@ -16,8 +16,8 @@ import textwrap
 import time
 import warnings
 from argparse import Namespace
-from collections.abc import Callable, Collection, Generator, Mapping, Sequence
-from contextlib import contextmanager, nullcontext, redirect_stdout, suppress
+from collections.abc import Callable, Collection, Generator, Iterator, Mapping, Sequence
+from contextlib import AbstractContextManager, contextmanager, nullcontext, redirect_stdout, suppress
 from dataclasses import fields as dataclass_fields
 from dataclasses import is_dataclass
 from functools import cache
@@ -292,6 +292,23 @@ def output_file(tmp_path: Path) -> Path:
 def output_dir(tmp_path: Path) -> Path:
     """Return standard output directory path."""
     return tmp_path / "model"
+
+
+@pytest.fixture
+def directory_listing(monkeypatch: pytest.MonkeyPatch) -> Callable[..., AbstractContextManager[None]]:
+    """Return a context manager that makes ``Path.rglob`` list files in path order or in reverse path order."""
+    rglob = Path.rglob
+
+    @contextmanager
+    def listed(*, reverse: bool) -> Generator[None]:
+        def listing(self: Path, pattern: str, **kwargs: bool | None) -> Iterator[Path]:
+            return iter(sorted(rglob(self, pattern, **kwargs), reverse=reverse))
+
+        with monkeypatch.context() as patch:
+            patch.setattr(Path, "rglob", listing)
+            yield
+
+    return listed
 
 
 @pytest.fixture

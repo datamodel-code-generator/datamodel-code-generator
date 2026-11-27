@@ -20,7 +20,7 @@ import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable as ABCCallable
 from collections.abc import Iterator, Sequence
-from contextlib import ExitStack, nullcontext, suppress
+from contextlib import AbstractContextManager, ExitStack, nullcontext, suppress
 from dataclasses import Field as DataclassField
 from dataclasses import is_dataclass
 from decimal import Decimal
@@ -42160,3 +42160,40 @@ def test_read_refs_in_their_resources_first_input_dialect(tmp_path: Path, output
                 "builtin",
             ],
         )
+
+
+@pytest.mark.parametrize(
+    "directories",
+    [
+        pytest.param(("orders", "users"), id="two"),
+        pytest.param(("billing", "orders", "users"), id="three"),
+        pytest.param(("v1/orders", "v1/users", "v2/orders", "v2/users"), id="nested"),
+    ],
+)
+def test_directory_input_same_named_files_order(
+    tmp_path: Path, directories: tuple[str, ...], directory_listing: ABCCallable[..., AbstractContextManager[None]]
+) -> None:
+    """Files of one name in different subdirectories get the same numbered class names whatever the listing order."""
+    schemas = tmp_path / "schemas"
+    for directory in directories:
+        (schemas / directory).mkdir(parents=True)
+        (schemas / directory / "schema.json").write_text(
+            json.dumps({
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "title": directory.replace("/", "_").title(),
+                "type": "object",
+                "properties": {"status": {"type": "object", "properties": {"code": {"type": "integer"}}}},
+                "definitions": {"Status": {"type": "string", "enum": ["open", "closed"]}},
+                "required": ["status"],
+            }),
+            encoding="utf-8",
+        )
+    for reverse in (False, True):
+        with directory_listing(reverse=reverse):
+            run_main_and_assert(
+                input_path=schemas,
+                output_path=tmp_path / f"model-{reverse}",
+                input_file_type="jsonschema",
+                extra_args=["--disable-timestamp", "--formatters", "builtin"],
+                name="model",
+            )
