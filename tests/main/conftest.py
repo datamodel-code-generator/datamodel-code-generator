@@ -678,7 +678,7 @@ def _extend_args(
 
 
 def _run_main(
-    input_path: Path,
+    input_path: Path | None,
     output_path: Path,
     input_file_type: InputFileTypeLiteral | None = None,
     *,
@@ -1054,7 +1054,7 @@ def run_main_and_assert(  # noqa: PLR0912
     This is the unified helper function for testing file-based input.
 
     Input options:
-        input_path: Path to input schema file
+        input_path: Path to input schema file (none with an --input-model in extra_args)
         stdin_path: Path to file that will be used as stdin (requires monkeypatch)
         monkeypatch: pytest monkeypatch fixture for mocking stdin
 
@@ -1163,7 +1163,7 @@ def run_main_and_assert(  # noqa: PLR0912
             return_code = main(args)
     # Standard file input
     else:
-        if input_path is None:  # pragma: no cover
+        if input_path is None and "--input-model" not in (extra_args or ()):  # pragma: no cover
             pytest.fail("input_path is required")
         return_code = _run_main(input_path, output_path, input_file_type, extra_args=extra_args, copy_files=copy_files)
 

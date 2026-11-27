@@ -1895,6 +1895,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "allow_private_network",
         "read_input_model_dataclass_fields_by_alias",
         "reuse_every_reached_input_model_type",
+        "keep_typed_input_model_root_python_types",
         "allow_population_by_field_name",
         "collapse_root_models",
         "collapse_shared_parent_wrappers",

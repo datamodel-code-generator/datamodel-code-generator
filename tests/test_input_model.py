@@ -1243,7 +1243,18 @@ _TYPED_ROOTS = (
     "@dataclass\n"
     "class WorkingType:\n"
     "    kind: type[int]\n"
+    "    inner: WorkingUnion\n\n\n"
+    "@dataclass\n"
+    "class WorkingKind:\n"
+    "    kind: type[int]\n\n\n"
+    "@dataclass\n"
+    "class WorkingNested:\n"
     "    inner: WorkingUnion\n"
+    "    inners: list[WorkingUnion] = field(default_factory=list)\n\n\n"
+    "@dataclass\n"
+    "class Settings:\n"
+    "    retries: Union[int, Callable]\n"
+    "    kind: type[int]\n"
 )
 
 _OUTPUT_MODEL_TYPES = (
@@ -1323,6 +1334,88 @@ def test_input_model_unserializable_fields_of_typed_roots(
         output_path=tmp_path / "output.py",
         extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
     )
+
+
+@pytest.mark.cli_doc(
+    options=["--keep-typed-input-model-root-python-types"],
+    option_description="""Write a dataclass or TypedDict root with the Python types of a Pydantic model root.
+
+`--input-model` writes a Pydantic model with the Python types JSON Schema cannot spell: a `Callable` branch of a union
+and a `type[X]` field keep their types. Outside the reuse path, a dataclass or TypedDict root takes the JSON Schema
+Pydantic's standard generator writes for it instead, which drops the `Callable` branch (`retries: int`) and writes
+`type[int]` as `Any`.
+With this option such a root is written as a Pydantic model root is, so the output keeps both.""",
+    cli_args=["--input-model", "mymodule:Settings", "--keep-typed-input-model-root-python-types"],
+    input_model="mymodule:Settings",
+    golden_output="input_model/keep_typed_input_model_root_python_types[option].txt",
+    comparison_output="input_model/keep_typed_input_model_root_python_types[released].txt",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--keep-typed-input-model-root-python-types"], id="option"),
+        pytest.param(
+            ["--keep-typed-input-model-root-python-types", "--no-keep-typed-input-model-root-python-types"],
+            id="no-option",
+        ),
+        pytest.param(["--preset", "standard-py310-20261127"], id="preset"),
+    ],
+)
+def test_input_model_keep_typed_input_model_root_python_types(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str]
+) -> None:
+    """Keep the Python types of a dataclass root under the option (#7565).
+
+    Without it the root takes the forms of Pydantic's standard JSON Schema: ``retries: int`` without its ``Callable``
+    branch, ``kind: Any``. The input module is written for the test.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "typed_roots", raising=False)
+    (tmp_path / "typed_roots.py").write_text(_TYPED_ROOTS, encoding="utf-8")
+    run_input_model_and_assert(
+        input_model="typed_roots:Settings",
+        output_path=tmp_path / "output.py",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
+@pytest.mark.parametrize(
+    ("root", "extra_args"),
+    [
+        pytest.param("WorkingUnion", [], id="union"),
+        pytest.param("WorkingProbe", [], id="union-typeddict"),
+        pytest.param("WorkingKind", [], id="type"),
+        pytest.param("WorkingNested", [], id="nested-union"),
+        pytest.param("WorkingType", [], id="type-and-nested-union"),
+        pytest.param("Job", [], id="failing-root"),
+        pytest.param("ReusedUnion", list(_REUSE_ALL), id="reuse-all-union"),
+        pytest.param("ReusedType", list(_REUSE_ALL), id="reuse-all-type"),
+        pytest.param("ForeignGeneric", ["--input-model-ref-strategy", "reuse-foreign"], id="reuse-foreign-generic"),
+        pytest.param("WorkingUnion", ["--output-model-type", "dataclasses.dataclass"], id="union-dataclass"),
+        pytest.param("WorkingUnion", ["--output-model-type", "msgspec.Struct"], id="union-msgspec"),
+    ],
+)
+def test_input_model_typed_root_python_types_option(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, root: str, extra_args: list[str]
+) -> None:
+    """A dataclass or TypedDict root keeps its Python types under the option, as a Pydantic root does (#7565).
+
+    A union keeps the branch Pydantic's standard JSON Schema drops (``int | Callable``) and ``type[int]`` is written
+    as such, in the root and in the classes it holds, on the reuse path too. A root that already took the generation
+    of a Pydantic model (``failing-root``) is written as without the option. Each case writes its output twice, with the
+    option and without it, which the stored outputs compare. The input module is written for the test.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "typed_roots", raising=False)
+    (tmp_path / "typed_roots.py").write_text(_TYPED_ROOTS, encoding="utf-8")
+    for name, option in (("released", []), ("option", ["--keep-typed-input-model-root-python-types"])):
+        run_input_model_and_assert(
+            input_model=f"typed_roots:{root}",
+            output_path=tmp_path / f"{name}.py",
+            extra_args=[*extra_args, *option, "--disable-timestamp", "--formatters", "builtin"],
+            name=name,
+        )
 
 
 def test_input_model_typed_root_callable_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

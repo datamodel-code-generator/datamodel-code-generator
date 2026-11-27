@@ -235,6 +235,7 @@ class BaseGenerateConfig(TypedDict):
     keep_string_keywords_beside_formats: NotRequired[bool]
     read_input_model_dataclass_fields_by_alias: NotRequired[bool]
     reuse_every_reached_input_model_type: NotRequired[bool]
+    keep_typed_input_model_root_python_types: NotRequired[bool]
     use_site_models_for_constrained_refs: NotRequired[bool]
     use_one_model_per_ref_site: NotRequired[bool]
     original_field_name_delimiter: NotRequired[str | None]

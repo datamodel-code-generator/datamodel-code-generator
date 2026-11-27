@@ -213,7 +213,7 @@ def _assert_builtin_cli_formatter_parity(
                 )
                 return_code = main(args)
         else:
-            if input_path is None:  # pragma: no cover
+            if input_path is None and "--input-model" not in (builtin_extra_args or ()):  # pragma: no cover
                 pytest.fail("input_path is required")
             return_code = context.run_main(
                 input_path,

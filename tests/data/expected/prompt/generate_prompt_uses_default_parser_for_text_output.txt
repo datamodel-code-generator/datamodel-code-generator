@@ -18,7 +18,9 @@
 - `--input-file-type`: Specify the input file type for code generation.
 - `--input-model`: Import a Python type or dict schema from a module or Python file.
 - `--input-model-ref-strategy`: Strategy for referenced types when using --input-model.
+- `--keep-typed-input-model-root-python-types`: Write a dataclass or TypedDict root with the Python types of a P...
 - `--no-ignore-ref-siblings-by-schema-version`
+- `--no-keep-typed-input-model-root-python-types`
 - `--no-read-dynamic-anchors-in-document-order`
 - `--no-read-escaped-ref-pointers`
 - `--no-read-ids-with-empty-fragment`

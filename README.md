@@ -133,11 +133,11 @@ datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261125 \
+  --preset standard-py312-20261127 \
   --output model.py
 ```
 
-This quick start uses `standard-py312-20261125` as the modern Python 3.12 baseline.
+This quick start uses `standard-py312-20261127` as the modern Python 3.12 baseline.
 Preset names include the target Python version: `py312` means Python 3.12.
 
 See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/) for all options. See [Presets](https://datamodel-code-generator.koxudaxi.dev/presets/),
@@ -145,7 +145,7 @@ See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/
 [`--output-model-type`](https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-customization/#output-model-type) for this command.
 
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
-documentation, use [`practical-py312-20261125`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261125).
+documentation, use [`practical-py312-20261127`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261127).
 
 **Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
 analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
@@ -373,7 +373,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261125 \
+  --preset standard-py312-20261127 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \
@@ -386,7 +386,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261125 \
+  --preset standard-py312-20261127 \
   --output app/models.py \
   --generate-client httpx2 \
   --client-output app/client \

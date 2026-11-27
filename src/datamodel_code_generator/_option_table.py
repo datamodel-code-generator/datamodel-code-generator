@@ -537,6 +537,24 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "of a field already imports instead of writing an unused copy of it; without it reuse descends through "
         "Pydantic models only and such a copy is written (ItemModel beside Mapping[str, Item]), as in 0.89.0",
     ),
+    toggle(
+        Section.BASE,
+        "--keep-typed-input-model-root-python-types",
+        help="With --input-model, give a dataclass or TypedDict root the Python types of a Pydantic model root: a "
+        "union keeps the branches Pydantic's standard JSON Schema drops, such as `Callable` in `int | Callable`, and "
+        "a `type[X]` field keeps its Python type; without it such a root keeps the forms that standard JSON Schema "
+        "spells (`int`, `Any`)",
+        preset=PresetJoin(
+            "20261127",
+            {"keep_typed_input_model_root_python_types": True},
+            title="Python types of typed input model roots",
+            description=(
+                "With --input-model, give a dataclass or TypedDict root the Python types of a Pydantic model root: a "
+                "union keeps the branches Pydantic's standard JSON Schema drops, such as Callable in int | Callable, "
+                "and a type[X] field keeps its Python type instead of Any."
+            ),
+        ),
+    ),
     # Customization options for generated models
     deprecated(Exclusive.EXTRA_FIELDS, "--allow-extra-fields", implies=_relations("--extra-fields", value="allow")),
     toggle(Section.MODEL, "--allow-population-by-field-name", help="Allow population by field name"),

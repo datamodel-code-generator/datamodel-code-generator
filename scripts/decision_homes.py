@@ -7617,8 +7617,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "(`_transform_single_model_to_inheritance`); a Pydantic model takes the generator of the input model, as "
             "does a dataclass or TypedDict on the reuse path (which keeps the forms it was released with), and any "
             "other dataclass or TypedDict takes Pydantic's standard generator, and the generator of a Pydantic model "
-            "only where the standard one cannot write it (a `Callable` field or an arbitrary class), which also "
-            "names the definitions Pydantic merged while it wrote the schema"
+            "only where the standard one cannot write it (a `Callable` field or an arbitrary class), and under "
+            "`--keep-typed-input-model-root-python-types` every dataclass or TypedDict root takes the generator of the "
+            "input model on either path; it also names the definitions Pydantic merged while it wrote the schema"
         ),
         sites=(),
     ),
