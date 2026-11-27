@@ -2058,21 +2058,21 @@ class _PydanticV2Model(DataModel):
             return _builds_arbitrary_type(model._fields_built_with_config(), reached)
 
         needing = {
-            id(model) for model in models if isinstance(model, _PydanticV2Model) and builds_arbitrary_type(model)
+            id(model): model for model in models if isinstance(model, _PydanticV2Model) and builds_arbitrary_type(model)
         }
         if not needing:
             return
         decided: set[int] = set()
 
-        def decide(model: _PydanticV2Model) -> None:
-            if id(model) in decided:
+        def decide(current: DataModel) -> None:
+            if id(current) in decided:
                 return
-            decided.add(id(model))
-            for base in _find_base_classes(model):
-                if isinstance(base, _PydanticV2Model):
-                    decide(base)
-            if id(model) not in needing:
+            decided.add(id(current))
+            for base in _find_base_classes(current):
+                decide(base)
+            if id(current) not in needing:
                 return
+            model: _PydanticV2Model = needing[id(current)]
             model._keep_string_pattern_aliases_out_of_bases()
             items, known = model.applied_config()
             if ARBITRARY_TYPES_ALLOWED_KEY not in items and (known is None or ARBITRARY_TYPES_ALLOWED_KEY in known):

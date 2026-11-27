@@ -3,8 +3,8 @@ id = "input-model-arbitrary-types-allowed"
 category = "default-fix"
 title = "--input-model allows arbitrary types where a field's class needs them"
 summary = "A Pydantic v2 model generated from an input model whose field type is a plain class that Pydantic builds only with arbitrary_types_allowed (in a union, Optional, a container such as UserDict, a root model, a type alias or a parent model) wrote no config and failed at import with PydanticSchemaGenerationError. Each such model now writes arbitrary_types_allowed=True (a root model of such a type is written RootModel[Any] with the class in its root field). Class names, field names, field types and valid-payload values are unchanged, and modules that import today are byte-identical."
-refs = ["#1", "#7562"]
-decision = ["#1"]
+refs = ["#7595", "#7562"]
+decision = ["#7595"]
 kind = "default-output"
 action = "review"
 source = "release-note"

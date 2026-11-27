@@ -288,8 +288,6 @@ class RootModel(BaseModel):
 
         A root of an arbitrary type, which the config allows (``_allow_arbitrary_types``), takes it the same way.
         """
-        if self._internal_template_data.get(_STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY):
-            return
         self._set_internal_template_data(key=_STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY, value=True)
         self._additional_imports.append(IMPORT_ANY)
         self.invalidate_render_caches()
