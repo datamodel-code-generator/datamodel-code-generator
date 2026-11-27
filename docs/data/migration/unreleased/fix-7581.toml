@@ -3,8 +3,8 @@ id = "fix-7581"
 category = "default-fix"
 title = "A fieldless object that names an x-python-type is a root of that type"
 summary = "An object schema that declares no property, no map, no validator and keeps no unknown keys, and whose x-python-type names a class it does not fit (--input-model writes a Pydantic root of a plain class, an InstanceOf class or a class that builds its own schema this way), was written as an empty model that held nothing and accepted any object. It is now the root of that class under the same name, as a field of the same schema already took the class: a Pydantic RootModel[Any] with root: <class> and arbitrary_types_allowed=True, or a type alias of the class in dataclass, TypedDict and msgspec output. Inline OpenAPI request and response bodies follow the same rule. An object keeps unknown keys, and stays a model, where its schema, --extra-fields allow, --allow-extra-fields or an --extra-template-data entry (by schema path, class name or #all#) allows them and no --extra-fields forbid or ignore overrides it. The empty model held no value, but some working output changes. Under --collapse-root-models and the dated presets the former empty class name is inlined into its holders like any root model. A definition that held only an allOf over such an object (a description beside one $ref) is a root of that class, as it is over a string root, and a model that extends such an object no longer has it as a base, as over any root model. The owner decided this exception to the default rule on 2026-11-27 (the empty model, and the working output that changes with it)."
-refs = ["#1", "#7581"]
-decision = ["#1"]
+refs = ["#7606", "#7581"]
+decision = ["#7606"]
 kind = "default-output"
 action = "review"
 source = "release-note"
