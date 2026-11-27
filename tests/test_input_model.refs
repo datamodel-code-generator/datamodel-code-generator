@@ -1094,6 +1094,8 @@ two-models-reuse-all	input_model/reuse_same_named_classes[two-models-reuse-all].
 	input_model/transport_preserves_inheritance.txt
 [test_input_model_transport_preserves_nested_runtime_identity]
 	input_model/transport_preserves_nested_runtime_identity.txt
+[test_input_model_typed_root_callable_defaults]
+	input_model/typed_root_callable_defaults.txt
 [test_input_model_typeddict]
 	input_model/typeddict.txt	= input_model/path_format.txt
 [test_input_model_union_branch_provenance]
@@ -1387,6 +1389,41 @@ root-model-root	input_model/unserializable_fields_of_held_classes[root-model-roo
 same-named-classes	input_model/unserializable_fields_of_held_classes[same-named-classes].txt
 same-named-classes-reuse-all	input_model/unserializable_fields_of_held_classes[same-named-classes-reuse-all].txt
 two-models	input_model/unserializable_fields_of_held_classes[two-models].txt
+[test_input_model_unserializable_fields_of_typed_roots]
+arbitrary-type	input_model/unserializable_fields_of_typed_roots[arbitrary-type].txt
+callable-forms	input_model/unserializable_fields_of_typed_roots[callable-forms].txt
+callable-in-containers	input_model/unserializable_fields_of_typed_roots[callable-in-containers].txt
+dataclass-root-dataclasses.dataclass	input_model/unserializable_fields_of_typed_roots[dataclass-root-dataclasses.dataclass].txt
+dataclass-root-msgspec.Struct	input_model/unserializable_fields_of_typed_roots[dataclass-root-msgspec.Struct].txt
+dataclass-root-pydantic_v2.BaseModel	input_model/unserializable_fields_of_typed_roots[dataclass-root-pydantic_v2.BaseModel].txt
+dataclass-root-pydantic_v2.dataclass	input_model/unserializable_fields_of_typed_roots[dataclass-root-pydantic_v2.dataclass].txt
+dataclass-root-typing.TypedDict	input_model/unserializable_fields_of_typed_roots[dataclass-root-typing.TypedDict].txt
+generic-dataclass-root	input_model/unserializable_fields_of_typed_roots[generic-dataclass-root].txt
+nested-held-classes	input_model/unserializable_fields_of_typed_roots[nested-held-classes].txt
+nested-held-classes-regenerate-all	input_model/unserializable_fields_of_typed_roots[nested-held-classes-regenerate-all].txt	= input_model/unserializable_fields_of_typed_roots[nested-held-classes].txt
+nested-held-classes-reuse-foreign	input_model/unserializable_fields_of_typed_roots[nested-held-classes-reuse-foreign].txt
+optional-callable	input_model/unserializable_fields_of_typed_roots[optional-callable].txt
+optional-callable-typeddict	input_model/unserializable_fields_of_typed_roots[optional-callable-typeddict].txt
+pydantic-dataclass-by-alias	input_model/unserializable_fields_of_typed_roots[pydantic-dataclass-by-alias].txt
+pydantic-dataclass-by-name	input_model/unserializable_fields_of_typed_roots[pydantic-dataclass-by-name].txt
+pydantic-dataclass-root	input_model/unserializable_fields_of_typed_roots[pydantic-dataclass-root].txt
+reuse-all-optional	input_model/unserializable_fields_of_typed_roots[reuse-all-optional].txt
+reuse-all-root-field	input_model/unserializable_fields_of_typed_roots[reuse-all-root-field].txt
+reuse-all-root-field-dataclasses.dataclass	input_model/unserializable_fields_of_typed_roots[reuse-all-root-field-dataclasses.dataclass].txt
+reuse-all-root-field-msgspec.Struct	input_model/unserializable_fields_of_typed_roots[reuse-all-root-field-msgspec.Struct].txt
+reuse-all-root-field-pydantic_v2.dataclass	input_model/unserializable_fields_of_typed_roots[reuse-all-root-field-pydantic_v2.dataclass].txt
+reuse-all-root-field-typing.TypedDict	input_model/unserializable_fields_of_typed_roots[reuse-all-root-field-typing.TypedDict].txt
+reuse-all-type-kept	input_model/unserializable_fields_of_typed_roots[reuse-all-type-kept].txt
+reuse-all-union	input_model/unserializable_fields_of_typed_roots[reuse-all-union].txt
+reuse-foreign-generic	input_model/unserializable_fields_of_typed_roots[reuse-foreign-generic].txt
+typeddict-holds-dataclass	input_model/unserializable_fields_of_typed_roots[typeddict-holds-dataclass].txt
+typeddict-not-required	input_model/unserializable_fields_of_typed_roots[typeddict-not-required].txt
+typeddict-root	input_model/unserializable_fields_of_typed_roots[typeddict-root].txt
+typeddict-total-false	input_model/unserializable_fields_of_typed_roots[typeddict-total-false].txt
+union-in-failing-root	input_model/unserializable_fields_of_typed_roots[union-in-failing-root].txt
+working-type	input_model/unserializable_fields_of_typed_roots[working-type].txt
+working-union	input_model/unserializable_fields_of_typed_roots[working-union].txt
+working-union-typeddict	input_model/unserializable_fields_of_typed_roots[working-union-typeddict].txt
 [test_input_model_validation_property_winners]
 builtin-api-AllSkipped	input_model/validation_property_winners[builtin-api-AllSkipped].py
 builtin-api-AllSkipped	input_model/validation_property_winners[builtin-api-AllSkipped].runtime.txt
