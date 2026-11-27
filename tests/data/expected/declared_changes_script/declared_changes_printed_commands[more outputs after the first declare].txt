@@ -36,3 +36,8 @@ covers = [
     "models/b.py",
     "models/c.py",
 ]
+
+[[change.cells]]
+input = ["a.json"]
+backends = "*"
+options = "*"

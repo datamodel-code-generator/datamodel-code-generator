@@ -18,10 +18,12 @@ failed
 $ declare b-two --category output-text --title t --refs #42 --labels models/b* --base base
 exit 0
 docs/data/migration/unreleased/b-two.toml covers 1 more stored outputs
+  still needed: entry b-two: category output-text names the cells it covers ([[change.cells]])
 
 $ declare b-two --tests *::test_model[[]a] --base base
 exit 0
 docs/data/migration/unreleased/b-two.toml covers 1 more stored outputs
+  still needed: entry b-two: category output-text names the cells it covers ([[change.cells]])
 
 $ declare b-two --category notice --rest --base base
 exit 2
@@ -48,6 +50,7 @@ $ declare rest --category notice --title t --summary s --decision #7 --surface=-
 exit 0
 docs/data/migration/unreleased/rest.toml covers 2 more stored outputs
   still needed: entry rest has no refs
+  still needed: entry rest: category notice names the cells it covers ([[change.cells]])
   still needed: entry rest: only category new-surface names surface items
 
 $ declare rest --rest --base base
@@ -57,8 +60,10 @@ scripts/declared_changes.py: nothing to declare: no undeclared stored output mat
 $ check --base base --report-only
 exit 0
 declared changes: the working tree against base, release since 0.1.0
+record problem: entry b-two: category output-text names the cells it covers ([[change.cells]])
 record problem: entry help: category output-text names the cells it covers ([[change.cells]])
 record problem: entry rest has no refs
+record problem: entry rest: category notice names the cells it covers ([[change.cells]])
 record problem: entry rest: only category new-surface names surface items
 record problem: unreleased/rest.toml: covers models/c.py, models output, which category notice does not cover: give it a record of its own
 failed
@@ -117,8 +122,10 @@ unreleased/rest.toml: dropped models/c.py
 $ check --base base
 exit 1
 declared changes: the working tree against base, release since 0.1.0
+record problem: entry b-two: category output-text names the cells it covers ([[change.cells]])
 record problem: entry help: category output-text names the cells it covers ([[change.cells]])
 record problem: entry rest has no refs
+record problem: entry rest: category notice names the cells it covers ([[change.cells]])
 record problem: entry rest: only category new-surface names surface items
 1 stored outputs returned to 0.1.0 and need no record:
   models/w.txt (dropped from lower)
