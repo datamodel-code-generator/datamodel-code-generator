@@ -455,10 +455,11 @@ _COMMENT_ONLY_HEADER_FAST_PATH_LIMIT = 4096
 def get_first_file(path: Path, encoding: str = "utf-8") -> Path:
     """Find and return the first file in a path: the path itself unless it is a directory, else its first file.
 
-    The hidden files of a directory are read as text in ``encoding`` (``is_hidden_binary``).
+    A directory is read shallowest files first, each depth in file-name order (files of one name in path order), so a
+    single top-level file comes first; its hidden files are read as text in ``encoding`` (``is_hidden_binary``).
     """
     if path.is_dir():
-        if (first := next(iter_input_files(path, encoding=encoding), None)) is not None:
+        if (first := next(iter_input_files(path, encoding=encoding, order="shallow"), None)) is not None:
             return first
     elif path.exists():
         return path
@@ -1724,7 +1725,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0914, PLR0915
                 case Path() as input_path if (input_filter := config._directory_input_filter) is not None:  # noqa: SLF001
                     detected_input = next(
                         input_filter.iter_files(
-                            iter_input_files(input_path, encoding=config.encoding), config.encoding
+                            iter_input_files(input_path, encoding=config.encoding, order="shallow"), config.encoding
                         ),
                         None,
                     )

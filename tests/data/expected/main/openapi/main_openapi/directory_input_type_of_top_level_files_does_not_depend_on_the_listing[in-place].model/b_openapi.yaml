@@ -1,0 +1,12 @@
+components:
+  schemas:
+    Order:
+      properties:
+        id:
+          type: integer
+      type: object
+info:
+  title: Api
+  version: 1.0.0
+openapi: 3.0.3
+paths: {}

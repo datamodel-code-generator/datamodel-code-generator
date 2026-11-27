@@ -2726,6 +2726,10 @@ AdaptedModel-False	main/jsonschema/main_jsonschema/custom_template_dependencies_
 AdaptedModel-True	main/jsonschema/main_jsonschema/custom_template_dependencies_support_parser_extensions[AdaptedModel-True].first.py	= main/jsonschema/main_jsonschema/custom_template_dependencies_support_parser_extensions[AbsoluteAdaptedTemplateModel-False].first.py
 AdaptedModel-True	main/jsonschema/main_jsonschema/custom_template_dependencies_support_parser_extensions[AdaptedModel-True].second.py	= main/jsonschema/main_jsonschema/custom_template_dependencies_support_parser_extensions[AdaptedModel-False].second.py
 DefaultDirectoryModel-False	main/jsonschema/main_jsonschema/custom_template_dependencies_support_parser_extensions[DefaultDirectoryModel-False].first.py	= main/jsonschema/main_jsonschema/custom_template_dependencies_support_parser_extensions[AbsoluteAdaptedTemplateModel-False].first.py
+[test_directory_input_same_named_files_order]
+nested	main/jsonschema/main_jsonschema/directory_input_same_named_files_order[nested].model/
+three	main/jsonschema/main_jsonschema/directory_input_same_named_files_order[three].model/
+two	main/jsonschema/main_jsonschema/directory_input_same_named_files_order[two].model/
 [test_dotted_module_exports]
 dotted_module_exports-children-None-None-False-plain-children-PythonVersion.PY_310-api	main/jsonschema/main_jsonschema/dotted_module_exports[dotted_module_exports-children-None-None-False-plain-children-PythonVersion.PY_310-api].txt
 dotted_module_exports-children-None-None-False-plain-children-PythonVersion.PY_310-api	main/jsonschema/main_jsonschema/dotted_module_exports[dotted_module_exports-children-None-None-False-plain-children-PythonVersion.PY_310-api]/

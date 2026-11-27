@@ -1,0 +1,42 @@
+[[change]]
+id = "same-named-files-in-path-order"
+category = "decided-change"
+title = "Files with the same name in different subdirectories of a directory input are read in path order"
+summary = "Files with the same name in different subdirectories of a directory input are now read in path order. Before, their order came from the file system, so numbered class names such as Status1 and Status2 could differ between machines or CI runner images. If you generate from such a directory, regenerate once: some numbered names may swap; after that they are the same everywhere. Directory inputs whose files all have different names are read as before. The file that settles the input type of a directory, when the type is not given, is the first of the shallowest files in the same order, so a single top-level file decides as before."
+kind = "default-output"
+action = "review"
+source = "release-note"
+keep = { note = "No option restores the file system order: it was not the same on two machines." }
+refs = ["#7564", "#7552"]
+decision = ["#7552"]
+covers = [
+    "main/jsonschema/main_jsonschema/directory_input_same_named_files_order[nested].model/",
+    "main/jsonschema/main_jsonschema/directory_input_same_named_files_order[three].model/",
+    "main/jsonschema/main_jsonschema/directory_input_same_named_files_order[two].model/",
+    "main/openapi/main_openapi/directory_input_same_named_files_order[nested].model/",
+    "main/openapi/main_openapi/directory_input_same_named_files_order[three].model/",
+    "main/openapi/main_openapi/directory_input_same_named_files_order[two].model/",
+    "main/openapi/main_openapi/directory_input_type_is_detected_from_the_top_level_file[in-place].model/",
+    "main/openapi/main_openapi/directory_input_type_is_detected_from_the_top_level_file[separate-output].model/",
+    "main/openapi/main_openapi/directory_input_type_of_top_level_files_does_not_depend_on_the_listing[in-place].model/",
+    "main/openapi/main_openapi/directory_input_type_of_top_level_files_does_not_depend_on_the_listing[separate-output].model/",
+]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/nested_resources"]
+backends = "*"
+options = "*"
+aspects = ["exit", "message", "name-added", "name-removed", "numbered-name-removed", "type", "warning"]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/merged_copy_duplicates"]
+backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
+options = "*"
+aspects = ["exit", "message", "name-added", "name-removed", "numbered-name-removed", "type", "warning"]
+
+[[change.cells]]
+input = ["project:openmetadata/schema"]
+backends = ["pydantic_v2.BaseModel"]
+options = [["--use-annotated", "--base-class", "metadata.ingestion.models.custom_pydantic.BaseModel", "--set-default-enum-member", "--formatters", "black", "isort"]]
+input_file_type = "jsonschema"
+aspects = ["numbered-name-removed"]
