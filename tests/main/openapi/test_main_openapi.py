@@ -2195,6 +2195,31 @@ def test_main_modular_allof_inheritance_mro_conflict(output_dir: Path, capsys: p
     )
 
 
+def test_main_modular_allof_inheritance_mro_conflict_under_generic_base_class(
+    output_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Reject the same order under the generic base class, whose base is the library base it imports (#7437).
+
+    Until 0.103.0 the check could not tell what the generic base class inherits, so it wrote ``top.py``, which fails
+    to import with a TypeError on the method resolution order.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_inheritance_modular_mro_conflict.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--use-generic-base-class", "--extra-fields", "forbid"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Generated model E (allof_inheritance_modular_mro_conflict.yaml#/components/schemas/top.E) has "
+            "inconsistent method resolution order for generated bases "
+            "C (allof_inheritance_modular_mro_conflict.yaml#/components/schemas/mid.C), "
+            "D (allof_inheritance_modular_mro_conflict.yaml#/components/schemas/mid.D).\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
 def test_main_modular_allof_inheritance_import_override(output_dir: Path) -> None:
     """Leave a base imported from an overriding module out of the generated hierarchy."""
     run_main_and_assert(

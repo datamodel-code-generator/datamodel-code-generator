@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._python_type_annotation import PythonTypeName, rewrite_python_type_expr
@@ -15,10 +15,21 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator.imports import Imports
-    from datamodel_code_generator.model.base import DataModel
+    from datamodel_code_generator.model.base import BaseClassDataType, DataModel
     from datamodel_code_generator.types import DataType
 
 _ImportsByName = dict[str, dict[_ImportKey, Import]]
+_BaseBindingRow: TypeAlias = Literal["base-follows-binding", "legacy-generic-base-names-dropped-class-binding"]
+
+
+class StructuredImportAliases(NamedTuple):
+    """The aliases a module's structured consumers take, and the bases that keep their spelling."""
+
+    imports: dict[_ImportKey, Import]
+    """The import each identity whose consumers take an alias binds."""
+    kept_base_bindings: frozenset[tuple[_ImportKey, str]]
+    """The identities and aliases of the bases that keep naming their alias although the identity takes another one
+    (row ``legacy-generic-base-names-dropped-class-binding``)."""
 
 
 @dataclass(slots=True)
@@ -33,6 +44,60 @@ class _StructuredImportAliasState:
     used_names: set[str]
     aliased_imports: dict[_ImportKey, Import]
     template_import_keys: set[_ImportKey]
+    base_bindings: dict[str, _ImportKey]
+    """The alias that the import of a base binds, by the identity it imports: the generic base class's."""
+    base_import_keys: set[_ImportKey]
+    """The identities that the bases of the models import."""
+    kept_base_bindings: set[tuple[_ImportKey, str]]
+
+    def collect_base(self, base_class: BaseClassDataType) -> None:
+        """Record the identity a base imports and the alias it binds, or reserve the name of a base nothing imports."""
+        if (base_import := base_class.import_) is not None:
+            self.base_import_keys.add(key := _import_key(base_import))
+            if base_import.alias:
+                self.base_bindings.setdefault(base_import.alias, key)
+                self.used_names.add(base_import.alias)
+        if base_import is None and (base_name := base_class.type_hint):
+            self.reserved_names.add(base_name.partition(".")[0])
+            self.used_names.add(base_name.partition(".")[0])
+
+    def is_reserved(self, name: str, key: _ImportKey) -> bool:
+        """Return whether identity ``key`` may not bind ``name``.
+
+        Fields, classes and names no import binds take their names. The alias of a base is the identity's that the
+        base imports while no import of another identity binds it too: the base, the fields that name the identity and
+        the import line then name one binding.
+        """
+        if name in self.reserved_names:
+            return True
+        if (owner := self.base_bindings.get(name)) is None:
+            return False
+        return owner != key or bool(self.ordinary_imports_by_name.get(name, {}).keys() - {key})
+
+    def realias_established_binding(self, import_: Import, key: _ImportKey) -> None:
+        """Give identity ``key`` an alias of its own, as another name takes the binding of its established ``import_``.
+
+        The bases that bind it follow unless row ``legacy-generic-base-names-dropped-class-binding`` keeps their
+        spelling.
+        """
+        binding = import_.binding_name
+        if self.base_binding_row(binding, key) == "legacy-generic-base-names-dropped-class-binding":
+            self.kept_base_bindings.add((key, binding))
+        self.alias_import(import_, self.unique_alias(binding, field_collision=True))
+
+    def base_binding_row(self, name: str, key: _ImportKey) -> _BaseBindingRow:
+        """Return how the bases that bind ``name`` to identity ``key`` follow the alias the identity takes instead.
+
+        Row ``legacy-generic-base-names-dropped-class-binding``: where an import of another identity that no base
+        names binds the alias of the generic base class's base too, as the import of a class that row
+        ``legacy-generic-base-drops-configured-bases`` drops does, the base keeps its spelling and inherits the class
+        of that import, as released. Where a base names that identity (a class kept beside the generic base class),
+        the base follows its identity's alias.
+        """
+        others = self.ordinary_imports_by_name.get(name, {}).keys() - {key}
+        if self.base_bindings.get(name) == key and others and not others & self.base_import_keys:
+            return "legacy-generic-base-names-dropped-class-binding"
+        return "base-follows-binding"
 
     def collect_import(self, imports_by_name: _ImportsByName, import_: Import) -> None:
         """Record an exact import identity under its effective binding name."""
@@ -132,9 +197,7 @@ def _collect_model_context_imports(
     structured_import_keys = _structured_import_keys(state)
     for model in models:
         for base_class in model.base_classes:
-            if not base_class.import_ and (base_name := base_class.type_hint):
-                state.reserved_names.add(base_name.partition(".")[0])
-                state.used_names.add(base_name.partition(".")[0])
+            state.collect_base(base_class)
         # This public aggregate contains field, base, default, backend, and
         # additional imports. Unaliased structured identities are classified
         # above; an established alias remains the canonical module binding.
@@ -169,11 +232,13 @@ def resolve_structured_import_aliases(
     models: list[DataModel],
     all_model_field_names: set[str],
     import_aggregates: Iterable[Imports] = (),
-) -> dict[_ImportKey, Import]:
+) -> StructuredImportAliases:
     """Prefer established module bindings and alias structured imports around them."""
     reserved_names = set(all_model_field_names)
     reserved_names.update(model.class_name for model in models)
-    state = _StructuredImportAliasState({}, {}, {}, {}, reserved_names, set(reserved_names), {}, set())
+    state = _StructuredImportAliasState(
+        {}, {}, {}, {}, reserved_names, set(reserved_names), {}, set(), {}, set(), set()
+    )
     _collect_data_type_imports(state, data_types, all_model_field_names)
     _collect_field_runtime_imports(state, models)
     _collect_model_context_imports(state, models, import_aggregates)
@@ -184,14 +249,11 @@ def resolve_structured_import_aliases(
     for key in _structured_import_keys(state) & state.ordinary_imports_by_key.keys():
         ordinary_import = state.ordinary_imports_by_key[key]
         if ordinary_import.alias:
-            if ordinary_import.binding_name in state.reserved_names:
-                state.alias_import(
-                    ordinary_import,
-                    state.unique_alias(ordinary_import.binding_name, field_collision=True),
-                )
+            if state.is_reserved(ordinary_import.binding_name, key):
+                state.realias_established_binding(ordinary_import, key)
             else:
                 state.aliased_imports[key] = ordinary_import
-        elif (name := ordinary_import.binding_name) in state.reserved_names and key not in state.template_import_keys:
+        elif state.is_reserved(name := ordinary_import.binding_name, key) and key not in state.template_import_keys:
             state.alias_import(ordinary_import, state.unique_alias(name, field_collision=True))
 
     for import_ in state.ordinary_field_alias_candidates.values():
@@ -211,20 +273,18 @@ def resolve_structured_import_aliases(
             if key in ordinary_keys:
                 kept_unaliased = True
                 continue
-            if not kept_unaliased and name not in state.reserved_names and not ordinary_keys:
+            reserved = state.is_reserved(name, key)
+            if not kept_unaliased and not reserved and not ordinary_keys:
                 kept_unaliased = True
                 continue
             state.alias_import(
                 import_,
-                state.unique_alias(
-                    name,
-                    field_collision=name in state.reserved_names and not kept_unaliased,
-                ),
+                state.unique_alias(name, field_collision=reserved and not kept_unaliased),
             )
-    return state.aliased_imports
+    return StructuredImportAliases(state.aliased_imports, frozenset(state.kept_base_bindings))
 
 
 resolve_python_type_import_aliases = resolve_structured_import_aliases
 
 
-__all__ = ["resolve_python_type_import_aliases", "resolve_structured_import_aliases"]
+__all__ = ["StructuredImportAliases", "resolve_python_type_import_aliases", "resolve_structured_import_aliases"]

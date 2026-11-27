@@ -43,7 +43,7 @@ def test_resolver_avoids_reserved_alias_suffixes() -> None:
         [_bound_data_type("first", "Thing"), _bound_data_type("second", "Thing")],
         [],
         {"Thing_1"},
-    )
+    ).imports
 
     assert aliases["second", "Thing"].alias == "Thing_2"
 
@@ -51,7 +51,7 @@ def test_resolver_avoids_reserved_alias_suffixes() -> None:
         [_bound_data_type("first", "Thing"), _bound_data_type("second", "Thing")],
         [],
         {"Thing", "Thing_aliased"},
-    )
+    ).imports
 
     assert field_aliases["first", "Thing"].alias == "Thing_aliased_"
     assert field_aliases["second", "Thing"].alias == "Thing_aliased__"
@@ -67,11 +67,11 @@ def test_resolver_shares_ordinary_field_alias_with_same_bound_identity() -> None
         python_type=BoundPythonType(PythonTypeBoundName("date", "datetime", "date"), (import_,)),
     )
 
-    aliases = resolve_python_type_import_aliases([ordinary, bound], [], {"date"})
+    aliases = resolve_python_type_import_aliases([ordinary, bound], [], {"date"}).imports
 
     assert aliases == {("datetime", "date"): Import(from_="datetime", import_="date", alias="date_aliased")}
 
-    assert resolve_python_type_import_aliases([ordinary, bound], [], set()) == {}
+    assert resolve_python_type_import_aliases([ordinary, bound], [], set()).imports == {}
 
 
 @pytest.mark.allow_direct_assert
@@ -84,7 +84,7 @@ def test_resolver_propagates_existing_alias_to_same_bound_identity() -> None:
         [DataType(type="ExistingAlias", import_=ordinary_import), bound],
         [],
         set(),
-    )
+    ).imports
 
     assert aliases == {("foo", "Bar"): ordinary_import}
     aliased_bound = alias_bound_python_type(bound.python_type, aliases)
@@ -106,7 +106,7 @@ def test_resolver_realiases_aggregate_binding_shadowed_by_field() -> None:
         [],
         {"Taken"},
         (module_imports,),
-    )
+    ).imports
 
     assert aliases == {("foo", "Bar"): Import(from_="foo", import_="Bar", alias="Taken_aliased")}
 
@@ -139,7 +139,7 @@ def test_resolver_collects_plain_names_model_imports_and_late_module_imports() -
         [model],
         set(),
         (module_imports,),
-    )
+    ).imports
 
     assert aliases["external", "Thing"].alias == "Thing_1"
 
@@ -153,7 +153,7 @@ def test_resolver_reserves_unimported_base_class_names() -> None:
         base_classes=[Reference(path="LocalBase", name="LocalBase")],
     )
 
-    aliases = resolve_python_type_import_aliases([_bound_data_type("external", "LocalBase")], [model], set())
+    aliases = resolve_python_type_import_aliases([_bound_data_type("external", "LocalBase")], [model], set()).imports
 
     assert aliases["external", "LocalBase"].alias == "LocalBase_aliased"
 
@@ -210,7 +210,7 @@ def test_data_type_runtime_expression_metadata_rewrites_kwargs_without_rescannin
     field = DataModelField(name="Decimal", data_type=data_type)
     model = BaseModel(reference=Reference(path="model", name="Model"), fields=[field])
 
-    aliases = resolve_python_type_import_aliases([data_type], [model], {"Decimal"})
+    aliases = resolve_python_type_import_aliases([data_type], [model], {"Decimal"}).imports
     _apply_structured_import_aliases(GenerationStore().builder(), [model], aliases)
     copied_data_type = deepcopy(data_type)
 

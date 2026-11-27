@@ -1,0 +1,3 @@
+BaseModel(zpkg.base._BaseModel)
+Item(BaseModel)
+    x: builtins.str, builtins.NoneType
