@@ -1,0 +1,41 @@
+exit: 1
+error: `targets` entry `DataModel.gone_cached` of write-owners `cache:no store operation` names no attribute, method, or `__dict__` key of `DataModel` in the analyzed files
+error: `targets` entry `DataType._read_only` of write-owners `cache:no store operation` names no attribute, method, or `__dict__` key of `DataType` in the analyzed files, unless it is one the code names at run time; `DataType.read` exists
+error: `targets` entry `DataType._gone` of write-owners `presentation:no store operation` names no attribute, method, or `__dict__` key of `DataType` in the analyzed files, unless it is one the code names at run time
+error: `targets` entry `DataType.gone_attribute` of write-owners `presentation:no store operation` names no attribute, method, or `__dict__` key of `DataType` in the analyzed files, unless it is one the code names at run time
+error: `targets` entry `DataType._gone_bookkeeping` of write-owners `bookkeeping` names no attribute, method, or `__dict__` key of `DataType` in the analyzed files, unless it is one the code names at run time; `DataType._bookkeeping` exists
+src/datamodel_code_generator/model/enum.py:6: MUT201 Enum.mark Enum._new_own
+src/datamodel_code_generator/parser/keys.py:29: MUT201 literal DataType._new_literal
+src/datamodel_code_generator/parser/keys.py:33: MUT201 constant DataType._new_constant
+src/datamodel_code_generator/parser/keys.py:37: MUT205 untyped _new_untyped
+src/datamodel_code_generator/parser/keys.py:42: MUT205 loop _new_loop
+src/datamodel_code_generator/parser/keys.py:46: MUT205 any_value _new_any
+src/datamodel_code_generator/parser/keys.py:50: MUT201 listed DataType._listed
+src/datamodel_code_generator/parser/keys.py:58: MUT201 through_vars DataType._new_vars
+src/datamodel_code_generator/parser/keys.py:62: MUT201 through_getattr DataType._new_getattr
+src/datamodel_code_generator/parser/keys.py:67: MUT201 through_an_alias DataType._new_alias
+src/datamodel_code_generator/parser/keys.py:71: MUT201 through_a_walrus DataType._new_walrus
+src/datamodel_code_generator/parser/keys.py:76: MUT201 deleted DataType._new_deleted
+src/datamodel_code_generator/parser/keys.py:80: MUT201 popped DataType._new_popped
+src/datamodel_code_generator/parser/keys.py:84: MUT201 augmented DataType._new_augmented
+src/datamodel_code_generator/parser/keys.py:88: MUT201 in_a_tuple DataType._new_tuple
+src/datamodel_code_generator/parser/keys.py:94: MUT201 through_an_annotated_alias DataType._new_annotated_alias
+src/datamodel_code_generator/parser/keys.py:100: MUT201 through_a_rebound_alias DataType._new_rebound
+src/datamodel_code_generator/parser/keys.py:105: MUT201 optional DataType._new_optional
+src/datamodel_code_generator/parser/keys.py:109: MUT201 field DataModelFieldBase._new_field
+src/datamodel_code_generator/parser/keys.py:113: MUT201 model DataModel._new_model
+src/datamodel_code_generator/parser/keys.py:117: MUT201 subclass Enum._new_subclass
+src/datamodel_code_generator/parser/keys.py:121: MUT201 model_vars DataModel._new_model_vars
+src/datamodel_code_generator/parser/keys.py:125: MUT201 reference Reference._new_reference
+src/datamodel_code_generator/parser/keys.py:129: MUT201 module_constant DataType._new_module
+src/datamodel_code_generator/parser/keys.py:133: MUT201 annotated_target DataType._new_annotated
+src/datamodel_code_generator/parser/keys.py:137: MUT201 starred_target DataType._new_starred
+src/datamodel_code_generator/parser/keys.py:142: MUT201 alias_popped DataType._new_alias_popped
+src/datamodel_code_generator/parser/keys.py:148: MUT201 alias_of_an_alias DataType._new_copied
+src/datamodel_code_generator/parser/keys.py:153: MUT201 vars_alias DataType._new_vars_alias
+src/datamodel_code_generator/parser/keys.py:158: MUT201 getattr_alias DataType._new_getattr_alias
+src/datamodel_code_generator/parser/keys.py:163: MUT201 closure_direct.<locals>.inner DataType._new_closure_direct
+src/datamodel_code_generator/parser/keys.py:170: MUT205 rebound_in_a_loop _new_rebound_loop
+src/datamodel_code_generator/parser/keys.py:174: MUT205 built _new_built
+src/datamodel_code_generator/parser/keys.py:178: MUT205 computed DataType
+src/datamodel_code_generator/parser/keys.py:182: MUT205 no_key DataType

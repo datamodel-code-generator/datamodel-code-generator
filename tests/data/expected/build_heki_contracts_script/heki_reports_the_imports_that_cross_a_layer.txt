@@ -31,7 +31,7 @@ _target_config.py:12: IMP201 datamodel_code_generator.parser
 _target_config.py:16: IMP202 *
 config.py:1: IMP201 datamodel_code_generator.model.typed_dict
 config.py:2: IMP201 datamodel_code_generator.parser.LiteralType
-config.py:6: MUT204 datamodel_code_generator.model.typed_dict{,.*}:*
+config.py:6: MUT204 datamodel_code_generator.model.{dataclass,field_name,msgspec,pydantic_base,typed_dict}{,.*}:*
 input_model.py:1: IMP201 datamodel_code_generator.DataModelType
 input_model.py:7: IMP202 datamodel_code_generator.parser.mcp._rewrite_schema_refs
 model/base.py:9: IMP201 datamodel_code_generator.model.pydantic_v2.base_model
@@ -113,7 +113,7 @@ parser/seeded.py:29: MUT206 is_pydantic_extra_field
 parser/seeded.py:30: MUT206 SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH
 parser/seeded.py:31: MUT206 __module__
 parser/seeded.py:38: MUT206 is_pydantic_extra_field
-parser/seeded.py:42: MUT204 *(module="datamodel_code_generator.model.dataclass")
+parser/seeded.py:42: MUT204 *(module="datamodel_code_generator.model.{dataclass,field_name,msgspec,pydantic_base,pydantic_v2,typed_dict}{,.*}")
 parser/seeded.py:46: MUT207 _append_internal_template_data
 parser/seeded.py:48: MUT206 _internal_template_data
 parser/seeded.py:49: MUT206 _internal_template_data
@@ -126,8 +126,8 @@ parser/seeded.py:60: MUT204 datamodel_code_generator.enums.DataModelType
 parser/seeded.py:83: MUT204 datamodel_code_generator._requirements.python_target_meets(construct="python.typed_dict_*")
 parser/seeded.py:84: MUT204 datamodel_code_generator._requirements.python_target_meets(construct="python.typed_dict_*")
 parser/seeded.py:85: MUT207 _meets
-parser/seeded.py:94: MUT203 datamodel_code_generator.types.DataTypeManager.__module__
-parser/seeded.py:94: MUT203 datamodel_code_generator.types.DataTypeManager.__module__
+parser/seeded.py:94: MUT203 datamodel_code_generator.*.__module__
+parser/seeded.py:94: MUT203 datamodel_code_generator.*.__module__
 parser/unreadable.py:1: IMP202 *
 reference.py:3: IMP201 msgspec
 reference.py:4: IMP201 datamodel_code_generator.model.typed_dict

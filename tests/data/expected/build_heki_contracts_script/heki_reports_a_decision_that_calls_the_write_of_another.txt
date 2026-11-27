@@ -1,0 +1,5 @@
+exit: 1
+src/datamodel_code_generator/model/helpers.py:5: MUT204 omit_through_a_helper datamodel_code_generator.parser._phases:_DecisionWriter.omit_default
+src/datamodel_code_generator/parser/_held_null.py:10: MUT204 other_write datamodel_code_generator.parser._phases:_DecisionWriter.omit_default
+src/datamodel_code_generator/parser/_held_null.py:18: MUT207 untyped_write omit_default
+src/datamodel_code_generator/parser/_held_null.py:22: MUT204 phase_read datamodel_code_generator.parser._phases:_DecisionWriter.outcome

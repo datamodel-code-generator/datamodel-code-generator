@@ -1,0 +1,6 @@
+exit: 1
+src/datamodel_code_generator/adapter.py:18: MUT204 bypass datamodel_code_generator.core.Rule
+src/datamodel_code_generator/adapter.py:18: MUT204 bypass datamodel_code_generator.core.decide
+src/datamodel_code_generator/adapter.py:26: MUT204 _helper datamodel_code_generator.core.decide
+src/datamodel_code_generator/through.py:13: MUT204 by_module datamodel_code_generator.core.decide
+src/datamodel_code_generator/through.py:16: MUT204 <module> datamodel_code_generator.core.decide

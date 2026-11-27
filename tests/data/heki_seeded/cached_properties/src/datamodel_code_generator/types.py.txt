@@ -1,0 +1,2 @@
+class DataType:
+    pass
