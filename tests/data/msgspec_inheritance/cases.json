@@ -1477,5 +1477,21 @@
     "invalid": {
       "k": "s"
     }
+  },
+  {
+    "name": "jsonschema_configured_bases_inheritance_cycle",
+    "schema": "jsonschema_configured_bases_inheritance_cycle.json",
+    "format": "jsonschema",
+    "options": {
+      "base_class_map": {
+        "Y": "msgspec.inspect.Type",
+        "Z": "msgspec.inspect.Metadata"
+      }
+    },
+    "cli": [
+      "--base-class-map",
+      "{\"Y\": \"msgspec.inspect.Type\", \"Z\": \"msgspec.inspect.Metadata\"}"
+    ],
+    "error": true
   }
 ]

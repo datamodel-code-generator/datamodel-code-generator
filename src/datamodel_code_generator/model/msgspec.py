@@ -944,7 +944,9 @@ class Struct(DataModel):
         """Find two slot owners, neither inheriting from the other, one of which has a line the generator reads whole.
 
         A slot owner declares a slot field that no model it inherits from declares. The models are taken bases first,
-        in the order of the compact walk, and each owner is paired with the owners taken before it.
+        in the order of the compact walk, and each owner is paired with the owners taken before it. A model is walked
+        once; a base it reaches again while it is still on the walk is an inheritance cycle, which the generated module
+        check rejects, and is left out of its parents.
         """
         keys = _ModelKeys()
         ancestors: dict[ModelKey, frozenset[ModelKey]] = {}
@@ -954,14 +956,15 @@ class Struct(DataModel):
         pending = [(view.layout_model(base), False) for base in bases]
         while pending:
             model, complete = pending.pop()
-            if (key := keys.of(model)) in known:
+            if not complete and not keys.first(model):
                 continue
             parent_models = Struct._layout_parents(model, view)
-            parents = [keys.of(parent) for parent in parent_models]
             if not complete:
                 pending.append((model, True))
                 pending.extend((parent, False) for parent in reversed(parent_models))
                 continue
+            key = keys.of(model)
+            parents = [parent for parent in map(keys.of, parent_models) if parent in known]
             ancestors[key] = frozenset(chain(parents, chain.from_iterable(ancestors[parent] for parent in parents)))
             inherited = frozenset(chain.from_iterable(slots[parent] for parent in parents))
             own = frozenset(field.name for field in model.fields if view.is_slot(field))
