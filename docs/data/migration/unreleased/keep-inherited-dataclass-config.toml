@@ -3,7 +3,7 @@ id = "keep-inherited-dataclass-config"
 category = "new-surface"
 title = "Keep the config a pydantic dataclass inherits under an option"
 summary = "--keep-inherited-dataclass-config makes a pydantic dataclass that sets its own config keep the config items it inherits from its first base (str_max_length, populate_by_name, extra, alias_generator and the regex engine), merged with its own where its own wins. Without it such a class keeps its own config alone, as before; the default output is unchanged. When the kept config selects Python's regex engine (python-re), validation can get looser than the schema: a pattern of the dataclass that Python's re rejects, such as \\p{L}, is left out and its $ also accepts a trailing newline; a second base built with that engine leaves its own \\p{L} pattern out (#7579); and a base whose pattern has a lone surrogate keeps its pattern but loses python-re, so the default engine reads the surrogate as U+FFFD."
-refs = ["#1", "#7497", "#7560"]
+refs = ["#7585", "#7497", "#7560"]
 surface = ["--keep-inherited-dataclass-config"]
 covers = [
     "main/jsonschema/pydantic_accepted_forms/dataclass_config_keeps_the_items_of_its_first_base[alias-generator].default/",
