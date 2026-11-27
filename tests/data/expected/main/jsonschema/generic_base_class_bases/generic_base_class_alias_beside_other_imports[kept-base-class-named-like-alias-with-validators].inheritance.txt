@@ -1,0 +1,4 @@
+BaseModel(pydantic.main.BaseModel)
+Item(_JsonSchemaRuntimeValidationBase, zpkg.base._BaseModel, BaseModel)
+    x: pydantic.main.BaseModel, builtins.NoneType
+_JsonSchemaRuntimeValidationBase(BaseModel)

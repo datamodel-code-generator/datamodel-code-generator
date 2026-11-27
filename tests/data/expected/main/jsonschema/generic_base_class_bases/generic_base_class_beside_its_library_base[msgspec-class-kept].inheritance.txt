@@ -1,0 +1,3 @@
+Item(Struct)
+    x: msgspec.Struct, msgspec.UnsetType
+Struct(msgspec.Struct)

@@ -5731,14 +5731,6 @@ heuristic = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/model/msgspec.py"
-qualname = "Struct.create_base_class_model"
-rule_code = "MUT201"
-target = "Reference.path"
-count = 1
-heuristic = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/msgspec.py"
 qualname = "_MetaAnnotatedType.type_hint"
 rule_code = "MUT204"
 target = "datamodel_code_generator._python_syntax.subscript_text"
@@ -5942,14 +5934,6 @@ path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
 qualname = "BaseModel.create_base_class_model"
 rule_code = "MUT201"
 target = "Reference.name"
-count = 1
-heuristic = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/model/pydantic_v2/base_model.py"
-qualname = "BaseModel.create_base_class_model"
-rule_code = "MUT201"
-target = "Reference.path"
 count = 1
 heuristic = 1
 

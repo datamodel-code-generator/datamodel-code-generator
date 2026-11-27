@@ -96,6 +96,31 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--keep-bases-beside-generic-base-class",
     ),
     LegacyRow(
+        "legacy-generic-base-names-dropped-class-binding",
+        (
+            "where the import of a class no base names binds the alias of the library base of the generated base class "
+            "of `--use-generic-base-class` (`_BaseModel`, `_Struct`), as the import of a `--base-class` class that row "
+            "`legacy-generic-base-drops-configured-bases` drops does, and a field names the library base too, the "
+            "generated base class keeps naming the alias and inherits the class of whichever import binds it last "
+            "(`parser/_python_type_imports.py:_StructuredImportAliasState.base_binding_row`)"
+        ),
+        fix=7436,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/generic_base_class_library_base/class.json",
+            "--input-file-type",
+            "jsonschema",
+            "--disable-timestamp",
+            "--use-generic-base-class",
+            "--extra-fields",
+            "forbid",
+            "--base-class",
+            "mypkg.base._BaseModel",
+            "--formatters",
+            "builtin",
+        ),
+    ),
+    LegacyRow(
         "legacy-standard-primitive-types-without-decoder",
         (
             "without `--use-str-for-formats-msgspec-cannot-decode`, `--use-standard-primitive-types` writes "
