@@ -13,6 +13,7 @@ child-dataclass	input_model/arbitrary_class_fields[child-dataclass].txt
 child-dataclass-extra-forbid	input_model/arbitrary_class_fields[child-dataclass-extra-forbid].txt
 child-only	input_model/arbitrary_class_fields[child-only].txt
 child-only-dataclass	input_model/arbitrary_class_fields[child-only-dataclass].txt
+constrained-branch	input_model/arbitrary_class_fields[constrained-branch].txt
 containers	input_model/arbitrary_class_fields[containers].txt
 containers-only	input_model/arbitrary_class_fields[containers-only].txt
 containers-only-as-written	input_model/arbitrary_class_fields[containers-only-as-written].txt	= input_model/arbitrary_class_fields[containers-only].txt
@@ -24,8 +25,14 @@ hooked	input_model/arbitrary_class_fields[hooked].txt
 hooked-allowed	input_model/arbitrary_class_fields[hooked-allowed].txt
 instance-of	input_model/arbitrary_class_fields[instance-of].txt
 issue	input_model/arbitrary_class_fields[issue].txt
+list-beside-preserved	input_model/arbitrary_class_fields[list-beside-preserved].txt
 nested	input_model/arbitrary_class_fields[nested].txt
+optional-preserved-union	input_model/arbitrary_class_fields[optional-preserved-union].txt
 optional-subclass-of	input_model/arbitrary_class_fields[optional-subclass-of].txt
+preserved-union	input_model/arbitrary_class_fields[preserved-union].txt
+preserved-union-dataclass	input_model/arbitrary_class_fields[preserved-union-dataclass].txt
+preserved-union-root	input_model/arbitrary_class_fields[preserved-union-root].txt
+preserved-union-root-alias	input_model/arbitrary_class_fields[preserved-union-root-alias].txt	= input_model/arbitrary_class_fields[preserved-union-root].txt
 pydantic-dataclass-root	input_model/arbitrary_class_fields[pydantic-dataclass-root].txt
 reuse-all	input_model/arbitrary_class_fields[reuse-all].txt
 reuse-foreign	input_model/arbitrary_class_fields[reuse-foreign].txt

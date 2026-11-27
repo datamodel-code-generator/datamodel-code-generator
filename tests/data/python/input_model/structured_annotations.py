@@ -8,9 +8,9 @@ from __future__ import annotations
 from collections import UserDict
 from collections.abc import Callable  # noqa: TC003  # Pydantic resolves this annotation at runtime.
 from dataclasses import dataclass
-from typing import Any, Generic, Optional, TypeVar
+from typing import Annotated, Any, Generic, Optional, TypeVar
 
-from pydantic import BaseModel, ConfigDict, InstanceOf, RootModel
+from pydantic import BaseModel, ConfigDict, Field, InstanceOf, RootModel
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 from pydantic_core import core_schema
 from typing_extensions import TypedDict
@@ -205,6 +205,41 @@ class HoldsRoot(BaseModel):
     """A model that holds a root of the class."""
 
     root_field: RootOptional
+
+
+class PreservedUnion(BaseModel):
+    """The class beside a type whose Python type the field keeps: the field's own type spells the union."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    value: Thing | set[int]
+
+
+class OptionalPreservedUnion(BaseModel):
+    """That union beside None."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    value: Optional[Thing | frozenset[int]] = None
+
+
+class ListBesidePreserved(BaseModel):
+    """A list of the class beside a type whose Python type the field keeps."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    value: list[Thing] | set[int]
+
+
+class ConstrainedBranch(BaseModel):
+    """A constrained list of the class beside another type."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    value: Annotated[list[Thing], Field(min_length=1)] | int
+
+
+class PreservedUnionRoot(RootModel):
+    """A root of the class beside a type whose Python type the root keeps."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    root: Thing | set[int]
 
 
 class Parent(BaseModel):

@@ -764,8 +764,17 @@ def _has_unserializable_schema(value: Any) -> bool:
     return any(node.get(_UNSERIALIZABLE_MARKER) for node in _iter_schema_nodes(value))
 
 
-def _has_arbitrary_type_marker(value: object) -> bool:
-    return any(isinstance(node.get(_UNSERIALIZABLE_MARKER), _ArbitraryTypeMarker) for node in _iter_schema_nodes(value))
+def _names_arbitrary_type(value: object, expression_collector: PythonTypeExpressionCollector | None) -> bool:
+    """Return whether the type written at a schema names a class Pydantic builds only with ``arbitrary_types_allowed``.
+
+    That type covers every node of the schema: a node marked so (``_ArbitraryTypeMarker``) and a node, such as a union
+    branch, whose ``x-python-type`` already spells such a type (``PythonTypeExpressionCollector.has_arbitrary_types``).
+    """
+    return any(
+        isinstance(node.get(_UNSERIALIZABLE_MARKER), _ArbitraryTypeMarker)
+        or (expression_collector is not None and expression_collector.has_arbitrary_types(node.get("x-python-type")))
+        for node in _iter_schema_nodes(value)
+    )
 
 
 def _remove_unserializable_markers(value: Any) -> None:
@@ -815,12 +824,12 @@ def _process_unserializable_property(
             )
     elif prop.get(_UNSERIALIZABLE_MARKER):
         prop["x-python-type"] = _serialize_python_type_full(
-            annotation, expression_collector, arbitrary_types=_has_arbitrary_type_marker(prop)
+            annotation, expression_collector, arbitrary_types=_names_arbitrary_type(prop, expression_collector)
         )
         prop.pop(_UNSERIALIZABLE_MARKER, None)
     elif not _UNSERIALIZABLE_PART_KEYS.isdisjoint(prop) and _has_unserializable_schema(prop):
         prop["x-python-type"] = _serialize_python_type_full(
-            annotation, expression_collector, arbitrary_types=_has_arbitrary_type_marker(prop)
+            annotation, expression_collector, arbitrary_types=_names_arbitrary_type(prop, expression_collector)
         )
         _remove_unserializable_markers(prop)
     elif not in_union and not released_typed_root_forms and get_origin(annotation) is type:
@@ -911,7 +920,7 @@ def _serialize_python_type(
 ) -> str | None:
     """Serialize Python type to a string for x-python-type field.
 
-    ``arbitrary_types`` keeps the mark of the ``x-python-type`` the type replaces (``_serialize_python_type_full``).
+    ``arbitrary_types`` keeps the mark of the ``x-python-type`` values the type replaces (``_names_arbitrary_type``).
     """
     expression = _preserved_python_type_expr(tp)
     if expression is not None and generic_names:
@@ -1107,8 +1116,7 @@ def _add_python_type_to_model_properties(
             annotation,
             expression_collector,
             generic_names,
-            arbitrary_types=expression_collector is not None
-            and expression_collector.has_arbitrary_types(prop.get("x-python-type")),
+            arbitrary_types=_names_arbitrary_type(prop, expression_collector),
         ):
             prop["x-python-type"] = serialized
 
