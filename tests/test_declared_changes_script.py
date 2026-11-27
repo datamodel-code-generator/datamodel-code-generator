@@ -57,12 +57,16 @@ RELEASED = {
 """The tree of the release tag 0.1.0."""
 
 
-def _record(entry_id: str, covers: list[str], **keys: Any) -> dict[str, str]:
+CELLS = '\n[[change.cells]]\ninput = ["a.json"]\nbackends = "*"\noptions = "*"\n'
+MATCHING_CELLS = CELLS + 'match = "warn"\n'
+
+
+def _record(entry_id: str, covers: list[str], *, cells: str = "", **keys: Any) -> dict[str, str]:
     fields = {"category": "harness", "title": "t", "summary": "s"} | keys
     lines = [f"id = {json.dumps(entry_id)}", *(f"{key} = {json.dumps(value)}" for key, value in fields.items())]
     block = "".join(f'    "{label}",\n' for label in sorted(covers))
     text = "[[change]]\n" + "\n".join(lines) + "\n" + (f"covers = [\n{block}]\n" if covers else "")
-    return {f"{FRAGMENTS}/{entry_id}.toml": text}
+    return {f"{FRAGMENTS}/{entry_id}.toml": text + cells}
 
 
 def _write(repository: Path, files: dict[str, str | None]) -> None:
@@ -125,6 +129,7 @@ def _repository(tmp_path: Path, spec: Mapping[str, Any]) -> Path:
 
 SRC = {"src/pkg.py": "VALUE = 2\n"}
 OUTPUT_TEXT = {
+    "cells": CELLS,
     "category": "output-text",
     "kind": "output-text",
     "action": "none",
@@ -321,6 +326,7 @@ CASES: dict[str, dict[str, Any]] = {
         | _record(
             "notice-models",
             ["models/b.py"],
+            cells=MATCHING_CELLS,
             category="notice",
             kind="warning",
             action="warn",
@@ -678,6 +684,31 @@ def test_declared_changes_check(case: str, tmp_path: Path, capsys: pytest.Captur
     assert_output(f"exit {code}\n{printed}")
 
 
+CELL_RULE_CASES: dict[str, dict[str, str]] = {
+    "a crash fix names no cells": _record("crash", [], category="crash-fix", refs=["#1"], decision=["#1"]),
+    "a default fix selects no aspects or match": _record(
+        "default",
+        [],
+        cells=CELLS,
+        category="default-fix",
+        kind="default-output",
+        action="review",
+        refs=["#1"],
+        decision=["#1"],
+    ),
+    "an internal record names cells": _record("internal", [], cells=CELLS, category="internal"),
+    "a crash fix names its cells": _record("crash", [], cells=CELLS, category="crash-fix", refs=["#1"]),
+}
+
+
+@pytest.mark.parametrize("case", sorted(CELL_RULE_CASES))
+def test_check_applies_category_cell_rules(case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A record the change adds is held to the cell rules of its category, as the gate holds it."""
+    repository = _repository(tmp_path, {"head": CELL_RULE_CASES[case]})
+    code = declared_changes.main(["check", "--base", "base", "--head", "HEAD"], repository)
+    assert_output(f"exit {code}\n{capsys.readouterr().out}")
+
+
 def _run(repository: Path, capsys: pytest.CaptureFixture[str], args: list[str]) -> str:
     code = declared_changes.main(args, repository)
     printed = capsys.readouterr()
@@ -860,7 +891,7 @@ def test_declared_changes_declare_backfill(tmp_path: Path, capsys: pytest.Captur
     assert_output("\n".join(output))
 
 
-RENAMED: dict[str, tuple[dict[str, str | None], list[str]]] = {
+RENAMED: dict[str, tuple[Mapping[str, str | None], list[str]]] = {
     "covered by its old name": (
         SRC | NEW_OUTPUT | _record("new-output", ["models/new.py"], **OUTPUT_TEXT),
         ["new-output", "--tests", "*::test_renamed"],
