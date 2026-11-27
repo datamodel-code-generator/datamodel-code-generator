@@ -4799,3 +4799,11 @@ def test_judge(case: str) -> None:
     verdict = judge(cell, frozenset(found), records, evidence)
     output = {**asdict(verdict), "accepted_by": [records[index].id for index in sorted(verdict.accepted_by)]}
     assert_output(json.dumps(output, indent=1) + "\n")
+
+
+def test_write_tree_writes_back_the_bytes_an_output_was_read_with(tmp_path: Path) -> None:
+    """Write a byte that an output tree holds as a lone surrogate back as that byte (the nightly tier crashed on it)."""
+    raw = b'PATTERN = "\x8f"\n'
+    text = raw.decode("utf-8", errors="surrogateescape")
+    behaviour_diff._write_tree({"model.py": text}, tmp_path)
+    assert_output(repr((tmp_path / "model.py").read_bytes()), name="written")
