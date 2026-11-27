@@ -233,7 +233,9 @@ def init_load_edges(
     come from, and a forwarder ``__init__.py`` writes no ``--all-exports-scope`` re-exports. ``init_loads`` walks these
     edges. ``row="legacy-forwarder-export-loads"`` adds those modules to the re-exports instead, the reading of the
     refusal of a class beside a module of its name from 0.90.0 on, for the output that the refusal keeps
-    (``_class_named_like_submodule``).
+    (``_class_named_like_submodule``); the decision of which modules import the models of such a module from it reads
+    that row too, for the class the refusal keeps (``submodules_hidden_by_packages``), and the ``"written"`` edges
+    for which modules run before the class binds.
     """
     edges = module_import_edges(contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope)
     written = {

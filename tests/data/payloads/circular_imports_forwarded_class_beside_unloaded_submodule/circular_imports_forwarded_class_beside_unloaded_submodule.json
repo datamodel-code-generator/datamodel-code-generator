@@ -1,0 +1,15 @@
+{
+  "pkg.report.Report": [
+    {},
+    {"detail": {"message": "m"}},
+    {"detail": {"message": 1}}
+  ],
+  "pkg.api.Order": [
+    {"warn": {"count": 1}},
+    {"warn": {"count": "x"}}
+  ],
+  "pkg.Warn": [
+    {"count": 1, "order": {"warn": {"count": 2}}},
+    {"count": "x"}
+  ]
+}

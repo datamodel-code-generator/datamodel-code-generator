@@ -1,0 +1,4 @@
+{"detail": {"message": "m"}}: accepted {'detail': {'message': 'm'}}
+{"detail": {"message": 1}}: rejected ValidationError
+{"count": 1, "x": {"warn": {"count": 2}}}: accepted {'count': 1, 'x': {'warn': {'count': 2}}}
+{"count": "x"}: rejected ValidationError

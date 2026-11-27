@@ -1,0 +1,92 @@
+[[change]]
+id = "forwarded-class-beside-unloaded-submodule"
+category = "default-fix"
+title = "A module imports the models of a submodule that its package's forwarded class hides, where nothing loads the submodule first"
+summary = "Where an import cycle merge moves a class into _internal.py, the package __init__.py only re-exports it (from ._internal import Warn), nothing the __init__.py runs loads the submodule of the same name (pkg/Warn.py) and --all-exports-scope lets the output through, a module that read the submodule wrote from . import Warn with Warn.Detail, which read the class: the module failed to import with AttributeError, and with dataclasses, msgspec or TypedDict every decode or get_type_hints failed. Such a module now imports the model from the submodule (from .Warn import Detail), as --use-exact-imports does and as 0.89.0 does for a package __init__.py that defines the class. Only those modules change; a package whose modules read nothing of the submodule keeps its output, and a reader's attribute Warn, which only the import bound, goes away. Once a reader is imported, the name Warn of the package is the submodule, as --all-exports-scope recursive output already behaves; with dataclasses, msgspec or TypedDict a program that imported a reader and then read the exported class from the package now gets the module."
+refs = ["#7596", "#7573"]
+decision = ["#7596"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[dataclasses.dataclass].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[dataclasses.dataclass].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[dataclasses.dataclass]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[exact-imports].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[exact-imports].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[exact-imports]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[msgspec.Struct].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[msgspec.Struct].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[msgspec.Struct]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-children].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-children].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-children]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-recursive].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-recursive].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-recursive]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[preset].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[preset].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[preset]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[py314].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[py314].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[py314]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.BaseModel].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.BaseModel].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.BaseModel]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.dataclass].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.dataclass].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.dataclass]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-children].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-children].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-children]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-recursive].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-recursive].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-recursive]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-enum-default].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-enum-default].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-enum-default]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-msgspec].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-msgspec].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-msgspec]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[rename].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[rename].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[rename]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[typing.TypedDict].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[typing.TypedDict].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[typing.TypedDict]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-children].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-children].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-children]/",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-recursive].bindings.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-recursive].payloads.txt",
+    "main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-recursive]/",
+    "main/openapi/circular_imports_package_modules/circular_imports_forwarded_class_beside_unloaded_submodule.bindings.txt",
+    "main/openapi/circular_imports_package_modules/circular_imports_forwarded_class_beside_unloaded_submodule.payloads.txt",
+    "main/openapi/circular_imports_package_modules/circular_imports_forwarded_class_beside_unloaded_submodule/",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_circular_imp~b59dd4c8.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_circular_imp~fe996436.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_circular_imports~200f705e.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_circular_imports~3a59f254.errors.txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_circular_imports_forwarded_class_beside_unloaded_submodule.yaml].txt",
+]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/submodule_named_like_forwarded_class.json",
+    "tests/data/jsonschema/submodule_named_like_forwarded_class_unloaded_read.json",
+    "tests/data/jsonschema/submodule_named_like_nested_forwarded_class_unloaded_read.json",
+]
+backends = "*"
+options = [["--all-exports-scope", "children"], ["--all-exports-scope", "recursive"]]
+aspects = ["import-path-removed", "type"]
+input_file_type = "jsonschema"
+
+[[change.cells]]
+input = ["tests/data/openapi/circular_imports_forwarded_class_beside_unloaded_submodule.yaml"]
+backends = "*"
+options = [["--all-exports-scope", "children"], ["--all-exports-scope", "recursive"]]
+aspects = ["import-path-removed", "type"]
+input_file_type = "openapi"

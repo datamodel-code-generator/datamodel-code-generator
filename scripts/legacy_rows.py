@@ -4413,11 +4413,13 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         (
             "the refusal of a class beside a module of its name in its package reads the `__init__.py` that an import "
             "cycle merge leaves as a forwarder of the class with the `--all-exports-scope` re-exports it does not "
-            "write, as a load of the module, and writes the output that 0.90.0 and later write there "
+            "write, as a load of the module, and writes the output there as 0.90.0 and later do; the modules that "
+            "read the module import its models from it (#7573) "
             "(`parser/_passes/_import_edges.py:init_load_edges`, "
-            "`parser/_passes/imports.py:_class_named_like_submodule`)"
+            "`parser/_passes/imports.py:_class_named_like_submodule`, "
+            "`parser/_passes/imports.py:submodules_hidden_by_packages`)"
         ),
-        fix=7573,
+        fix=KEEP,
         witness=(
             "--input",
             "tests/data/jsonschema/submodule_named_like_forwarded_class.json",
