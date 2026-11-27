@@ -4803,7 +4803,7 @@ def test_judge(case: str) -> None:
 
 def test_write_tree_writes_back_the_bytes_an_output_was_read_with(tmp_path: Path) -> None:
     """Write a byte that an output tree holds as a lone surrogate back as that byte (the nightly tier crashed on it)."""
-    raw = b'PATTERN = "\x8f"\n'
+    raw = b'PATTERN = "\x8f"'  # no newline: text mode writes the platform's newline
     text = raw.decode("utf-8", errors="surrogateescape")
     behaviour_diff._write_tree({"model.py": text}, tmp_path)
     assert_output(repr((tmp_path / "model.py").read_bytes()), name="written")
