@@ -1943,6 +1943,8 @@ class DataModel(TemplateBase, Nullable, ABC)
     @classmethod
     def create_base_class_model(cls, config: dict[str, Any], reference: Reference, custom_template_dir: Path | None=None, keyword_only: bool=False, treat_dot_as_module: bool | None=None) -> DataModel | None
     @classmethod
+    def config_left_without_generic_base_class(cls, config: dict[str, object]) -> Mapping[str, object]
+    @classmethod
     def render_module_code(cls, models: list[DataModel]) -> str
     @classmethod
     def get_module_code_insertion_index(cls, models: list[DataModel]) -> int
@@ -2681,6 +2683,9 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model)
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
         uses ANNOTATED_CONSTRAINTS_CONTEXT: object = Sentinel('ANNOTATED_CONSTRAINTS_CONTEXT')
     def __init__(self, *, reference: Reference, fields: list[DataModelFieldBase], decorators: list[str] | None=None, base_classes: list[Reference] | None=None, custom_base_class: str | list[str] | None=None, custom_template_dir: Path | None=None, extra_template_data: defaultdict[str, dict[str, Any]] | None=None, methods: list[str] | None=None, path: Path | None=None, description: str | None=None, default: Any=UNDEFINED, nullable: bool=False, keyword_only: bool=False, frozen: bool=False, treat_dot_as_module: bool | None=None, dataclass_arguments: DataclassArguments | None=None) -> None
+    @classmethod
+    @override
+    def config_left_without_generic_base_class(cls, config: dict[str, object]) -> Mapping[str, object]
     @override
     def orders_required_assignments_before_defaults(self) -> bool
     @override

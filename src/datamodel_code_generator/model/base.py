@@ -3589,6 +3589,16 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return None
 
     @classmethod
+    def config_left_without_generic_base_class(cls, config: dict[str, object]) -> Mapping[str, object]:
+        """Return the items of the run-level ``config`` that this type's models write but its missing base class drops.
+
+        A type that writes none of the run-level configuration leaves out nothing; a type that reads it per model
+        overrides this with its own config builder.
+        """
+        del config
+        return {}
+
+    @classmethod
     def render_module_code(cls, models: list[DataModel]) -> str:  # noqa: ARG003
         """Render shared code that should be emitted once per generated module."""
         return ""

@@ -8555,14 +8555,6 @@ heuristic = 2
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/_passes/modules.py"
-qualname = "restore_inherited_field_names_for_unique_aliases"
-rule_code = "EFF201"
-target = "pass:restore_inherited_field_names_for_unique_aliases:DataModel.fields"
-count = 1
-heuristic = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/modules.py"
 qualname = "root_key_data_type"
 rule_code = "MUT204"
 target = "datamodel_code_generator.types._copy_data_type"
@@ -10059,22 +10051,6 @@ heuristic = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._finalize_structured_imports"
-rule_code = "MUT201"
-target = "ModuleContext.models"
-count = 1
-heuristic = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._generate_module_output"
-rule_code = "MUT201"
-target = "ModuleContext.models"
-count = 1
-heuristic = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._model_shapes"
 rule_code = "MUT204"
 target = "datamodel_code_generator.parser._model_shapes.ModelShapes"
@@ -10099,14 +10075,6 @@ heuristic = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._prepare_schema_runtime_validation_module_code"
-rule_code = "MUT201"
-target = "ModuleContext.models"
-count = 1
-heuristic = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._refuse_untrusted_code"
 rule_code = "MUT204"
 target = "datamodel_code_generator.python_literal.stable_repr"
@@ -10126,14 +10094,6 @@ path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._set_nested_model_default_factory_metadata"
 rule_code = "EFF201"
 target = "pass:set_nested_model_default_factory_metadata:DataModel._nested_model_default_factory_recursive_keys"
-count = 1
-heuristic = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/base.py"
-qualname = "Parser._set_nested_model_default_factory_metadata"
-rule_code = "MUT201"
-target = "ModuleContext.models"
 count = 1
 heuristic = 1
 
