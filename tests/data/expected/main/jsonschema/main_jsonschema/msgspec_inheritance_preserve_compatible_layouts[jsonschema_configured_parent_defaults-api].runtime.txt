@@ -1,0 +1,40 @@
+{
+  "convert": {
+    "r": "r",
+    "j": 1,
+    "tags": [
+      "a"
+    ],
+    "nested": {
+      "n": 2
+    },
+    "k": 1
+  },
+  "decode": {
+    "r": "r",
+    "j": 1,
+    "tags": [
+      "a"
+    ],
+    "nested": {
+      "n": 2
+    },
+    "k": 1
+  },
+  "fields": [
+    "r",
+    "j",
+    "tags",
+    "nested",
+    "k"
+  ],
+  "bases": [
+    "Struct"
+  ],
+  "mro": [
+    "Payload",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

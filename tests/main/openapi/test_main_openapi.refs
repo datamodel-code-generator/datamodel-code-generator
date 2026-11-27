@@ -4,6 +4,16 @@
 	main/openapi/main_openapi/allow_extra_fields.py
 [test_allow_population_by_field_name]
 	main/openapi/main_openapi/allow_population_by_field_name.py
+[test_directory_input_same_named_files_order]
+nested	main/openapi/main_openapi/directory_input_same_named_files_order[nested].model/
+three	main/openapi/main_openapi/directory_input_same_named_files_order[three].model/
+two	main/openapi/main_openapi/directory_input_same_named_files_order[two].model/
+[test_directory_input_type_is_detected_from_the_top_level_file]
+in-place	main/openapi/main_openapi/directory_input_type_is_detected_from_the_top_level_file[in-place].model/
+separate-output	main/openapi/main_openapi/directory_input_type_is_detected_from_the_top_level_file[separate-output].model/
+[test_directory_input_type_of_top_level_files_does_not_depend_on_the_listing]
+in-place	main/openapi/main_openapi/directory_input_type_of_top_level_files_does_not_depend_on_the_listing[in-place].model/
+separate-output	main/openapi/main_openapi/directory_input_type_of_top_level_files_does_not_depend_on_the_listing[separate-output].model/
 [test_disable_timestamp]
 	main/openapi/main_openapi/disable_timestamp.py
 [test_discriminator_field_aliases_msgspec]

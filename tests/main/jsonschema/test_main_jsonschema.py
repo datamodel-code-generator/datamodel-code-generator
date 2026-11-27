@@ -20,7 +20,7 @@ import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable as ABCCallable
 from collections.abc import Iterator, Sequence
-from contextlib import ExitStack, nullcontext, suppress
+from contextlib import AbstractContextManager, ExitStack, nullcontext, suppress
 from dataclasses import Field as DataclassField
 from dataclasses import is_dataclass
 from decimal import Decimal
@@ -36230,7 +36230,11 @@ def test_msgspec_inheritance_preserve_other_backends(
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_msgspec_inheritance_preserve_mixed_opaque_layout(output_file: Path, entrypoint: str) -> None:
-    """Keep opaque ancestry conservative even after a known compact conflict."""
+    """Flatten the join whose bases conflict whatever a configured class holds, and leave a base below one as it is.
+
+    ``Payload`` flattens, as ``LeftOuter`` and ``RightInner`` conflict; ``RightOuter`` still fails to import, as only
+    the slots of its configured class, which the generator does not read, conflict with those of ``RightInner``.
+    """
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=MSGSPEC_INHERITANCE_DATA / "dry_opaque.json",
@@ -36249,6 +36253,46 @@ def test_msgspec_inheritance_preserve_mixed_opaque_layout(output_file: Path, ent
     with pytest.raises(TypeError) as error:
         _assert_python_module_importable(output_file, "generated_mixed_opaque", "Payload")
     assert_output(f"{error.value}\n", name="dry_opaque")
+
+
+def test_msgspec_inheritance_configured_base_modular(output_dir: Path) -> None:
+    """Flatten a join of another module's bases that conflict below a configured class, changing only its module."""
+    import msgspec
+
+    run_main_and_assert(
+        input_path=MSGSPEC_INHERITANCE_DATA / "configured_base_modular",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--disable-timestamp",
+            "--base-class-map",
+            '{"J": "msgspec.inspect.Type"}',
+        ],
+    )
+    with _generated_package_module(output_dir, "payload") as module:
+        assert_output(json.dumps(msgspec.to_builtins(msgspec.convert({"j": 1, "k": 2}, type=module.Payload))) + "\n")
+        with pytest.raises(msgspec.ValidationError):
+            msgspec.convert({"j": "s"}, type=module.Payload)
+
+
+def test_msgspec_inheritance_configured_base_preset() -> None:
+    """Flatten a join whose bases conflict below a configured class under a dated preset."""
+    run_main_and_assert(
+        input_path=MSGSPEC_INHERITANCE_DATA / "jsonschema_configured_parent_defaults.json",
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--disable-timestamp",
+            "--preset",
+            "standard-py310-20261125",
+            "--base-class-map",
+            '{"J": "msgspec.inspect.Type"}',
+        ],
+        force_exec_validation=True,
+    )
 
 
 _EXPORT_CASES = [
@@ -42160,3 +42204,40 @@ def test_read_refs_in_their_resources_first_input_dialect(tmp_path: Path, output
                 "builtin",
             ],
         )
+
+
+@pytest.mark.parametrize(
+    "directories",
+    [
+        pytest.param(("orders", "users"), id="two"),
+        pytest.param(("billing", "orders", "users"), id="three"),
+        pytest.param(("v1/orders", "v1/users", "v2/orders", "v2/users"), id="nested"),
+    ],
+)
+def test_directory_input_same_named_files_order(
+    tmp_path: Path, directories: tuple[str, ...], directory_listing: ABCCallable[..., AbstractContextManager[None]]
+) -> None:
+    """Files of one name in different subdirectories get the same numbered class names whatever the listing order."""
+    schemas = tmp_path / "schemas"
+    for directory in directories:
+        (schemas / directory).mkdir(parents=True)
+        (schemas / directory / "schema.json").write_text(
+            json.dumps({
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "title": directory.replace("/", "_").title(),
+                "type": "object",
+                "properties": {"status": {"type": "object", "properties": {"code": {"type": "integer"}}}},
+                "definitions": {"Status": {"type": "string", "enum": ["open", "closed"]}},
+                "required": ["status"],
+            }),
+            encoding="utf-8",
+        )
+    for reverse in (False, True):
+        with directory_listing(reverse=reverse):
+            run_main_and_assert(
+                input_path=schemas,
+                output_path=tmp_path / f"model-{reverse}",
+                input_file_type="jsonschema",
+                extra_args=["--disable-timestamp", "--formatters", "builtin"],
+                name="model",
+            )

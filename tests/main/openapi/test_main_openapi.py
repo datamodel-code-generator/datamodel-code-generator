@@ -96,6 +96,9 @@ from tests.main.conftest import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from contextlib import AbstractContextManager
+
     from _pytest.recwarn import WarningsRecorder
     from pytest_mock import MockerFixture
 
@@ -18236,3 +18239,128 @@ paths:
         capsys=capsys,
         expected_stderr_contains="[type=model_type, input_value='foo', input_type=str]",
     )
+
+
+@pytest.mark.parametrize(
+    "directories",
+    [
+        pytest.param(("orders", "users"), id="two"),
+        pytest.param(("billing", "orders", "users"), id="three"),
+        pytest.param(("v1/orders", "v1/users", "v2/orders", "v2/users"), id="nested"),
+    ],
+)
+def test_directory_input_same_named_files_order(
+    tmp_path: Path, directories: tuple[str, ...], directory_listing: Callable[..., AbstractContextManager[None]]
+) -> None:
+    """Files of one name in different subdirectories get the same numbered class names whatever the listing order."""
+    specs = tmp_path / "specs"
+    for directory in directories:
+        (specs / directory).mkdir(parents=True)
+        (specs / directory / "openapi.yaml").write_text(
+            yaml.safe_dump({
+                "openapi": "3.0.3",
+                "info": {"title": directory.replace("/", "_").title(), "version": "1.0.0"},
+                "paths": {},
+                "components": {
+                    "schemas": {
+                        "Order": {
+                            "type": "object",
+                            "properties": {"status": {"type": "object", "properties": {"code": {"type": "integer"}}}},
+                        },
+                        "Status": {"type": "string", "enum": ["open", "closed"]},
+                    }
+                },
+            }),
+            encoding="utf-8",
+        )
+    for reverse in (False, True):
+        with directory_listing(reverse=reverse):
+            run_main_and_assert(
+                input_path=specs,
+                output_path=tmp_path / f"model-{reverse}",
+                input_file_type="openapi",
+                extra_args=["--disable-timestamp", "--formatters", "builtin"],
+                name="model",
+            )
+
+
+@pytest.mark.parametrize("in_place", [pytest.param(False, id="separate-output"), pytest.param(True, id="in-place")])
+def test_directory_input_type_is_detected_from_the_top_level_file(
+    tmp_path: Path,
+    in_place: bool,
+    directory_listing: Callable[..., AbstractContextManager[None]],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A top-level file decides the detected input type before any file below it, whatever its name sorts as."""
+    specs = tmp_path / "specs"
+    (specs / "components").mkdir(parents=True)
+    (specs / "openapi.yaml").write_text(
+        yaml.safe_dump({
+            "openapi": "3.0.3",
+            "info": {"title": "Top", "version": "1.0.0"},
+            "paths": {},
+            "components": {"schemas": {"Order": {"type": "object", "properties": {"id": {"type": "integer"}}}}},
+        }),
+        encoding="utf-8",
+    )
+    (specs / "components" / "common.json").write_text(
+        json.dumps({
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Common",
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+        }),
+        encoding="utf-8",
+    )
+    for reverse in (False, True):
+        with directory_listing(reverse=reverse):
+            run_main_and_assert(
+                input_path=specs,
+                output_path=specs if in_place else tmp_path / f"model-{reverse}",
+                input_file_type=None,
+                extra_args=["--disable-timestamp", "--formatters", "builtin"],
+                capsys=capsys,
+                expected_stderr=inferred_message.format("openapi") + "\n",
+                name="model",
+            )
+
+
+@pytest.mark.parametrize("in_place", [pytest.param(False, id="separate-output"), pytest.param(True, id="in-place")])
+def test_directory_input_type_of_top_level_files_does_not_depend_on_the_listing(
+    tmp_path: Path,
+    in_place: bool,
+    directory_listing: Callable[..., AbstractContextManager[None]],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Of top-level files of different types the first by name decides the input type in either listing order."""
+    specs = tmp_path / "specs"
+    specs.mkdir()
+    (specs / "a_schema.json").write_text(
+        json.dumps({
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Schema",
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+        }),
+        encoding="utf-8",
+    )
+    (specs / "b_openapi.yaml").write_text(
+        yaml.safe_dump({
+            "openapi": "3.0.3",
+            "info": {"title": "Api", "version": "1.0.0"},
+            "paths": {},
+            "components": {"schemas": {"Order": {"type": "object", "properties": {"id": {"type": "integer"}}}}},
+        }),
+        encoding="utf-8",
+    )
+    for reverse in (False, True):
+        with directory_listing(reverse=reverse):
+            run_main_and_assert(
+                input_path=specs,
+                output_path=specs if in_place else tmp_path / f"model-{reverse}",
+                input_file_type=None,
+                extra_args=["--disable-timestamp", "--formatters", "builtin"],
+                capsys=capsys,
+                expected_stderr=inferred_message.format("jsonschema") + "\n",
+                name="model",
+            )

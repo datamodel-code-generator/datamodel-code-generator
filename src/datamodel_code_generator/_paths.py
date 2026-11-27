@@ -43,7 +43,6 @@ from __future__ import annotations
 import contextlib
 import errno
 import os
-from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal
 from urllib.parse import quote_from_bytes, urlsplit
@@ -52,7 +51,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
 AncestorTest = Literal["directory", "exists"]
-FileOrder = Literal["path", "name"]
+FileOrder = Literal["path", "name", "shallow"]
 OutputLayout = Literal["module", "package"]
 
 SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR: Final = "Single-module output requires a file path, not a directory"
@@ -205,16 +204,29 @@ def names_directory(path: Path) -> bool:
 
 
 def files_under(directory: Path, pattern: str = "*", *, order: FileOrder = "path") -> list[Path]:
-    """Return the files below a directory whose names match ``pattern``, in path or file-name order; none below a file.
+    """Return the files below a directory whose names match ``pattern``, in path, file-name or shallow order.
 
-    The name order keeps files of one name in the order ``Path.rglob`` yields them.
+    The name order puts files of one name in path order. The shallow order puts the files with the fewest directories
+    above them first, each depth in the name order: a file of the top level comes before any file below it. None below
+    a file.
     """
-    return _ordered((path for path in directory.rglob(pattern) if path.is_file()), order)
+    return _ordered((path for path in directory.rglob(pattern) if path.is_file()), order, directory)
 
 
-def _ordered(files: Iterable[Path], order: FileOrder) -> list[Path]:
-    """Return ``files`` in path or file-name order (the name order is stable)."""
-    return sorted(files, key=attrgetter("name")) if order == "name" else sorted(files)
+def _ordered(files: Iterable[Path], order: FileOrder, directory: Path) -> list[Path]:
+    """Return ``files`` of ``directory`` in path, file-name or shallow order (ties of the last two by path)."""
+    match order:
+        case "name":
+            return sorted(files, key=_name_order_key)
+        case "shallow":
+            return sorted(files, key=lambda path: (len(path.relative_to(directory).parts), *_name_order_key(path)))
+        case _:
+            return sorted(files)
+
+
+def _name_order_key(path: Path) -> tuple[str, Path]:
+    """Return the sort key of the file-name order: the file name, then the path."""
+    return path.name, path
 
 
 def is_hidden_binary(path: Path, directory: Path, encoding: str = "utf-8") -> bool:
@@ -233,21 +245,23 @@ def is_hidden_binary(path: Path, directory: Path, encoding: str = "utf-8") -> bo
     return "\0" in head.decode(encoding, errors="replace")
 
 
-def iter_input_files(directory: Path, pattern: str = "*", encoding: str = "utf-8") -> Iterator[Path]:
-    """Yield the files of a directory input whose names match ``pattern``, in the order ``Path.rglob`` yields them.
+def iter_input_files(
+    directory: Path, pattern: str = "*", encoding: str = "utf-8", *, order: FileOrder = "name"
+) -> Iterator[Path]:
+    """Yield the files of a directory input whose names match ``pattern``, in path, file-name or shallow order.
 
     A hidden file that is not text in ``encoding`` is not an input (``is_hidden_binary``).
     """
-    for path in directory.rglob(pattern):
-        if path.is_file() and not is_hidden_binary(path, directory, encoding):
+    for path in files_under(directory, pattern, order=order):
+        if not is_hidden_binary(path, directory, encoding):
             yield path
 
 
 def input_files_under(
     directory: Path, pattern: str = "*", *, order: FileOrder = "path", encoding: str = "utf-8"
 ) -> list[Path]:
-    """Return the files of a directory input in path or file-name order (``iter_input_files``, ``files_under``)."""
-    return _ordered(iter_input_files(directory, pattern, encoding), order)
+    """Return the files of a directory input in the given order (``iter_input_files``, ``files_under``)."""
+    return list(iter_input_files(directory, pattern, encoding, order=order))
 
 
 def output_layout(path: Path) -> OutputLayout | None:
