@@ -29,7 +29,7 @@ from http.server import ThreadingHTTPServer
 from operator import itemgetter
 from pathlib import Path, PurePath
 from threading import Thread
-from types import MappingProxyType, UnionType
+from types import MappingProxyType, ModuleType, UnionType
 from typing import TYPE_CHECKING, Any, get_args, get_origin, get_type_hints
 from urllib.parse import urlparse
 
@@ -3954,7 +3954,7 @@ def _decode_with_generated_model(output_model_type: str, model: Any, payload: st
 
 
 @contextmanager
-def _imported_decoded_modules(output_dir: Path, decoded: list[tuple[str, str, list[str]]]) -> Generator[list[Any]]:
+def _imported_decoded_modules(output_dir: Path, decoded: list[tuple[str, str, list[str]]]) -> Generator[list[ModuleType]]:
     """Import the generated package as Python does, the module of the first entry first, and yield the modules."""
     with _generated_package_module(output_dir, decoded[0][0]):
         yield [
