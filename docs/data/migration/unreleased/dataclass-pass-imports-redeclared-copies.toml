@@ -6,4 +6,9 @@ summary = "finalize_type_alias_users now imports the models that the copies of i
 refs = ["#1"]
 covers = [
     "parser/pipeline/tables_follow_the_rules.provisional_reads.txt",
+    "where_script/where_answers[fact].txt",
+    "where_script/where_grammar[all].txt",
+    "where_script/where_grammar[line-in-a-method].txt",
+    "where_script/where_grammar[method-with-users].txt",
+    "where_script/where_grammar[symbol-of-a-file].txt",
 ]

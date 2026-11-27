@@ -1,0 +1,9 @@
+[[change]]
+id = "generation-store-records-hint-body-types"
+category = "api"
+title = "Store operation that records the types a field's hint names from type alias bodies"
+summary = "GenerationStore.record_hint_body_types records, on a field, its own copies of the types naming a model that its hint writes from type alias bodies, so the module imports them. Nothing is removed or changed."
+refs = ["#7487"]
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]
