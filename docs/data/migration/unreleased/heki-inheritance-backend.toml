@@ -3,4 +3,4 @@ id = "heki-inheritance-backend"
 category = "internal"
 title = "Ask the model root which backend the inheritance check judges"
 summary = "The inheritance check reads the backend of the model class through the model root instead of comparing its module name with backend module names; the package writes the same output"
-refs = ["#1"]
+refs = ["#7555"]

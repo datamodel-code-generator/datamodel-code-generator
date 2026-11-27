@@ -3,7 +3,7 @@ id = "architecture-checker-heki-contracts"
 category = "internal"
 title = "Hold the architecture rules with heki contracts"
 summary = "The architecture checker's read rules moved to heki contracts built from the layers; the checker and its tests are removed and the package writes the same output"
-refs = ["#1"]
+refs = ["#7556"]
 covers = [
     "architecture_boundaries/architecture_boundary_allowlist_contract_and_file_discovery.txt",
     "architecture_boundaries/architecture_boundary_cli_checks_the_full_source_tree.txt",
