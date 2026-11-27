@@ -782,7 +782,6 @@ def pass_block(repo: Repo, declaration: PassDecl) -> Block:
     head = [
         short(declaration.summary),
         f"{declaration.phase.name}, scope {declaration.scope.value}, {declaration.kind.value}{condition}",
-        *([f"trigger: {declaration.trigger.text}"] if declaration.trigger else []),
         *([f"removed by: {declaration.removed_by}"] if declaration.removed_by else []),
         *([f"moves to {declaration.target.name} once its change lands"] if declaration.target else []),
         f"reads: {reads}",

@@ -66,8 +66,8 @@ becomes final and where a decision belongs.
   its reason (`scripts/check_pass_pipeline.py` says which). The finality check
   (`DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`) holds every rule: "... undeclared: ..." means the pass writes a fact
   its declaration does not list; the other rules report writes after a fact is final. It is a value check: pull
-  request shards skip it except the Python 3.14 coverage shards, and runs of `main`, the schedule and the nightly
-  trigger run keep it on. heki checks the declared writes too, but only for the calls it resolves: the `pass:<name>`
+  request shards skip it except the Python 3.14 coverage shards, and runs of `main`, the schedule and manual runs
+  keep it on. heki checks the declared writes too, but only for the calls it resolves: the `pass:<name>`
   boundaries that `scripts/build_heki_contracts.py` builds from the declarations and the fact tables
   (`scripts/heki.toml`) report a write of a row whose facts the pass does not declare, or after they are frozen, and
   the `pass-glue` boundary a fact write between the passes. Most passes also reach calls and writes heki cannot
@@ -75,13 +75,10 @@ becomes final and where a decision belongs.
   where a boundary reports nothing, so no heki finding does not mean the pass keeps to its declaration. Declare the
   fact or move the write, then rebuild the contracts.
 - A pass that rewrites a fact some outputs lack returns early at the top of its body when its source is empty, and
-  reads that source once. A `when` names only options (`scripts/check_pass_pipeline.py` lists them).
-  A `trigger` (`PassSpec.trigger`, `PassDecl.trigger` with the facts it reads and why the early return costs more) is
-  allowed only for the passes `TRIGGERS` of that script lists, which never grows: false only where running the pass
-  would write nothing. The nightly run of the suite on the newest Python runs such passes anyway (`tox run -e
-  pass-triggers -- <test>`, or `pytest --check-pass-triggers <test>`): "... trigger-absent write: ..." means the
-  trigger is false where the pass writes; widen the trigger. Run it on the tests that reach a trigger you add or change
-  before you push.
+  reads that source once. The early return reads the collection the body iterates, or a factor of the set it computes,
+  never a proxy fact such as the number of modules. A `when` names only options (`scripts/check_pass_pipeline.py` lists
+  them); nothing else skips a pass, so there is no trigger, and a write the pass makes runs on every input where the
+  stored outputs and the finality check see it.
 - For a fix that spans passes, write the design (the facts it reads, where each becomes final, the outputs it changes,
   and since which release) and have it reviewed before implementing.
 

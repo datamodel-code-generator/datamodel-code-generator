@@ -174,20 +174,6 @@ def _same_state(state: _FinalizeState[Any]) -> _FinalizeState[Any]:
     return state
 
 
-def _several_modules(_: object, state: _FinalizeState[Any]) -> bool:
-    """Return whether the output writes more than one module: the trigger of the passes between modules."""
-    return len(state.contexts) > 1
-
-
-def _orders_constructors(models: Iterable[DataModel]) -> bool:
-    """Return whether constructor ordering can change a model: one orders keyword-only fields or restores a field."""
-    restore = DataModel.restore_required_inherited_field_state.__func__
-    return any(
-        model.SUPPORTS_KW_ONLY or type(model).restore_required_inherited_field_state.__func__ is not restore
-        for model in models
-    )
-
-
 def _writes_unique_sets_in_modules(parser: PipelineHost, _: object) -> bool:
     """Return whether the module passes write the uniqueItems sets: --use-unique-items-as-set, not by value."""
     return parser.use_unique_items_as_set and not parser.use_unique_items_as_set_by_value
@@ -224,7 +210,6 @@ STRUCTURE_BODY: tuple[StepLike[PipelineHost, _StructureState], ...] = (
     PassSpec(
         "resolve_circular_imports",
         late(structure.resolve_module_circular_imports),
-        trigger=lambda _, s: len(s.module_models) > 1,
     ),
 )
 """The passes of ``_build_module_structure``."""
@@ -326,7 +311,6 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
             self, s.model_list_before_override_removal, early=True
         ),
         when=lambda self, _: not self.order_constructor_fields_by_final_names,
-        trigger=lambda _, s: _orders_constructors(s.model_list_before_override_removal),
     ),
     PassSpec("snapshot_module_unused_models", lambda _, s: modules.snapshot_module_unused_models(s)),
     PassSpec(
@@ -441,7 +425,6 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
             PassSpec(
                 "alias_builtin_shadowing_module_imports",
                 late(imports.alias_builtin_shadowing_module_imports),
-                trigger=_several_modules,
             ),
             PassSpec(
                 "alias_builtins_hidden_by_submodules",
@@ -454,7 +437,6 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
                 "import_models_of_hidden_submodules",
                 late(imports.import_models_of_hidden_submodules),
                 when=lambda _, state: state.with_import,
-                trigger=_several_modules,
             ),
             PassSpec(
                 "name_final_classes_of_additional_properties",
@@ -688,7 +670,6 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             PassSpec(
                 "import_enum_member_literal_classes",
                 late(cross_module.import_enum_member_literal_classes),
-                trigger=lambda self, _: self.use_enum_values_in_discriminator or bool(self._const_narrowed_values),
             ),
         ),
     ),
@@ -728,7 +709,6 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                     _models_before_override_removal(self, run),
                     render_prep.InheritedFieldCopies(run.contexts, run.internal_modules, run.model_path_to_module_name),
                 ),
-                trigger=lambda self, run: _orders_constructors(_models_before_override_removal(self, run)),
             ),
             PassSpec(
                 "settle_module_unused_models",

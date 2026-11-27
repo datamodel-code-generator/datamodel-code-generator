@@ -812,6 +812,7 @@ def fix_constructor_field_ordering(
     *,
     early: bool = False,
     copies: InheritedFieldCopies | None = None,
+    bases_first: bool = False,
 ) -> None:
     """Fix constructor field ordering after inherited defaults are resolved.
 
@@ -819,10 +820,31 @@ def fix_constructor_field_ordering(
     field has its final name, the form of ``--order-constructor-fields-by final-names`` off. The rendered nullability
     is final only after the modules, so it then counts the defaults as the construction key gives them. With
     ``copies``, a written model gets a keyword-only copy of each inherited field that two of its bases put after a
-    default. The nested factories read row ``legacy-nested-factory-order-before-nullability``.
+    default. The nested factories read row ``legacy-nested-factory-order-before-nullability``. With ``bases_first``,
+    each model follows the models it inherits from. It returns at once when no model can change
+    (``constructor_ordering_models``).
     """
+    if not (ordered := constructor_ordering_models(models)):
+        return
+    if bases_first:
+        ordered.sort(key=lambda model: len(constructor_base_models(parser, model)))
     with ordering_constructor_fields(before_nullability=True, construction_defaults=early):
-        fix_constructor_field_ordering_of(parser, models, early=early, copies=copies)
+        fix_constructor_field_ordering_of(parser, ordered, early=early, copies=copies)
+
+
+def constructor_ordering_models(models: Iterable[DataModel]) -> list[DataModel]:
+    """Return the models whose constructor ordering can write: the loop of ``fix_constructor_field_ordering_of``.
+
+    The loop writes a model only through ``restore_required_inherited_field_state`` (the base hook restores nothing),
+    ``get_inherited_constructor_info`` and ``get_local_constructor_ordering_key`` (both return ``None`` without
+    ``SUPPORTS_KW_ONLY``), so any other model is left as it is.
+    """
+    restore = DataModel.restore_required_inherited_field_state.__func__
+    return [
+        model
+        for model in models
+        if model.SUPPORTS_KW_ONLY or type(model).restore_required_inherited_field_state.__func__ is not restore
+    ]
 
 
 def fix_constructor_field_ordering_bases_first(
@@ -832,11 +854,7 @@ def fix_constructor_field_ordering_bases_first(
 
     A model then reads its bases as this pass left them: the fields they make keyword-only and the copies they take.
     """
-    fix_constructor_field_ordering(
-        parser,
-        sorted(models, key=lambda model: len(constructor_base_models(parser, model))),
-        copies=copies,
-    )
+    fix_constructor_field_ordering(parser, models, copies=copies, bases_first=True)
 
 
 def order_constructor_fields_by_decided_nested_factories(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:

@@ -295,12 +295,14 @@ def module_dependency_graph(
     validator rules of a model name count as its field types do: its module imports them for the class body that
     evaluates the rules, an alias written as a class for its rules included.
     """
-    snapshot = GraphSnapshot.MODULE_DEPENDENCIES
-    keyed = keyed_models((model for _, models in module_models_list for model in models), snapshot.value)
     module_of: dict[ModelKey, tuple[str, ...]] = {}
     for module, models in module_models_list:
         for model in models:
             module_of[model_key_of(model.reference)] = module
+    if len(groups := set(module_of.values())) <= 1:
+        return GroupGraph({group: set() for group in groups})
+    snapshot = GraphSnapshot.MODULE_DEPENDENCIES
+    keyed = keyed_models((model for _, models in module_models_list for model in models), snapshot.value)
     rule_references = {
         key: keyed.keys_of(
             reference for data_type in _parsed_rule_data_types(model) if (reference := data_type.reference) is not None

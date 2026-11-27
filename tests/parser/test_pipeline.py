@@ -280,63 +280,6 @@ def test_when_names_only_options(table: str) -> None:
     assert_output("".join(f"{problem}\n" for problem in problems) or "no problem\n")
 
 
-def _no_run(_parser: object, _state: object) -> None:
-    """Run nothing."""
-
-
-def _trigger_table(*triggers: tuple[str, bool, check_pass_pipeline.Trigger | None, set[str]]) -> tuple[Any, ...]:
-    """Return a pipeline of one pass each, and the declarations.
-
-    Per pass: its name, whether the table has a trigger, and the declared trigger and reads.
-    """
-    steps = tuple(
-        check_pass_pipeline.PassSpec(name, _no_run, trigger=(lambda _parser, _state: False) if in_table else None)
-        for name, in_table, _, _ in triggers
-    )
-    decls = tuple(
-        check_pass_pipeline.PassDecl(
-            name,
-            check_pass_pipeline.Phase.DECIDE,
-            check_pass_pipeline.Scope.GLOBAL,
-            check_pass_pipeline.PassKind.TRANSFORM,
-            reads=frozenset(check_pass_pipeline.Fact[fact] for fact in reads),
-            trigger=trigger,
-        )
-        for name, _, trigger, reads in triggers
-    )
-    return steps, decls
-
-
-def _trigger(reason: str = "the exact form costs more", reads: tuple[str, ...] = ()) -> check_pass_pipeline.Trigger:
-    return check_pass_pipeline.Trigger(
-        "a record is filled", frozenset(check_pass_pipeline.Fact[fact] for fact in reads), reason
-    )
-
-
-TRIGGER_CASES = {
-    "a-listed-trigger": ((("a", True, _trigger(), set()),), ("a",)),
-    "no-trigger": ((("a", False, None, set()),), ()),
-    "an-unlisted-trigger": ((("a", True, _trigger(), set()),), ()),
-    "a-listed-pass-without-trigger": ((("a", False, None, set()),), ("a",)),
-    "a-trigger-without-reason": ((("a", True, _trigger(" "), set()),), ("a",)),
-    "a-trigger-the-declaration-lacks": ((("a", True, None, set()),), ()),
-    "a-trigger-the-table-lacks": ((("a", False, _trigger(), set()),), ("a",)),
-    "a-trigger-reading-more-than-the-pass": ((("a", True, _trigger(reads=("BASES",)), {"DEFAULTS"}),), ("a",)),
-}
-"""Passes with their triggers in the table and the declaration, and the passes ``TRIGGERS`` lists."""
-
-
-@pytest.mark.parametrize(("passes", "kept"), TRIGGER_CASES.values(), ids=TRIGGER_CASES)
-def test_trigger_problems(
-    passes: tuple[tuple[str, bool, check_pass_pipeline.Trigger | None, set[str]], ...], kept: tuple[str, ...]
-) -> None:
-    """A trigger is allowed only for a listed pass that names its reason, in the table and the declaration alike."""
-    steps, decls = _trigger_table(*passes)
-    problems = check_pass_pipeline.trigger_problems(steps, decls, kept)
-
-    assert_output("".join(f"{problem}\n" for problem in problems) or "no problem\n")
-
-
 def _no_decision(_facts: check_pass_pipeline.FinalFacts, _writer: object) -> None:
     """Decide nothing."""
 

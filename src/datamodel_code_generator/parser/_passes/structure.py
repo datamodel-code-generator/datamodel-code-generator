@@ -1113,13 +1113,15 @@ def apply_reuse_model_tree_scope(parser: StructureHost, state: _StructureState) 
 
 def resolve_module_circular_imports(parser: StructureHost, state: _StructureState) -> None:
     """Break the import cycles between modules."""
-    state.module_models, state.internal_modules, state.forwarder_map = resolve_circular_imports(
+    module_models, internal_modules, forwarder_map = resolve_circular_imports(
         parser, state.module_models, state.all_exports_scope
     )
-    if state.internal_modules:
-        state.model_path_to_module_name.forget(
-            model for module, models in state.module_models if module in state.internal_modules for model in models
-        )
+    if not internal_modules:
+        return
+    state.module_models, state.internal_modules, state.forwarder_map = module_models, internal_modules, forwarder_map
+    state.model_path_to_module_name.forget(
+        model for module, models in module_models if module in internal_modules for model in models
+    )
 
 
 def build_structure(parser: StructureHost, run: StructuredRun[Any]) -> None:
