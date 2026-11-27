@@ -1,0 +1,14 @@
+[[change]]
+id = "keep-typed-input-model-root-python-types-api"
+category = "api"
+title = "Public names for --keep-typed-input-model-root-python-types and the 20261127 presets"
+summary = "The option adds its config field and the 20261127 presets add their names; nothing is removed or changed."
+refs = ["#7565"]
+decision = ["#7565"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig", "datamodel_code_generator.preset.PresetName"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

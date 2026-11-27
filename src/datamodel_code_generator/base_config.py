@@ -386,6 +386,7 @@ class BaseGenerateConfig(BaseModel):
     use_generic_base_class: bool = False
     keep_bases_beside_generic_base_class: bool = False
     keep_bases_of_typed_dicts_listed_before_their_parents: bool = False
+    keep_inherited_dataclass_config: bool = False
     class_name: str | None = None
     allow_leading_underscore_class_name: bool = False
     class_name_prefix: str | None = None
@@ -540,6 +541,7 @@ class BaseGenerateConfig(BaseModel):
     keep_string_keywords_beside_formats: bool = False
     read_input_model_dataclass_fields_by_alias: bool = False
     reuse_every_reached_input_model_type: bool = False
+    keep_typed_input_model_root_python_types: bool = False
     use_site_models_for_constrained_refs: bool = False
     use_one_model_per_ref_site: bool = False
     original_field_name_delimiter: str | None = None

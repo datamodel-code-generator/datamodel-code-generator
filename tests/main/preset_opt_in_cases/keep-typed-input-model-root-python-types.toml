@@ -1,0 +1,5 @@
+option = "--keep-typed-input-model-root-python-types"
+input = "python/input_model/dataclass_models.py"
+input_file_type = "jsonschema"
+args = ["--input-model", "tests.data.python.input_model.dataclass_models:Settings"]
+off_args = ["--input-model", "tests.data.python.input_model.dataclass_models:Settings"]

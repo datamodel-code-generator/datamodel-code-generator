@@ -794,6 +794,254 @@ def test_inherited_unicode_property_is_redeclared_in_another_module(
     assert_output(outcomes, name="outcomes")
 
 
+KEEP_INHERITED_DATACLASS_CONFIG = "--keep-inherited-dataclass-config"
+INHERITED_DATACLASS_CONFIG = OPEN_API_DATA_PATH / "inherited_dataclass_config" / "schema.yaml"
+INHERITED_DATACLASS_CONFIG_ENGINES = JSON_SCHEMA_DATA_PATH / "inherited_dataclass_config_engines.json"
+EXTRA_KEY = {"other": 1}
+SURROGATE_TAKER_SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$defs": {
+        "Marked": {"type": "object", "properties": {"mark": {"type": "string", "pattern": "^a\ud800b$"}}},
+        "Tailed": {
+            "allOf": [
+                {"$ref": "#/$defs/Marked"},
+                {"type": "object", "properties": {"tail": {"type": "string", "pattern": "^[a-z]+$"}}},
+            ]
+        },
+    },
+}
+"""Written here, as a YAML parser rejects the escape of a lone surrogate."""
+
+
+@pytest.mark.cli_doc(
+    options=[KEEP_INHERITED_DATACLASS_CONFIG],
+    option_description="""Keep the config items of the first base in a Pydantic dataclass with a config of its own.
+
+A Pydantic dataclass with no config of its own applies the config of its first dataclass base, such as
+`extra='forbid'` from `additionalProperties: false`. Once it writes a config of its own, for example
+`populate_by_name=True` for `--allow-population-by-field-name` or `regex_engine="python-re"` for a lookaround in
+its own patterns, Pydantic applies that config alone: without this option the dataclass accepts the extra keys its
+base rejects and drops the `--extra-template-data` items of its base, as 0.103.0 writes it. With it the config of
+the dataclass also writes the items of its base that it does not set itself, base items first, as a Pydantic model
+merges the config of every base (`ConfigDict(extra='forbid', regex_engine="python-re")`); an item the dataclass sets
+itself wins.
+
+The kept items can also select the base's `python-re` regex engine for the patterns of the dataclass: there `$`
+also accepts a trailing newline, and a pattern Python's `re` rejects, such as `\\p{L}`, is left out with a warning,
+as for a dataclass that takes the config of its base. A base the dataclass builds with that engine can change too: a
+second base leaves out a pattern Python's `re` rejects, and a base with a lone surrogate in a pattern keeps the default
+engine. A configured base class from `--base-class` that the
+generator does not read gives no items. Pydantic model output is the same either way.""",
+    input_schema="openapi/inherited_dataclass_config/schema.yaml",
+    cli_args=["--output-model-type", "pydantic_v2.dataclass", KEEP_INHERITED_DATACLASS_CONFIG],
+    golden_output="main/jsonschema/pydantic_accepted_forms/dataclass_config_keeps_the_items_of_its_first_base[engine].option/",
+    comparison_output="main/jsonschema/pydantic_accepted_forms/dataclass_config_keeps_the_items_of_its_first_base[engine].default/",
+    related_options=["--output-model-type", "--allow-population-by-field-name", "--extra-template-data"],
+)
+@pytest.mark.parametrize(
+    ("schema", "extra_args", "template_data", "payloads", "values"),
+    [
+        pytest.param(
+            INHERITED_DATACLASS_CONFIG,
+            [],
+            {},
+            {
+                "a": {
+                    "Code": {"valid": {"id": 1, "code": "ab"}, "extra": EXTRA_KEY, "lookahead": {"code": "xa"}},
+                    "Plain": {"valid": {"code": "ab"}, "extra": EXTRA_KEY},
+                    "Tagged": {"valid": {"tag": "ab"}, "extra": EXTRA_KEY},
+                    "Guard": {"valid": {"pin": "1", "code": "ab"}, "extra": EXTRA_KEY},
+                    "Mid": {"valid": {"note": "n"}, "extra": EXTRA_KEY},
+                    "Deep": {"valid": {"note": "n", "code": "ab"}, "extra": EXTRA_KEY},
+                    "Leaf": {"valid": {"code": "ab", "tag": "ab"}, "extra": EXTRA_KEY, "lookahead": {"tag": "ya"}},
+                    "Two": {"valid": {"two": "ab"}, "extra": EXTRA_KEY},
+                },
+                "b": {
+                    "Remote": {"valid": {"code": "ab"}, "extra": EXTRA_KEY},
+                    "Worded": {"valid": {"word": "ab"}, "extra": EXTRA_KEY, "lookahead": {"word": "xa"}},
+                },
+            },
+            {},
+            id="engine",
+        ),
+        pytest.param(
+            INHERITED_DATACLASS_CONFIG,
+            ["--allow-population-by-field-name"],
+            {},
+            {
+                "a": {"Mid": {"valid": {"note": "n"}, "extra": EXTRA_KEY}, "Code": {"extra": EXTRA_KEY}},
+                "b": {"Remote": {"valid": {"code": "ab"}, "extra": EXTRA_KEY}},
+            },
+            {},
+            id="population",
+        ),
+        pytest.param(
+            INHERITED_DATACLASS_CONFIG,
+            [],
+            {"a.Code": {"extra": "'allow'"}},
+            {"a": {"Code": {"extra": EXTRA_KEY}, "Leaf": {"extra": EXTRA_KEY}}},
+            {},
+            id="own-wins",
+        ),
+        pytest.param(
+            INHERITED_DATACLASS_CONFIG,
+            ["--extra-fields", "allow"],
+            {},
+            {"a": {"Code": {"extra": EXTRA_KEY}}, "b": {"Remote": {"extra": EXTRA_KEY}}},
+            {},
+            id="extra-fields",
+        ),
+        pytest.param(
+            INHERITED_DATACLASS_CONFIG,
+            [],
+            {"a.Closed": {"alias_generator": "to_camel"}},
+            {"b": {"Remote": {"camel": {"userName": "u", "code": "ab"}, "extra": EXTRA_KEY}}},
+            {"b": {"Remote": ({"userName": "u", "code": "ab"}, "user_name")}},
+            id="alias-generator",
+        ),
+        pytest.param(
+            INHERITED_DATACLASS_CONFIG,
+            ["--extra-fields", "forbid", "--use-generic-base-class"],
+            {},
+            {"a": {"Code": {"extra": EXTRA_KEY}, "Mid": {"extra": EXTRA_KEY}}},
+            {},
+            id="generic-base",
+        ),
+        pytest.param(
+            INHERITED_DATACLASS_CONFIG_ENGINES,
+            ["--allow-population-by-field-name"],
+            {},
+            {
+                "model": {
+                    "Named": {
+                        "valid": {"name": "Zo\u00eb", "tail": "ab"},
+                        "digits": {"name": "12"},
+                        "newline": {"tail": "ab\n"},
+                    },
+                    "Lettered": {"valid": {"letters": "Zo\u00eb"}, "digits": {"letters": "12"}},
+                    "Both": {"valid": {"count": 1, "letters": "Zo\u00eb"}, "extra": EXTRA_KEY},
+                }
+            },
+            {},
+            id="engines",
+        ),
+        pytest.param(
+            INHERITED_DATACLASS_CONFIG_ENGINES,
+            ["--base-class", "mypkg.Base"],
+            {},
+            {},
+            {},
+            id="opaque-base",
+        ),
+        pytest.param(
+            SURROGATE_TAKER_SCHEMA,
+            ["--allow-population-by-field-name"],
+            {},
+            {
+                "model": {
+                    "Marked": {"replacements": {"mark": "a\ufffd\ufffd\ufffdb"}},
+                    "Tailed": {"newline": {"tail": "ab\n"}},
+                }
+            },
+            {},
+            id="surrogate-taker",
+        ),
+        pytest.param(
+            SURROGATE_TAKER_SCHEMA,
+            ["--allow-population-by-field-name"],
+            {"Tailed": {"regex_engine": '"python-re"'}},
+            {
+                "model": {
+                    "Marked": {"replacements": {"mark": "a\ufffd\ufffd\ufffdb"}},
+                    "Tailed": {"newline": {"tail": "ab\n"}},
+                }
+            },
+            {},
+            id="surrogate-taker-names-engine",
+        ),
+    ],
+)
+def test_dataclass_config_keeps_the_items_of_its_first_base(
+    tmp_path: Path,
+    recwarn: pytest.WarningsRecorder,
+    monkeypatch: pytest.MonkeyPatch,
+    schema: Path | dict[str, object],
+    extra_args: list[str],
+    template_data: dict[str, dict[str, str]],
+    payloads: dict[str, dict[str, dict[str, object]]],
+    values: dict[str, dict[str, tuple[dict[str, object], str]]],
+) -> None:
+    r"""Keep the config items of the first dataclass base with ``--keep-inherited-dataclass-config`` (#7497, #7560).
+
+    Each case generates without the option (``default``) and with it (``option``). ``engine``: each subclass of
+    ``a.Closed`` and ``a.Open`` selects ``python-re`` for its own lookaround or the type alias ``b.Word`` and writes
+    a config of its own, which drops ``extra`` of its base; with the option ``a.Deep`` keeps the one ``a.Mid`` takes
+    from ``a.Closed``, ``a.Leaf`` the one of ``a.Code``, ``a.Two`` that of ``a.Open``, its first base, and ``b.Remote``
+    and ``b.Worded`` that of another module. ``population``: ``a.Mid`` has a config of its own only for
+    ``--allow-population-by-field-name`` (#7560). ``own-wins`` and ``extra-fields``: an item the subclass sets itself
+    stays. ``alias-generator``: ``b.Remote`` keeps the ``alias_generator`` of ``a.Closed`` and imports it, so
+    ``userName`` fills ``user_name``. ``generic-base``: the generic base class of a dataclass holds no config, so no
+    subclass has one to keep. ``engines``: ``Named`` takes the ``python-re`` that ``Labelled`` selects for a model it
+    reaches, so its own ``\p{L}`` is left out with a warning and ``$`` accepts a trailing newline; ``Both`` takes the
+    engine of ``Sealed``, its first base, and builds the ``\p{L}`` of ``Lettered`` with it, so ``Lettered`` leaves
+    it out too, as for a subclass with no config of its own. ``opaque-base``: a configured base class the generator
+    does not read gives no item. ``surrogate-taker``: ``Tailed`` applies the config of ``Marked``, so its default
+    engine pattern keeps ``Marked`` on the default engine, which reads the lone surrogate as U+FFFD, with a warning.
+    ``surrogate-taker-names-engine``: a ``Tailed`` that names ``python-re`` itself keeps it whatever ``Marked`` selects,
+    so it does not keep ``Marked`` on the default engine.
+    """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    if isinstance(schema, dict):
+        input_path = tmp_path / "surrogate_taker.json"
+        input_path.write_text(json.dumps(schema), encoding="utf-8")
+    else:
+        input_path = schema
+    input_file_type = "openapi" if input_path.suffix == ".yaml" else "jsonschema"
+    if template_data:
+        template_data_path = tmp_path / "extra-template-data.json"
+        configs = {name: {"config": config} for name, config in template_data.items()}
+        template_data_path.write_text(
+            json.dumps({**configs, **{f"#/components/schemas/{name}": config for name, config in configs.items()}}),
+            encoding="utf-8",
+        )
+        extra_args = [*extra_args, "--extra-template-data", str(template_data_path)]
+    outcomes = ""
+    for name, option_args in (("default", []), ("option", [KEEP_INHERITED_DATACLASS_CONFIG])):
+        package = tmp_path / f"{name}_models"
+        recwarn.clear()
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=package if input_file_type == "openapi" else package / "model.py",
+            input_file_type=input_file_type,
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.dataclass",
+                *extra_args,
+                *option_args,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=bool(payloads),
+            skip_code_validation=not payloads,
+            name=name,
+        )
+        outcomes += f"{name}\n"
+        outcomes += "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(warning.message) for warning in recwarn)
+            if "regex" in message
+        )
+        for module, models in payloads.items():
+            with _generated_package_module(package, module) as generated:
+                for model_name, cases in models.items():
+                    outcomes += f"{model_name}\n{_outcomes(getattr(generated, model_name), cases)}"
+                for model_name, (payload, attribute) in values.get(module, {}).items():
+                    parsed = _model_json_validator(getattr(generated, model_name))(json.dumps(payload))
+                    outcomes += f"{model_name}.{attribute}: {getattr(parsed, attribute)!r}\n"
+    assert_output(outcomes, name="outcomes")
+
+
 @pytest.mark.parametrize(
     ("document", "payloads"),
     [

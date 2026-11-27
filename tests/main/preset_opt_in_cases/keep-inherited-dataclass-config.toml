@@ -1,0 +1,4 @@
+option = "--keep-inherited-dataclass-config"
+input = "openapi/inherited_dataclass_config"
+input_file_type = "openapi"
+args = ["--output-model-type", "pydantic_v2.dataclass"]

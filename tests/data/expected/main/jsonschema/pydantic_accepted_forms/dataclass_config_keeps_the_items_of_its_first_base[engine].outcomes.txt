@@ -1,0 +1,68 @@
+default
+Code
+valid: valid
+extra: valid
+lookahead: string_pattern_mismatch
+Plain
+valid: valid
+extra: valid
+Tagged
+valid: valid
+extra: valid
+Guard
+valid: valid
+extra: valid
+Mid
+valid: valid
+extra: unexpected_keyword_argument
+Deep
+valid: valid
+extra: valid
+Leaf
+valid: valid
+extra: valid
+lookahead: string_pattern_mismatch
+Two
+valid: valid
+extra: valid
+Remote
+valid: valid
+extra: valid
+Worded
+valid: valid
+extra: valid
+lookahead: string_pattern_mismatch
+option
+Code
+valid: valid
+extra: unexpected_keyword_argument
+lookahead: string_pattern_mismatch
+Plain
+valid: valid
+extra: valid
+Tagged
+valid: valid
+extra: valid
+Guard
+valid: valid
+extra: unexpected_keyword_argument
+Mid
+valid: valid
+extra: unexpected_keyword_argument
+Deep
+valid: valid
+extra: unexpected_keyword_argument
+Leaf
+valid: valid
+extra: unexpected_keyword_argument
+lookahead: string_pattern_mismatch
+Two
+valid: valid
+extra: valid
+Remote
+valid: valid
+extra: unexpected_keyword_argument
+Worded
+valid: valid
+extra: unexpected_keyword_argument
+lookahead: string_pattern_mismatch

@@ -33,6 +33,7 @@
 | [`--keep-enum-literal-aliases`](#keep-enum-literal-aliases) | Keep a named enum written as a Literal type alias named unde... |
 | [`--keep-false-dataclass-arguments`](#keep-false-dataclass-arguments) | Write every dataclass decorator argument set to false. |
 | [`--keep-field-defaults-off-branch-roots`](#keep-field-defaults-off-branch-roots) | Leave a property's default off the root models extracted fro... |
+| [`--keep-inherited-dataclass-config`](#keep-inherited-dataclass-config) | Keep the config items of the first base in a Pydantic datacl... |
 | [`--keep-model-order`](#keep-model-order) | Keep generated model order deterministic while respecting de... |
 | [`--keep-null-of-nullable-items`](#keep-null-of-nullable-items) | Write the null that `nullable: true` declares on an array it... |
 | [`--keep-reference-null-on-collapsed-root-models`](#keep-reference-null-on-collapsed-root-models) | Keep the null of a root model that admits null where `--coll... |
@@ -4779,6 +4780,363 @@ and the root requires its value: `root: float = Field(..., ge=0.0)`.
             quantity: Quantity | Quantity1 | None = Field(5, validate_default=True)
             tags: Tags | None = None
             step: Step | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--keep-inherited-dataclass-config` {#keep-inherited-dataclass-config}
+
+Keep the config items of the first base in a Pydantic dataclass with a config of its own.
+
+A Pydantic dataclass with no config of its own applies the config of its first dataclass base, such as
+`extra='forbid'` from `additionalProperties: false`. Once it writes a config of its own, for example
+`populate_by_name=True` for `--allow-population-by-field-name` or `regex_engine="python-re"` for a lookaround in
+its own patterns, Pydantic applies that config alone: without this option the dataclass accepts the extra keys its
+base rejects and drops the `--extra-template-data` items of its base, as 0.103.0 writes it. With it the config of
+the dataclass also writes the items of its base that it does not set itself, base items first, as a Pydantic model
+merges the config of every base (`ConfigDict(extra='forbid', regex_engine="python-re")`); an item the dataclass sets
+itself wins.
+
+The kept items can also select the base's `python-re` regex engine for the patterns of the dataclass: there `$`
+also accepts a trailing newline, and a pattern Python's `re` rejects, such as `\p{L}`, is left out with a warning,
+as for a dataclass that takes the config of its base. A base the dataclass builds with that engine can change too: a
+second base leaves out a pattern Python's `re` rejects, and a base with a lone surrogate in a pattern keeps the default
+engine. A configured base class from `--base-class` that the
+generator does not read gives no items. Pydantic model output is the same either way.
+
+**Related:** [`--allow-population-by-field-name`](#allow-population-by-field-name), [`--extra-template-data`](template-customization.md#extra-template-data), [`--output-model-type`](#output-model-type)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input schema.yaml --output-model-type pydantic_v2.dataclass --keep-inherited-dataclass-config # (1)!
+    ```
+
+    1. :material-arrow-left: `--keep-inherited-dataclass-config` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.0.3
+    info:
+      title: Dataclasses that write a config of their own beside the config of a base
+      version: '1'
+    paths: {}
+    components:
+      schemas:
+        a.Closed:
+          type: object
+          additionalProperties: false
+          properties:
+            id:
+              type: integer
+        a.Open:
+          type: object
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+        a.Guarded:
+          type: object
+          additionalProperties: false
+          properties:
+            pin:
+              type: string
+              pattern: '^(?!0)[0-9]+$'
+        a.Plain:
+          type: object
+          properties:
+            code:
+              type: string
+              pattern: '^(?!x)[a-z]+$'
+        a.Code:
+          allOf:
+            - $ref: '#/components/schemas/a.Closed'
+            - type: object
+              properties:
+                code:
+                  type: string
+                  pattern: '^(?!x)[a-z]+$'
+        a.Tagged:
+          allOf:
+            - $ref: '#/components/schemas/a.Open'
+            - type: object
+              properties:
+                tag:
+                  type: string
+                  pattern: '^(?!x)[a-z]+$'
+        a.Guard:
+          allOf:
+            - $ref: '#/components/schemas/a.Guarded'
+            - type: object
+              properties:
+                code:
+                  type: string
+                  pattern: '^(?!x)[a-z]+$'
+        a.Mid:
+          allOf:
+            - $ref: '#/components/schemas/a.Closed'
+            - type: object
+              properties:
+                note:
+                  type: string
+        a.Deep:
+          allOf:
+            - $ref: '#/components/schemas/a.Mid'
+            - type: object
+              properties:
+                code:
+                  type: string
+                  pattern: '^(?!x)[a-z]+$'
+        a.Leaf:
+          allOf:
+            - $ref: '#/components/schemas/a.Code'
+            - type: object
+              properties:
+                tag:
+                  type: string
+                  pattern: '^(?!y)[a-z]+$'
+        a.Two:
+          allOf:
+            - $ref: '#/components/schemas/a.Open'
+            - $ref: '#/components/schemas/a.Closed'
+            - type: object
+              properties:
+                two:
+                  type: string
+                  pattern: '^(?!x)[a-z]+$'
+        b.Word:
+          type: string
+          pattern: '^(?!x)[a-z]+$'
+        b.Remote:
+          allOf:
+            - $ref: '#/components/schemas/a.Closed'
+            - type: object
+              properties:
+                user_name:
+                  type: string
+                code:
+                  type: string
+                  pattern: '^(?!x)[a-z]+$'
+        b.Worded:
+          allOf:
+            - $ref: '#/components/schemas/a.Closed'
+            - type: object
+              properties:
+                word:
+                  $ref: '#/components/schemas/b.Word'
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # __init__.py
+        # generated by datamodel-codegen:
+        #   filename:  schema.yaml
+
+        # a.py
+        # generated by datamodel-codegen:
+        #   filename:  schema.yaml
+
+        from __future__ import annotations
+
+        from pydantic import ConfigDict, constr
+        from pydantic.dataclasses import dataclass
+
+
+        @dataclass(config=ConfigDict(extra='forbid'))
+        class Closed:
+            id: int | None = None
+
+
+        @dataclass(config=ConfigDict(extra='allow'))
+        class Open:
+            id: int | None = None
+
+
+        @dataclass(config=ConfigDict(extra='forbid', regex_engine="python-re"))
+        class Guarded:
+            pin: constr(pattern=r'^(?!0)[0-9]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(regex_engine="python-re"))
+        class Plain:
+            code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(extra='forbid', regex_engine="python-re"))
+        class Code(Closed):
+            code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(extra='allow', regex_engine="python-re"))
+        class Tagged(Open):
+            tag: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(extra='forbid', regex_engine="python-re"))
+        class Guard(Guarded):
+            code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass
+        class Mid(Closed):
+            note: str | None = None
+
+
+        @dataclass(config=ConfigDict(extra='forbid', regex_engine="python-re"))
+        class Deep(Mid):
+            code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(extra='forbid', regex_engine="python-re"))
+        class Leaf(Code):
+            tag: constr(pattern=r'^(?!y)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(extra='allow', regex_engine="python-re"))
+        class Two(Open, Closed):
+            two: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+        # b.py
+        # generated by datamodel-codegen:
+        #   filename:  schema.yaml
+
+        from __future__ import annotations
+
+        from re import compile
+        from typing import Annotated
+
+        from pydantic import ConfigDict, Field, constr
+        from pydantic.dataclasses import dataclass
+        from typing_extensions import TypeAliasType
+
+        from .a import Closed
+
+        Word = TypeAliasType("Word", Annotated[str, Field(pattern=compile('^(?!x)[a-z]+$'))])
+
+
+        @dataclass(config=ConfigDict(extra='forbid', regex_engine="python-re"))
+        class Remote(Closed):
+            user_name: str | None = None
+            code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(extra='forbid', regex_engine="python-re"))
+        class Worded(Closed):
+            word: Word | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # __init__.py
+        # generated by datamodel-codegen:
+        #   filename:  schema.yaml
+
+        # a.py
+        # generated by datamodel-codegen:
+        #   filename:  schema.yaml
+
+        from __future__ import annotations
+
+        from pydantic import ConfigDict, constr
+        from pydantic.dataclasses import dataclass
+
+
+        @dataclass(config=ConfigDict(extra='forbid'))
+        class Closed:
+            id: int | None = None
+
+
+        @dataclass(config=ConfigDict(extra='allow'))
+        class Open:
+            id: int | None = None
+
+
+        @dataclass(config=ConfigDict(extra='forbid', regex_engine="python-re"))
+        class Guarded:
+            pin: constr(pattern=r'^(?!0)[0-9]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(regex_engine="python-re"))
+        class Plain:
+            code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(regex_engine="python-re"))
+        class Code(Closed):
+            code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(regex_engine="python-re"))
+        class Tagged(Open):
+            tag: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(regex_engine="python-re"))
+        class Guard(Guarded):
+            code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass
+        class Mid(Closed):
+            note: str | None = None
+
+
+        @dataclass(config=ConfigDict(regex_engine="python-re"))
+        class Deep(Mid):
+            code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(regex_engine="python-re"))
+        class Leaf(Code):
+            tag: constr(pattern=r'^(?!y)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(regex_engine="python-re"))
+        class Two(Open, Closed):
+            two: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+        # b.py
+        # generated by datamodel-codegen:
+        #   filename:  schema.yaml
+
+        from __future__ import annotations
+
+        from re import compile
+        from typing import Annotated
+
+        from pydantic import ConfigDict, Field, constr
+        from pydantic.dataclasses import dataclass
+        from typing_extensions import TypeAliasType
+
+        from .a import Closed
+
+        Word = TypeAliasType("Word", Annotated[str, Field(pattern=compile('^(?!x)[a-z]+$'))])
+
+
+        @dataclass(config=ConfigDict(regex_engine="python-re"))
+        class Remote(Closed):
+            user_name: str | None = None
+            code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+        @dataclass(config=ConfigDict(regex_engine="python-re"))
+        class Worded(Closed):
+            word: Word | None = None
         ```
 
         <!-- fmt: on -->

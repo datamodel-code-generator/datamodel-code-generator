@@ -14,7 +14,7 @@ from dataclasses import replace
 from itertools import chain
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, TypeVar, cast
 from warnings import warn
 
 from pydantic import Field, ValidationError, field_validator, model_validator
@@ -465,6 +465,21 @@ def _config_dict_items(config: Any) -> list[tuple[str, Any]]:
         return []
     values = dump(exclude_unset=True)
     return list(as_mapping(values).items())
+
+
+_ConfigValueT = TypeVar("_ConfigValueT")
+
+
+def _merged_config_items(
+    taken: Iterable[tuple[str, _ConfigValueT]], own: Iterable[tuple[str, _ConfigValueT]]
+) -> dict[str, _ConfigValueT]:
+    """Return the items of ``taken`` that ``own`` does not set, then those of ``own`` in their order: own wins.
+
+    A config a model takes from a base gives its items first, as Pydantic merges the config of a base before the
+    model's own; a key both set stays where the model's own config writes it.
+    """
+    own_items = dict(own)
+    return {**{key: value for key, value in taken if key not in own_items}, **own_items}
 
 
 def _decode_legacy_quoted_config_string(value: str) -> str:
@@ -1821,7 +1836,7 @@ def _select_surrogate_regex_engines(models: list[DataModel], alias_users: type[D
     The default engine reads a lone surrogate as U+FFFD, so a model wants Python's engine for one in a pattern of its
     fields (``_surrogate_pattern_scopes``) or of a type alias it reaches as ``finalize_type_alias_users`` reads it,
     and the patterns of the config decide (``selects_python_engine``): those it builds (``_config_pattern_engines``)
-    and those of every model that takes the config (``_takes_config_of``). Where one of them runs on the default
+    and those of every model the engine reaches (``_takes_engine_of``). Where one of them runs on the default
     engine as written, switching would change how Python reads it or refuse it at import, so the model keeps the
     default engine and warns.
     """
@@ -1840,7 +1855,7 @@ def _select_surrogate_regex_engines(models: list[DataModel], alias_users: type[D
     takers: defaultdict[int, list[_PydanticV2Model]] = defaultdict(list)
     for model in holders:
         for base in _find_base_classes(model):
-            if model._takes_config_of(base):  # noqa: SLF001
+            if model._takes_engine_of(base):  # noqa: SLF001
                 takers[id(base)].append(model)
     for model in holders:
         through_alias = isinstance(model, alias_users) and _uses_reached_alias(model, reached)
@@ -1967,7 +1982,8 @@ class _PydanticV2Model(DataModel):
         marked once (``PYTHON_ENGINE_BUILDS_KEY``), so its fields leave out a pattern Python's ``re`` rejects (#6593).
         A config that selects the engine only for the patterns of its bases marks the models that apply it alone: they
         redeclare each inherited field whose pattern the engine cannot build (``_redeclare_rejected_patterns``), and the
-        bases keep their output (#7452).
+        bases keep their output (#7452). Last, once no config changes any more, a config gets the items it applies from
+        a base (``_store_inherited_configs``).
         """
         for model in models:
             if isinstance(model, BaseModel) and model._own_patterns_select_python():  # noqa: SLF001
@@ -1991,6 +2007,14 @@ class _PydanticV2Model(DataModel):
             for field in current.fields:
                 field.invalidate_semantic_caches()
         cls._redeclare_rejected_patterns(models, for_bases, built)
+        cls._store_inherited_configs(models)
+
+    @classmethod
+    def _store_inherited_configs(cls, models: list[DataModel]) -> None:
+        """Write into each config the items it applies from a base, once every config is final.
+
+        None does: a model merges the config of every base itself.
+        """
 
     @classmethod
     def _select_engines_for_bases(cls, models: list[DataModel], selected: set[int]) -> None:
@@ -2052,6 +2076,10 @@ class _PydanticV2Model(DataModel):
         """Return whether the model applies the config of a base it names: a model merges the config of every base."""
         return True
 
+    def _takes_engine_of(self, base: DataModel) -> bool:
+        """Return whether the engine a base selects reaches the model: it applies the config of the base."""
+        return self._takes_config_of(base)
+
     def _bases_without_inherited_config(self) -> Sequence[BaseClassDataType]:  # noqa: PLR6301
         """Return the bases whose config the model does not take: none, as a model takes the config of every base."""
         return ()
@@ -2067,14 +2095,13 @@ class _PydanticV2Model(DataModel):
         every model of the same name (``--extra-template-data``). It reads the items of that config, so a config that
         is no mapping adds none. A config the model takes from a base (``taken_config``, a dataclass's
         ``_taken_config``) gives its items first, as Pydantic stops applying it once the model has a config of its
-        own, and the model imports the alias generator they name. Row
-        ``legacy-dataclass-own-engine-drops-taken-config``: only the engine the patterns of the bases select (the
-        caller passes ``taken_config``) keeps them (#7497).
+        own (``_merged_config_items``), and the model imports the alias generator they name. Row
+        ``legacy-dataclass-own-config-drops-taken-config``: without ``--keep-inherited-dataclass-config`` only the
+        engine the patterns of the bases select (the caller passes ``taken_config``) keeps them (#7497).
         """
-        config_parameters = {
-            **dict(_config_dict_items(taken_config)),
-            **dict(_config_dict_items(self.extra_template_data.get("config"))),
-        }
+        config_parameters = _merged_config_items(
+            _config_dict_items(taken_config), _config_dict_items(self.extra_template_data.get("config"))
+        )
         if "regex_engine" in config_parameters and not self._OVERWRITES_REGEX_ENGINE:
             return
         config_parameters["regex_engine"] = '"python-re"'

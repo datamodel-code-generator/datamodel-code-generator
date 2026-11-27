@@ -90,6 +90,7 @@ reviewed-safe keep_enum_literal_aliases
 reviewed-safe keep_enum_member_values
 reviewed-safe keep_false_dataclass_arguments
 reviewed-safe keep_field_defaults_off_branch_roots
+reviewed-safe keep_inherited_dataclass_config
 reviewed-safe keep_model_order
 reviewed-safe keep_null_of_nullable_items
 reviewed-safe keep_reference_null_on_collapsed_root_models

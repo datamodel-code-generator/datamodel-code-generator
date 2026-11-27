@@ -7,8 +7,9 @@ them to the 20261111 presets, the 20261113 presets add the opt-in options after 
 20261118 presets add the opt-in options of the release after 0.97.0 to the 20261113 presets, the 20261120 presets
 add the opt-in options after those to the 20261118 presets, the 20261123 presets add the opt-in options of the
 release after 0.100.0 to the 20261120 presets, the 20261124 presets add the opt-in options of the release after
-0.101.0 to the 20261123 presets, and the 20261125 presets add the opt-in options of the release after 0.102.0 to the
-20261124 presets.
+0.101.0 to the 20261123 presets, the 20261125 presets add the opt-in options of the release after 0.102.0 to the
+20261124 presets, and the 20261127 presets add the opt-in options of the release after 0.103.0 to the 20261125
+presets.
 """
 
 from __future__ import annotations
@@ -180,6 +181,9 @@ OPT_IN_OPTIONS_20261124: tuple[str, ...] = _argv(_added_options("20261123", "202
 OPT_IN_OPTIONS_20261125: tuple[str, ...] = _argv(_added_options("20261124", "20261125"))
 """The options the 20261125 presets set beyond the 20261124 presets, from the rows that join them."""
 
+OPT_IN_OPTIONS_20261127: tuple[str, ...] = _argv(_added_options("20261125", "20261127"))
+"""The options the 20261127 presets set beyond the 20261125 presets, from the rows that join them."""
+
 
 class CaseFile(TypedDict):
     """A case file: the option, its input under tests/data and the arguments of the two tests that generate it.
@@ -231,6 +235,11 @@ WARNINGS_WITHOUT_OPTION = _case_warnings(RELEASED_WARNINGS_WITHOUT_OPTION, "warn
 """The warning each input gives in a generation without the option that a turned-off test names, by file name."""
 
 
+def _input_file(input_path: Path, extra_args: list[str]) -> Path | None:
+    """Return the input file of a run, none where the arguments name an ``--input-model``, whose module it is."""
+    return None if "--input-model" in extra_args else input_path
+
+
 def _warns(warnings_by_input: dict[str, str], input_path: Path) -> AbstractContextManager[object]:
     """Return the context that expects the warning of an input, or one that expects none."""
     pattern = warnings_by_input.get(input_path.name)
@@ -244,6 +253,7 @@ PRACTICAL_OPT_IN_OPTIONS: dict[str, tuple[str, ...]] = {
     "20261123": ("--untyped-value-type", "pydantic.JsonValue"),
     "20261124": ("--untyped-value-type", "pydantic.JsonValue"),
     "20261125": ("--untyped-value-type", "pydantic.JsonValue"),
+    "20261127": ("--untyped-value-type", "pydantic.JsonValue"),
 }
 """The options the practical presets of a date set beyond its standard options, for Pydantic output."""
 
@@ -259,6 +269,7 @@ PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
     "20261123": ("20261120", OPT_IN_OPTIONS_20261123),
     "20261124": ("20261123", OPT_IN_OPTIONS_20261124),
     "20261125": ("20261124", OPT_IN_OPTIONS_20261125),
+    "20261127": ("20261125", OPT_IN_OPTIONS_20261127),
 }
 """The preset before each dated preset and the options it adds to it."""
 
@@ -958,7 +969,7 @@ def test_preset_sets_opt_in_option(
     common = ["--disable-timestamp", *extra_args]
     with _warns(WARNINGS_WITH_OPTION, input_path):
         run_main_and_assert(
-            input_path=input_path,
+            input_path=_input_file(input_path, extra_args),
             output_path=preset_output,
             input_file_type=input_file_type,
             extra_args=["--preset", f"{family}-py312-{release}", *common],
@@ -967,7 +978,7 @@ def test_preset_sets_opt_in_option(
         )
     with _warns(WARNINGS_WITH_OPTION, input_path):
         run_main_and_assert(
-            input_path=input_path,
+            input_path=_input_file(input_path, extra_args),
             output_path=options_output,
             input_file_type=input_file_type,
             extra_args=[
@@ -1145,7 +1156,7 @@ def test_preset_option_turned_off(
     off_output = tmp_path / "off.py"
     with chdir(project), _warns(WARNINGS_WITHOUT_OPTION, input_path):
         run_main_and_assert(
-            input_path=input_path,
+            input_path=_input_file(input_path, extra_args),
             output_path=off_output,
             input_file_type=input_file_type,
             extra_args=[*preset_args, *common],
@@ -1164,7 +1175,7 @@ def test_preset_option_turned_off(
     ]
     with _warns(WARNINGS_WITHOUT_OPTION, input_path):
         run_main_and_assert(
-            input_path=input_path,
+            input_path=_input_file(input_path, extra_args),
             output_path=tmp_path / "options.py",
             input_file_type=input_file_type,
             extra_args=["--preset", "standard-py312-20261017", *common, *options],
