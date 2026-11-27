@@ -82,6 +82,7 @@ from datamodel_code_generator.model.base import TEMPLATE_DIR, UNDEFINED
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecDataModelField
 from datamodel_code_generator.model.typed_dict import TypedDict as TypedDictModel
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from tests.capabilities import needs
 from tests.checks.areas import CheckFailure
 from tests.conftest import (
     CHECK_SCHEMA_GRAPH_ENV,
@@ -4725,6 +4726,7 @@ _FORWARDED_READ_OUTSIDE_CYCLE_FILES_DECODED = [
                 [],
                 _FORWARDED_READ_OUTSIDE_CYCLE_DECODED,
                 id=output_model_type,
+                marks=(needs("typed-dict-validation"),) if output_model_type == "typing.TypedDict" else (),
             )
             for output_model_type in (
                 "pydantic_v2.BaseModel",
@@ -4741,6 +4743,7 @@ _FORWARDED_READ_OUTSIDE_CYCLE_FILES_DECODED = [
                 extra_args,
                 _FORWARDED_READ_OUTSIDE_CYCLE_DECODED,
                 id=param_id,
+                marks=(needs("native-deferred-annotations"),) if param_id == "py314" else (),
             )
             for extra_args, param_id in (
                 (["--all-exports-scope", "children"], "all-exports-children"),
