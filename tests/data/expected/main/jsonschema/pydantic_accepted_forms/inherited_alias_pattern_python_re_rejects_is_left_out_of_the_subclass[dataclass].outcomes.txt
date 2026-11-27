@@ -2,6 +2,7 @@ Python's regex engine, which the config building it selects, does not compile pa
 Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Both.names is generated without this constraint.
 Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Both.short is generated without this constraint.
 Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Both.bounded is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Both.maybe is generated without this constraint.
 Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Both.nick is generated without this constraint.
 Named
 valid: valid
@@ -10,6 +11,8 @@ long: string_too_long
 no items: too_short
 Both
 valid: valid
+maybe: valid
+short maybe: string_too_short
 long: string_too_long
 no items: too_short
 four items: too_long

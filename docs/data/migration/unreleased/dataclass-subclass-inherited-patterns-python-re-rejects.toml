@@ -74,24 +74,3 @@ input = [
 ]
 backends = ["pydantic_v2.dataclass"]
 options = "*"
-
-[[change.cells]]
-input = ["payload:jsonschema/python_engine_beside_rejected_in_an_alias.json*"]
-backends = "*"
-options = "*"
-input_file_type = "jsonschema"
-
-[[change.cells]]
-input = ["payload:openapi/python_engine_beside_rejected_in_other_modules.yaml*"]
-backends = "*"
-options = "*"
-input_file_type = "openapi"
-
-[[change.cells]]
-input = [
-    "payload:openapi/python_engine_beside_rejected_alias_in_other_modules.yaml*",
-    "payload:openapi/python_engine_beside_rejected_alias_in_a_builtin_named_module.yaml*",
-]
-backends = "*"
-options = "*"
-input_file_type = "openapi"

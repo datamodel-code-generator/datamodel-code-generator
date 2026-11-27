@@ -3,6 +3,7 @@
   "$defs": {
     "Name": {"type": "string", "pattern": "^\\p{L}+$"},
     "ShortName": {"type": "string", "pattern": "^\\p{L}+$", "maxLength": 8},
+    "Maybe": {"type": ["string", "null"], "pattern": "^\\p{L}+$", "minLength": 2},
     "Names": {"type": "array", "items": {"$ref": "#/$defs/Name"}, "minItems": 1, "maxItems": 3},
     "Named": {
       "type": "object",
@@ -10,7 +11,8 @@
         "name": {"$ref": "#/$defs/Name"},
         "names": {"type": "array", "items": {"$ref": "#/$defs/Name"}},
         "short": {"$ref": "#/$defs/ShortName"},
-        "bounded": {"$ref": "#/$defs/Names"}
+        "bounded": {"$ref": "#/$defs/Names"},
+        "maybe": {"$ref": "#/$defs/Maybe"}
       }
     },
     "Coded": {"type": "object", "properties": {"code": {"type": "string", "pattern": "^(?!x)[a-z]+$"}}},

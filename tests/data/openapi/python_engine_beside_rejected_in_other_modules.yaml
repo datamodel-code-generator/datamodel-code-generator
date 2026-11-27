@@ -27,6 +27,9 @@ components:
         date:
           type: string
           pattern: '^\p{L}+$'
+        date_aliased:
+          type: string
+          pattern: '^\p{L}+$'
     a.Closed:
       type: object
       additionalProperties: false

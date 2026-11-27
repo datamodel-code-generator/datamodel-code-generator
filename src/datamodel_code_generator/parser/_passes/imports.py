@@ -467,13 +467,14 @@ def _alias_reserved_names(
 ) -> set[str]:
     """Return the names an alias that a module imports a name under takes none of.
 
-    The names of its classes and fields, those its imports and the shared imports bind, and ``also``: every name the
-    module binds, a ``__future__`` one too, which ``shared_import_bindings`` leaves out.
+    The names of its classes and of the fields their bodies write (``_class_body_fields``), those its imports and the
+    shared imports bind, and ``also``: every name the module binds, a ``__future__`` one too, which
+    ``shared_import_bindings`` leaves out.
     """
     return {
         *also,
         *(model.class_name for model in models),
-        *(field.name for model in models for field in model.fields if field.name is not None),
+        *(field.name for model in models for field in _class_body_fields(model) if field.name is not None),
         *_iter_import_bindings(imports),
         *_iter_import_bindings(shared_imports),
     }

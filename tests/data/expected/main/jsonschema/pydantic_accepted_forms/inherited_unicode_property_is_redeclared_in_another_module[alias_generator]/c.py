@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import date as date_aliased
+from datetime import date as date_aliased_1
 
 from pydantic import ConfigDict
 from pydantic.alias_generators import to_camel
@@ -20,7 +20,8 @@ class Both(Named, Coded):
     tint: str | a.Color | None = None
     nickname: str | None = None
     date: str | None = None
-    when: date_aliased | None = None
+    date_aliased: str | None = None
+    when: date_aliased_1 | None = None
 
 
 @dataclass(

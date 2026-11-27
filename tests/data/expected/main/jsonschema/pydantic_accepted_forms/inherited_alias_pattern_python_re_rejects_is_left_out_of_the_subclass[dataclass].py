@@ -17,6 +17,11 @@ ShortName = TypeAliasType(
 )
 
 
+Maybe = TypeAliasType(
+    "Maybe", Annotated[str, Field(pattern=r'^\p{L}+$', min_length=2)] | None
+)
+
+
 Names = TypeAliasType(
     "Names", Annotated[list[Name], Field(..., max_length=3, min_length=1)]
 )
@@ -28,6 +33,7 @@ class Named:
     names: list[Name] | None = None
     short: ShortName | None = None
     bounded: Names | None = None
+    maybe: Maybe | None = None
 
 
 @dataclass(config=ConfigDict(regex_engine="python-re"))
@@ -41,6 +47,7 @@ class Both(Named, Coded):
     names: list[str] | None = None
     short: Annotated[str, Field(max_length=8)] | None = None
     bounded: Annotated[list[str], Field(max_length=3, min_length=1)] | None = None
+    maybe: Annotated[str, Field(min_length=2)] | None = None
     nick: str | None = None
 
 

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import date as date_aliased
+from datetime import date as date_aliased_1
 
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
@@ -19,7 +19,8 @@ class Both(Named, Coded):
     tint: str | a.Color | None = None
     nickname: str | None = None
     date: str | None = None
-    when: date_aliased | None = None
+    date_aliased: str | None = None
+    when: date_aliased_1 | None = None
 
 
 @dataclass(config=ConfigDict(extra='forbid', regex_engine="python-re"))

@@ -23,6 +23,7 @@ class Named:
     tint: constr(pattern=r'^\p{L}+$') | Color | None = None
     nickname: Name | None = None
     date: constr(pattern=r'^\p{L}+$') | None = None
+    date_aliased: constr(pattern=r'^\p{L}+$') | None = None
 
 
 @dataclass(config=ConfigDict(extra='forbid'))

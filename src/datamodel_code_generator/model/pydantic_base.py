@@ -448,14 +448,13 @@ class DataModelField(DataModelFieldBase):
         """Return the type ``data_type`` writes without the patterns of ``_rejected_patterns_of``.
 
         A type writes itself without its pattern (``without``, the output's ``_TYPE_WITHOUT_PATTERN``). A type alias
-        is written as its body without them (``_written_type``), a body naming a model as the field's copy of it
-        (``_own_body_types``), with the other constraint arguments the call of its field writes
+        is written as its body without them, with the field's copy of each model the body names (``_written_type``,
+        ``_own_body_types``), with the other constraint arguments the call of its field writes
         (``_written_constraint_arguments``, as ``_CONSTRAINED_TYPE`` writes them).
         """
         if (body := _unbuilt_alias_body(data_type, visiting)) is None:
             return without(data_type)
-        if (written := self._written_type(body.data_type, visiting | {id(body)}, named)) is None:
-            written = self._own_body_types((body.data_type,), named).get(id(body.data_type)) or without(body.data_type)
+        written = self._written_type(body.data_type, visiting | {id(body)}, named) or body.data_type
         arguments = {
             name: value
             for name, value in DataModelField._written_constraint_arguments(body).items()
@@ -483,21 +482,21 @@ class DataModelField(DataModelFieldBase):
     ) -> DataType | None:
         """Return the copy of a type, the field's own by default, its hint writes without the patterns it rejects.
 
-        None when it writes the type as it is. The copy holds each type with a pattern of ``_rejected_patterns_of``
-        written without them (``_type_without_rejected_patterns``) and shares the field's references, as msgspec's
-        copies do; ``visiting`` holds the type alias bodies it is in. In a body, it holds each other type naming a
-        model as the field's copy of it (``_own_body_types``), which ``named`` collects.
+        None when it writes the type as it is, which a type alias body never does. The copy holds each type with a
+        pattern of ``_rejected_patterns_of`` written without them (``_type_without_rejected_patterns``) and shares the
+        field's references, as msgspec's copies do; ``visiting`` holds the type alias bodies it is in. In a body, it
+        holds each other type naming a model as the field's copy of it (``_own_body_types``), which ``named``
+        collects.
         """
         if (without := self._TYPE_WITHOUT_PATTERN) is None or not self._python_engine_builds():
             return None
         written = self.data_type if data_type is None else data_type
-        if not (
-            replacements := {
-                id(nested): self._type_without_rejected_patterns(nested, visiting, without, named)
-                for nested in written.all_data_types
-                if self._rejected_patterns_of(nested, visiting)
-            }
-        ):
+        replacements = {
+            id(nested): self._type_without_rejected_patterns(nested, visiting, without, named)
+            for nested in written.all_data_types
+            if self._rejected_patterns_of(nested, visiting)
+        }
+        if not (replacements or visiting):
             return None
         if visiting:
             kept = (nested for nested in written.all_data_types if id(nested) not in replacements)

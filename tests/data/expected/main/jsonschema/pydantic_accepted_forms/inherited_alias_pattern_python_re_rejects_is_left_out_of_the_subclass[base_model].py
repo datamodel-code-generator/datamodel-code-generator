@@ -14,6 +14,10 @@ class ShortName(RootModel[constr(pattern=r'^\p{L}+$', max_length=8)]):
     root: constr(pattern=r'^\p{L}+$', max_length=8)
 
 
+class Maybe(RootModel[constr(pattern=r'^\p{L}+$', min_length=2) | None]):
+    root: constr(pattern=r'^\p{L}+$', min_length=2) | None
+
+
 class Names(RootModel[list[Name]]):
     root: list[Name] = Field(..., max_length=3, min_length=1)
 
@@ -23,6 +27,7 @@ class Named(BaseModel):
     names: list[Name] | None = None
     short: ShortName | None = None
     bounded: Names | None = None
+    maybe: Maybe | None = None
 
 
 class Coded(BaseModel):
