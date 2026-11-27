@@ -984,6 +984,10 @@
       "not_recommended": "style",
       "reason": "Keeps the schema order of models in the output."
     },
+    "keep_typed_input_model_root_python_types": {
+      "not_recommended": "preset",
+      "reason": "--input-model only: set by the 20261127 presets; the recommendation starts from a preset."
+    },
     "keyword_only": {
       "not_recommended": "style",
       "reason": "Keyword-only model constructors; an API choice of the project."

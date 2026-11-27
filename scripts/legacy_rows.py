@@ -4214,6 +4214,24 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
+        "legacy-typed-root-standard-schema",
+        (
+            "without `--keep-typed-input-model-root-python-types`, a dataclass or TypedDict root of an input model is "
+            "written as the JSON Schema of Pydantic's standard generator spells it, which drops the `Callable` branch "
+            "of a union (`int | Callable` is `int`) and writes `type[X]` as `Any`, where a Pydantic model root keeps "
+            "both (`input_model.py:_model_schema_with_python_types`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input-model",
+            "tests.data.python.input_model.dataclass_models:Settings",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--keep-typed-input-model-root-python-types",
+    ),
+    LegacyRow(
         "legacy-str-subclass-host-repr",
         (
             "`represent_python_value` writes a `str` subclass that keeps the `repr()` of `str` (a `$ref` value that "
@@ -4442,6 +4460,7 @@ UNTESTED: Final[frozenset[str]] = frozenset({
     "legacy-struct-hash-last-base-first",
     "legacy-tag-from-earlier-union",
     "legacy-tree-scope",
+    "legacy-typed-root-standard-schema",
     "legacy-undeclared-keywords-off-literal",
     "legacy-unique-items-decided-before-collapse",
     "legacy-unique-sets-level-order",

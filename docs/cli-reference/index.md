@@ -8,7 +8,7 @@ This documentation is auto-generated from test cases.
 
 | Category | Options | Description |
 |----------|---------|-------------|
-| 📁 [Base Options](base-options.md) | 24 | Input/output configuration |
+| 📁 [Base Options](base-options.md) | 25 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 68 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 47 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 78 | Model generation behavior |
@@ -277,6 +277,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--keep-self-referencing-array-items`](model-customization.md#keep-self-referencing-array-items)
 - [`--keep-shared-members-on-collapsed-root-models`](model-customization.md#keep-shared-members-on-collapsed-root-models)
 - [`--keep-string-keywords-beside-formats`](field-customization.md#keep-string-keywords-beside-formats)
+- [`--keep-typed-input-model-root-python-types`](base-options.md#keep-typed-input-model-root-python-types)
 - [`--keyword-only`](model-customization.md#keyword-only)
 
 ### L {#l}

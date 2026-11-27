@@ -1,1 +1,1 @@
-'[tool.datamodel-codegen.profiles.api]\noutput-model-type = "typing.TypedDict"\ncollapse-reuse-models = true\nnaming-strategy = "enclosing-model"\npreset = "standard-py310-20261125"\nreuse-model = true\ntreat-dot-as-module = false\nuse-tag-as-union-variant-name = true\n'
+'[tool.datamodel-codegen.profiles.api]\noutput-model-type = "typing.TypedDict"\ncollapse-reuse-models = true\nnaming-strategy = "enclosing-model"\npreset = "standard-py310-20261127"\nreuse-model = true\ntreat-dot-as-module = false\nuse-tag-as-union-variant-name = true\n'

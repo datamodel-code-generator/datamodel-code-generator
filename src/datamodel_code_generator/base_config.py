@@ -540,6 +540,7 @@ class BaseGenerateConfig(BaseModel):
     keep_string_keywords_beside_formats: bool = False
     read_input_model_dataclass_fields_by_alias: bool = False
     reuse_every_reached_input_model_type: bool = False
+    keep_typed_input_model_root_python_types: bool = False
     use_site_models_for_constrained_refs: bool = False
     use_one_model_per_ref_site: bool = False
     original_field_name_delimiter: str | None = None
