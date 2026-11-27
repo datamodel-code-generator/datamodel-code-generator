@@ -3701,7 +3701,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "package's imports where the classes do not evaluate their annotations as they are defined, row "
             "`legacy-running-packages-load`), "
             "the import of the models of a submodule from the submodule where its package, defining the class or "
-            "forwarding it, loads it before its class (`parser/_passes/imports.py:submodules_hidden_by_packages`) "
+            "forwarding it, loads it before its class, or forwarding it where the refusal above keeps the class "
+            "(`parser/_passes/imports.py:submodules_hidden_by_packages`) "
             "and the packages whose `__init__.py` a module writes (the aliases of `parser/_passes/imports.py` for the "
             "names a package's submodules hide)"
         ),

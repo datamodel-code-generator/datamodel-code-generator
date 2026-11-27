@@ -3,7 +3,7 @@ id = "fix-7583-input-count"
 category = "docs-text"
 title = "Schema files the payload test discovers after the dataclass base class cases"
 summary = "The count of discovered schema files grows by the inputs of the pydantic dataclass base class cases; the package writes the same output."
-refs = ["#1", "#7583"]
+refs = ["#7603", "#7583"]
 covers = [
     "main/payload_validation/cases_cover_discovered_schema_files.txt",
 ]

@@ -23,17 +23,25 @@ def is_legacy_python_type_token(value: object) -> bool:
 class PythonTypeSchemaAnnotation:
     """Opaque schema annotation that preserves type IR through model dumps."""
 
-    __slots__ = ("_expression", "_legacy_token")
+    __slots__ = ("_arbitrary_types", "_expression", "_legacy_token")
 
-    def __init__(self, expression: PythonTypeExpr, legacy_token: str | None = None) -> None:
+    def __init__(
+        self, expression: PythonTypeExpr, legacy_token: str | None = None, *, arbitrary_types: bool = False
+    ) -> None:
         """Wrap one neutral type expression for schema transport."""
         self._expression = expression
         self._legacy_token = legacy_token
+        self._arbitrary_types = arbitrary_types
 
     @property
     def expression(self) -> PythonTypeExpr:
         """Return the neutral expression carried by this schema annotation."""
         return self._expression
+
+    @property
+    def arbitrary_types(self) -> bool:
+        """Return whether a class of the expression is one Pydantic builds only with ``arbitrary_types_allowed``."""
+        return self._arbitrary_types
 
     @property
     def legacy_token(self) -> str | None:

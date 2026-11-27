@@ -761,6 +761,8 @@ class DataType(_BaseModel):  # noqa: PLR0904
     tuple_item_count: int | None = Field(default=None, ge=0)
     given_container: Optional[GivenContainerName] = None
     is_custom_type: bool = False
+    needs_arbitrary_types: bool = False
+    """Whether the type names a class that Pydantic builds only with ``arbitrary_types_allowed`` (an input model's)."""
     literals: list[Union[StrictBool, StrictInt, StrictStr]] = Field(default_factory=list)
     enum_member_literals: list[tuple[str, str]] = Field(default_factory=list)  # [(EnumClassName, member_name), ...]
     enum_member_tag_values: tuple[Union[StrictBool, StrictInt, StrictStr], ...] = ()

@@ -20,8 +20,8 @@ import tempfile
 import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable as ABCCallable
-from collections.abc import Iterator, Sequence
-from contextlib import AbstractContextManager, ExitStack, nullcontext, suppress
+from collections.abc import Generator, Iterator, Sequence
+from contextlib import AbstractContextManager, ExitStack, contextmanager, nullcontext, suppress
 from dataclasses import Field as DataclassField
 from dataclasses import asdict, is_dataclass
 from dataclasses import fields as dataclass_fields
@@ -31,7 +31,7 @@ from http.server import ThreadingHTTPServer
 from operator import itemgetter
 from pathlib import Path, PurePath
 from threading import Thread
-from types import MappingProxyType, UnionType
+from types import MappingProxyType, ModuleType, UnionType
 from typing import TYPE_CHECKING, Any, get_args, get_origin, get_type_hints
 from urllib.parse import urlparse
 
@@ -3955,19 +3955,37 @@ def _decode_with_generated_model(output_model_type: str, model: Any, payload: st
     return f"{payload}: accepted {decoded!r}"
 
 
+@contextmanager
+def _imported_decoded_modules(
+    output_dir: Path, decoded: list[tuple[str, str, list[str]]]
+) -> Generator[list[ModuleType]]:
+    """Import the generated package as Python does, the module of the first entry first, and yield the modules."""
+    with _generated_package_module(output_dir, decoded[0][0]):
+        yield [
+            importlib.import_module(f"{output_dir.name}.{module_path}" if module_path else output_dir.name)
+            for module_path, _, _ in decoded
+        ]
+
+
 def _decoded_package_verdicts(
     output_dir: Path, output_model_type: str, decoded: list[tuple[str, str, list[str]]]
 ) -> str:
     """Import the generated package as Python does, its first module first, and describe each payload's decoding."""
-    verdicts = []
-    with _generated_package_module(output_dir, decoded[0][0]):
-        for module_path, model_name, payloads in decoded:
-            module = importlib.import_module(f"{output_dir.name}.{module_path}" if module_path else output_dir.name)
-            verdicts += [
-                _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
-                for payload in payloads
-            ]
+    with _imported_decoded_modules(output_dir, decoded) as modules:
+        verdicts = [
+            _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
+            for module, (_, model_name, payloads) in zip(modules, decoded, strict=True)
+            for payload in payloads
+        ]
     return "\n".join(verdicts) + "\n"
+
+
+def _forwarded_name_after_imports(output_dir: Path, decoded: list[tuple[str, str, list[str]]]) -> str:
+    """Import the modules of ``decoded`` in order and say what the name ``Warn`` of the first one's package is."""
+    with _imported_decoded_modules(output_dir, decoded) as modules:
+        package_name = modules[0].__name__.rpartition(".")[0]
+        kind = "class" if isinstance(sys.modules[package_name].Warn, type) else "module"
+    return f"{decoded[0][0].rpartition('.')[0]}.Warn after the imports: {kind}\n"
 
 
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
@@ -4837,6 +4855,160 @@ def test_main_jsonschema_forwarded_class_read_outside_cycle(
         skip_code_validation=True,
     )
     assert_output(_decoded_package_verdicts(output_dir, output_model_type, decoded), name="payloads")
+
+
+_FORWARDED_BESIDE_UNLOADED = "submodule_named_like_forwarded_class.json"
+_FORWARDED_BESIDE_UNLOADED_DECODED = [
+    ("pkg.api", "Order", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+    ("pkg._internal", "Warn", ['{"count": 1, "x": {"warn": {"count": 2}}}', '{"count": "x"}']),
+]
+_FORWARDED_UNLOADED_READ = "submodule_named_like_forwarded_class_unloaded_read.json"
+_FORWARDED_UNLOADED_READ_DECODED = [
+    (
+        "pkg.report",
+        "Report",
+        [
+            (
+                '{"detail": {"message": "m"}, "warn": {"count": 1}, "details": [{"message": "a"}], "either": "s", '
+                '"by_code": {"x": {"message": "b"}}, "kind": "high", "trace": {"line": 3}}'
+            ),
+            '{"details": [{"message": 1}]}',
+        ],
+    ),
+    ("other", "Other", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+    ("pkg.sub.leaf", "Leaf", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+    ("pkg.extended", "Extended", ['{"message": "m", "code": "c"}', '{"message": 1}']),
+    ("pkg.api", "Order", ['{"warn": {"count": 1}}', '{"warn": {"count": "x"}}']),
+    ("pkg._internal", "Warn", ['{"count": 1, "order": {"warn": {"count": 2}}}', '{"count": "x"}']),
+]
+_FORWARDED_UNREAD_DECODED = [
+    ("pkg._internal", "Warn", ['{"count": 1, "x": {"warn": {"count": 2}}}', '{"count": "x"}']),
+    ("pkg.Warn", "Detail", ['{"message": "m"}', '{"message": 1}']),
+]
+
+
+@pytest.mark.parametrize(
+    ("input_name", "output_model_type", "extra_args", "decoded"),
+    [
+        *(
+            pytest.param(
+                _FORWARDED_BESIDE_UNLOADED,
+                output_model_type,
+                ["--all-exports-scope", "children"],
+                _FORWARDED_BESIDE_UNLOADED_DECODED,
+                id=output_model_type,
+                marks=(needs("typed-dict-validation"),) if output_model_type == "typing.TypedDict" else (),
+            )
+            for output_model_type in (
+                "pydantic_v2.BaseModel",
+                "dataclasses.dataclass",
+                "msgspec.Struct",
+                "typing.TypedDict",
+                "pydantic_v2.dataclass",
+            )
+        ),
+        *(
+            pytest.param(
+                _FORWARDED_BESIDE_UNLOADED,
+                "pydantic_v2.BaseModel",
+                extra_args,
+                _FORWARDED_BESIDE_UNLOADED_DECODED,
+                id=param_id,
+                marks=(needs("native-deferred-annotations"),) if param_id == "py314" else (),
+            )
+            for extra_args, param_id in (
+                (["--all-exports-scope", "recursive"], "all-exports-recursive"),
+                (["--all-exports-scope", "children", "--target-python-version", "3.14"], "py314"),
+                (["--all-exports-scope", "children", "--use-exact-imports"], "exact-imports"),
+                (["--all-exports-scope", "children", "--rename-submodules-hidden-by-classes"], "rename"),
+                (["--all-exports-scope", "children", "--preset", "standard-py310-20261125"], "preset"),
+            )
+        ),
+        *(
+            pytest.param(
+                "submodule_named_like_forwarded_class_unread.json",
+                "pydantic_v2.BaseModel",
+                ["--all-exports-scope", scope],
+                _FORWARDED_UNREAD_DECODED,
+                id=f"unread-all-exports-{scope}",
+            )
+            for scope in ("children", "recursive")
+        ),
+        *(
+            pytest.param(
+                _FORWARDED_UNLOADED_READ,
+                output_model_type,
+                extra_args,
+                _FORWARDED_UNLOADED_READ_DECODED,
+                id=param_id,
+            )
+            for output_model_type, extra_args, param_id in (
+                ("pydantic_v2.BaseModel", ["--all-exports-scope", "children"], "readers-all-exports-children"),
+                ("pydantic_v2.BaseModel", ["--all-exports-scope", "recursive"], "readers-all-exports-recursive"),
+                (
+                    "pydantic_v2.BaseModel",
+                    ["--all-exports-scope", "children", "--set-default-enum-member"],
+                    "readers-enum-default",
+                ),
+                ("msgspec.Struct", ["--all-exports-scope", "children"], "readers-msgspec"),
+            )
+        ),
+        *(
+            pytest.param(
+                "submodule_named_like_nested_forwarded_class_unloaded_read.json",
+                "pydantic_v2.BaseModel",
+                ["--all-exports-scope", scope],
+                [
+                    ("a.b.api", "Order", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                    ("a.c", "C", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                    ("a.b.sub.deep", "Deep", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                ],
+                id=f"nested-all-exports-{scope}",
+            )
+            for scope in ("children", "recursive")
+        ),
+    ],
+)
+def test_main_jsonschema_forwarded_class_beside_unloaded_submodule(
+    output_dir: Path,
+    input_name: str,
+    output_model_type: str,
+    extra_args: list[str],
+    decoded: list[tuple[str, str, list[str]]],
+) -> None:
+    """Import a model of a submodule from it where ``__init__.py`` forwards its class and nothing loads the module.
+
+    An import cycle merge moves ``pkg.Warn`` and ``pkg.other.X`` into ``pkg/_internal.py``, which reads nothing of
+    ``pkg/Warn.py``, so no import of ``pkg`` loads the submodule and ``pkg`` keeps the class ``Warn`` until a module
+    imports ``pkg.Warn``. ``--all-exports-scope`` lets the output through, as the refusal reads the re-exports that a
+    forwarder never writes as loads. A module that read the submodule through ``from . import Warn`` got the class and
+    failed (``Warn.Detail``): at import with Pydantic, at ``get_type_hints`` and every decode with a dataclass, a
+    Struct or a TypedDict (#7573). It now imports ``Detail`` from ``pkg/Warn.py``, in a list, a union, a dict and an
+    enum default as well, and so does a module below a package ``pkg/Warn/``; the same holds for a nested package. A
+    package whose modules read nothing of the submodule is written as before, as is the output under
+    ``--use-exact-imports``, ``--rename-submodules-hidden-by-classes`` and the preset that renames the submodule. The
+    package is imported as Python imports it, a package before its modules. Once a module imports ``Detail`` from
+    ``pkg/Warn.py``, the name ``pkg.Warn`` is the submodule (``bindings``), as ``--all-exports-scope recursive`` output
+    already behaves; ``Warn`` of ``_internal`` stays the class.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        skip_code_validation=True,
+    )
+    assert_output(_decoded_package_verdicts(output_dir, output_model_type, decoded), name="payloads")
+    assert_output(_forwarded_name_after_imports(output_dir, decoded), name="bindings")
 
 
 def test_main_jsonschema_submodule_hidden_by_package_loaded_through_module(output_dir: Path) -> None:
@@ -27766,6 +27938,32 @@ def test_main_root_model_config_frozen(output_file: Path) -> None:
             "--output-model-type",
             "pydantic_v2.BaseModel",
             "--enable-faux-immutability",
+        ],
+    )
+
+
+def test_main_root_model_config_leaves_out_arbitrary_types(output_file: Path, tmp_path: Path) -> None:
+    """A RootModel leaves out an ``arbitrary_types_allowed`` its extra template data sets, as before (#7562).
+
+    Only a root that holds a class Pydantic builds with arbitrary types writes the key.
+    """
+    extra_template_data = tmp_path / "extra_template_data.json"
+    extra_template_data.write_text(
+        json.dumps({
+            "Items": {"config": {"arbitrary_types_allowed": True, "frozen": True}},
+            "ConstrainedString": {"config": {"arbitrary_types_allowed": True}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "root_model_config.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--extra-template-data",
+            str(extra_template_data),
         ],
     )
 

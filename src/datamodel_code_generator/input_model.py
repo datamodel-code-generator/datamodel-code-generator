@@ -379,6 +379,8 @@ def _runtime_python_type_expr(tp: object, *, full_name: bool = False) -> PythonT
 def _transport_python_type_expr(
     expression: PythonTypeExpr,
     expression_collector: PythonTypeExpressionCollector | None,
+    *,
+    arbitrary_types: bool = False,
 ) -> str:
     """Keep the public text contract while tokenizing the private parser path."""
     if expression_collector is not None:
@@ -398,17 +400,27 @@ def _transport_python_type_expr(
                     return PythonTypeName(parts[0])
             return item
 
-        return expression_collector.add(rewrite_python_type_expr(expression, bind_runtime_symbol_to_syntax))
+        return expression_collector.add(
+            rewrite_python_type_expr(expression, bind_runtime_symbol_to_syntax), arbitrary_types=arbitrary_types
+        )
     return render_python_type_expr(expression)
 
 
 def _serialize_python_type_full(
     tp: object,
     expression_collector: PythonTypeExpressionCollector | None = None,
+    *,
+    arbitrary_types: bool = False,
 ) -> str:
-    """Serialize ANY Python type to its string representation."""
+    """Serialize ANY Python type to its string representation.
+
+    ``arbitrary_types`` marks the type as one Pydantic builds only with ``arbitrary_types_allowed``, for the
+    collector's token (``PythonTypeExpressionCollector.add``).
+    """
     try:
-        return _transport_python_type_expr(_runtime_python_type_expr(tp), expression_collector)
+        return _transport_python_type_expr(
+            _runtime_python_type_expr(tp), expression_collector, arbitrary_types=arbitrary_types
+        )
     except ValueError as exc:
         raise Error(str(exc)) from None
 
@@ -509,7 +521,9 @@ def _get_input_model_json_schema_class(
             self._unserializable_count += 1
             return {
                 "type": "object",
-                _UNSERIALIZABLE_MARKER: id(schema),
+                _UNSERIALIZABLE_MARKER: (
+                    _ArbitraryTypeMarker(id(schema)) if _needs_arbitrary_types(schema) else id(schema)
+                ),
             }
 
         def callable_schema(
@@ -700,6 +714,10 @@ class _UnionBranchIndex(int):
     original: tuple[Any, ...] = ()
 
 
+class _ArbitraryTypeMarker(int):
+    """The marker of a node that Pydantic builds only with ``arbitrary_types_allowed`` (``_needs_arbitrary_types``)."""
+
+
 def _consume_union_branch(schema: dict[str, Any]) -> int | None:
     """Consume only provenance produced by the schema generator."""
     if not isinstance(index := schema.get(_UNION_BRANCH_MARKER), _UnionBranchIndex):
@@ -729,8 +747,34 @@ def _bind_union_choice(value: Any, targets: dict[int, dict[str, Any]], index: in
             _bind_union_choice(item, targets, index)
 
 
+def _needs_arbitrary_types(schema: dict[str, object]) -> bool:
+    """Return whether a core schema is the instance check Pydantic builds only with ``arbitrary_types_allowed``.
+
+    That is an ``is-instance`` node of a class other than ``type``, whose own schema Pydantic writes natively, and
+    that names no ``__get_pydantic_core_schema__``: a class with that hook builds without the config.
+    """
+    return (
+        schema.get("type") == "is-instance"
+        and (cls := schema.get("cls")) is not type
+        and not hasattr(cls, "__get_pydantic_core_schema__")
+    )
+
+
 def _has_unserializable_schema(value: Any) -> bool:
     return any(node.get(_UNSERIALIZABLE_MARKER) for node in _iter_schema_nodes(value))
+
+
+def _names_arbitrary_type(value: object, expression_collector: PythonTypeExpressionCollector | None) -> bool:
+    """Return whether the type written at a schema names a class Pydantic builds only with ``arbitrary_types_allowed``.
+
+    That type covers every node of the schema: a node marked so (``_ArbitraryTypeMarker``) and a node, such as a union
+    branch, whose ``x-python-type`` already spells such a type (``PythonTypeExpressionCollector.has_arbitrary_types``).
+    """
+    return any(
+        isinstance(node.get(_UNSERIALIZABLE_MARKER), _ArbitraryTypeMarker)
+        or (expression_collector is not None and expression_collector.has_arbitrary_types(node.get("x-python-type")))
+        for node in _iter_schema_nodes(value)
+    )
 
 
 def _remove_unserializable_markers(value: Any) -> None:
@@ -779,10 +823,14 @@ def _process_unserializable_property(
                 released_typed_root_forms=released_typed_root_forms,
             )
     elif prop.get(_UNSERIALIZABLE_MARKER):
-        prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
+        prop["x-python-type"] = _serialize_python_type_full(
+            annotation, expression_collector, arbitrary_types=_names_arbitrary_type(prop, expression_collector)
+        )
         prop.pop(_UNSERIALIZABLE_MARKER, None)
     elif not _UNSERIALIZABLE_PART_KEYS.isdisjoint(prop) and _has_unserializable_schema(prop):
-        prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
+        prop["x-python-type"] = _serialize_python_type_full(
+            annotation, expression_collector, arbitrary_types=_names_arbitrary_type(prop, expression_collector)
+        )
         _remove_unserializable_markers(prop)
     elif not in_union and not released_typed_root_forms and get_origin(annotation) is type:
         prop["x-python-type"] = _serialize_python_type_full(annotation, expression_collector)
@@ -867,13 +915,20 @@ def _serialize_python_type(
     tp: type,
     expression_collector: PythonTypeExpressionCollector | None = None,
     generic_names: dict[type, str] | None = None,
+    *,
+    arbitrary_types: bool = False,
 ) -> str | None:
-    """Serialize Python type to a string for x-python-type field."""
+    """Serialize Python type to a string for x-python-type field.
+
+    ``arbitrary_types`` keeps the mark of the ``x-python-type`` values the type replaces (``_names_arbitrary_type``).
+    """
     expression = _preserved_python_type_expr(tp)
     if expression is not None and generic_names:
         expression = _preserved_python_type_expr(tp, generic_names)
     expression = expression or _variadic_tuple_expr(tp, generic_names)
-    return _transport_python_type_expr(expression, expression_collector) if expression is not None else None
+    if expression is None:
+        return None
+    return _transport_python_type_expr(expression, expression_collector, arbitrary_types=arbitrary_types)
 
 
 def _variadic_tuple_expr(tp: type, generic_names: dict[type, str] | None = None) -> PythonTypeExpr | None:
@@ -1057,7 +1112,12 @@ def _add_python_type_to_model_properties(
 ) -> None:
     """Supplement one definition using the fields of its actual Python model."""
     for annotation, prop in _model_properties(properties, model):
-        if serialized := _serialize_python_type(annotation, expression_collector, generic_names):
+        if serialized := _serialize_python_type(
+            annotation,
+            expression_collector,
+            generic_names,
+            arbitrary_types=_names_arbitrary_type(prop, expression_collector),
+        ):
             prop["x-python-type"] = serialized
 
 

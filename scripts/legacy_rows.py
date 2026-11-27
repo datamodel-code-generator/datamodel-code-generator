@@ -3616,6 +3616,29 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--keep-inherited-dataclass-config",
     ),
     LegacyRow(
+        "legacy-custom-type-config-at-init",
+        (
+            "a Pydantic v2 model whose fields hold a `customTypePath` type when it is created writes "
+            "`arbitrary_types_allowed` (`build_base_config_parameters`), whatever the class the path names, and "
+            "keeps it where `--type-overrides` later replaces the type; the classes of an input model decide once "
+            "the field types are final (`_PydanticV2Model._allow_arbitrary_types`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/custom_type_path_overridden.json",
+            "--input-file-type",
+            "jsonschema",
+            "--disable-timestamp",
+            "--target-python-version",
+            "3.11",
+            "--type-overrides",
+            '{"Model.kind": "decimal.Decimal", "A": "uuid.UUID"}',
+            "--formatters",
+            "builtin",
+        ),
+    ),
+    LegacyRow(
         "legacy-flat-bare-loads",
         (
             "the check of module imports named like a builtin counts every name node of a rendered model as a bare "
@@ -4390,11 +4413,13 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         (
             "the refusal of a class beside a module of its name in its package reads the `__init__.py` that an import "
             "cycle merge leaves as a forwarder of the class with the `--all-exports-scope` re-exports it does not "
-            "write, as a load of the module, and writes the output that 0.90.0 and later write there "
+            "write, as a load of the module, and writes the output there as 0.90.0 and later do; the modules that "
+            "read the module import its models from it (#7573) "
             "(`parser/_passes/_import_edges.py:init_load_edges`, "
-            "`parser/_passes/imports.py:_class_named_like_submodule`)"
+            "`parser/_passes/imports.py:_class_named_like_submodule`, "
+            "`parser/_passes/imports.py:submodules_hidden_by_packages`)"
         ),
-        fix=7573,
+        fix=KEEP,
         witness=(
             "--input",
             "tests/data/jsonschema/submodule_named_like_forwarded_class.json",
@@ -4430,6 +4455,7 @@ UNTESTED: Final[frozenset[str]] = frozenset({
     "legacy-content-parameter-copy",
     "legacy-converter-placeholder-title",
     "legacy-count-ref-member-as-written",
+    "legacy-custom-type-config-at-init",
     "legacy-cycle-walk-reads-values-whole",
     "legacy-dataclass-follows-every-reference",
     "legacy-dataclass-overwrites-engine",

@@ -4,6 +4,70 @@
 option	input_model/abstract_containers_as_written[option].txt
 preset	input_model/abstract_containers_as_written[preset].txt
 released	input_model/abstract_containers_as_written[released].txt
+[test_input_model_arbitrary_class_fields]
+any-type	input_model/arbitrary_class_fields[any-type].txt
+callable-of	input_model/arbitrary_class_fields[callable-of].txt
+callable-returning	input_model/arbitrary_class_fields[callable-returning].txt
+child	input_model/arbitrary_class_fields[child].txt
+child-dataclass	input_model/arbitrary_class_fields[child-dataclass].txt
+child-dataclass-extra-forbid	input_model/arbitrary_class_fields[child-dataclass-extra-forbid].txt
+child-only	input_model/arbitrary_class_fields[child-only].txt
+child-only-dataclass	input_model/arbitrary_class_fields[child-only-dataclass].txt
+constrained-branch	input_model/arbitrary_class_fields[constrained-branch].txt
+containers	input_model/arbitrary_class_fields[containers].txt
+containers-only	input_model/arbitrary_class_fields[containers-only].txt
+containers-only-as-written	input_model/arbitrary_class_fields[containers-only-as-written].txt	= input_model/arbitrary_class_fields[containers-only].txt
+custom-base	input_model/arbitrary_class_fields[custom-base].txt
+dataclass-root	input_model/arbitrary_class_fields[dataclass-root].txt
+extra-forbid	input_model/arbitrary_class_fields[extra-forbid].txt
+holds-dataclass	input_model/arbitrary_class_fields[holds-dataclass].txt
+hooked	input_model/arbitrary_class_fields[hooked].txt
+hooked-allowed	input_model/arbitrary_class_fields[hooked-allowed].txt
+instance-of	input_model/arbitrary_class_fields[instance-of].txt
+issue	input_model/arbitrary_class_fields[issue].txt
+list-beside-preserved	input_model/arbitrary_class_fields[list-beside-preserved].txt
+nested	input_model/arbitrary_class_fields[nested].txt
+optional-preserved-union	input_model/arbitrary_class_fields[optional-preserved-union].txt
+optional-subclass-of	input_model/arbitrary_class_fields[optional-subclass-of].txt
+preserved-union	input_model/arbitrary_class_fields[preserved-union].txt
+preserved-union-dataclass	input_model/arbitrary_class_fields[preserved-union-dataclass].txt
+preserved-union-root	input_model/arbitrary_class_fields[preserved-union-root].txt
+preserved-union-root-alias	input_model/arbitrary_class_fields[preserved-union-root-alias].txt	= input_model/arbitrary_class_fields[preserved-union-root].txt
+pydantic-dataclass-root	input_model/arbitrary_class_fields[pydantic-dataclass-root].txt
+reuse-all	input_model/arbitrary_class_fields[reuse-all].txt
+reuse-foreign	input_model/arbitrary_class_fields[reuse-foreign].txt
+root-alias	input_model/arbitrary_class_fields[root-alias].txt
+root-in-model	input_model/arbitrary_class_fields[root-in-model].txt
+root-in-model-root-alias	input_model/arbitrary_class_fields[root-in-model-root-alias].txt	= input_model/arbitrary_class_fields[root-in-model].txt
+root-in-model-type-alias	input_model/arbitrary_class_fields[root-in-model-type-alias].txt
+root-optional	input_model/arbitrary_class_fields[root-optional].txt	= input_model/arbitrary_class_fields[root-alias].txt
+root-union	input_model/arbitrary_class_fields[root-union].txt
+subclass-of	input_model/arbitrary_class_fields[subclass-of].txt
+type-override	input_model/arbitrary_class_fields[type-override].txt
+type-override-whole-type	input_model/arbitrary_class_fields[type-override-whole-type].txt	= input_model/arbitrary_class_fields[type-override].txt
+typeddict-root	input_model/arbitrary_class_fields[typeddict-root].txt
+user-dict	input_model/arbitrary_class_fields[user-dict].txt
+[test_input_model_arbitrary_class_fields_by_output_type]
+dataclasses.dataclass-DataclassHolder	input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-DataclassHolder].txt
+dataclasses.dataclass-Holder	input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-Holder].txt
+dataclasses.dataclass-PydanticDataclassHolder	input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-PydanticDataclassHolder].txt
+dataclasses.dataclass-TypedDictHolder	input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-TypedDictHolder].txt
+msgspec.Struct-DataclassHolder	input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-DataclassHolder].txt
+msgspec.Struct-Holder	input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-Holder].txt
+msgspec.Struct-PydanticDataclassHolder	input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-PydanticDataclassHolder].txt
+msgspec.Struct-TypedDictHolder	input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-TypedDictHolder].txt
+pydantic_v2.BaseModel-DataclassHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-DataclassHolder].txt	= input_model/arbitrary_class_fields[dataclass-root].txt
+pydantic_v2.BaseModel-Holder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-Holder].txt	= input_model/arbitrary_class_fields[issue].txt
+pydantic_v2.BaseModel-PydanticDataclassHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-PydanticDataclassHolder].txt	= input_model/arbitrary_class_fields[pydantic-dataclass-root].txt
+pydantic_v2.BaseModel-TypedDictHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-TypedDictHolder].txt	= input_model/arbitrary_class_fields[typeddict-root].txt
+pydantic_v2.dataclass-DataclassHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-DataclassHolder].txt
+pydantic_v2.dataclass-Holder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-Holder].txt
+pydantic_v2.dataclass-PydanticDataclassHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-PydanticDataclassHolder].txt
+pydantic_v2.dataclass-TypedDictHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-TypedDictHolder].txt
+typing.TypedDict-DataclassHolder	input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-DataclassHolder].txt
+typing.TypedDict-Holder	input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-Holder].txt
+typing.TypedDict-PydanticDataclassHolder	input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-PydanticDataclassHolder].txt
+typing.TypedDict-TypedDictHolder	input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-TypedDictHolder].txt
 [test_input_model_callable_types]
 basic	input_model/callable_types[basic].txt
 multi_param	input_model/callable_types[multi_param].txt	= input_model/callable_types[basic].txt

@@ -1,0 +1,14 @@
+[[change]]
+id = "input-model-arbitrary-types-api"
+category = "api"
+title = "Type annotation and DataType fact for classes that need arbitrary types"
+summary = "PythonTypeSchemaAnnotation takes a keyword-only arbitrary_types argument and has an arbitrary_types property, and DataType has a needs_arbitrary_types field (default False): an input model's x-python-type names a class Pydantic builds only with arbitrary_types_allowed. Nothing is removed or changed."
+refs = ["#7595", "#7562"]
+decision = ["#7595"]
+source = "release-note"
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.input_model_result.PythonTypeSchemaAnnotation", "datamodel_code_generator.types.DataType"] }
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

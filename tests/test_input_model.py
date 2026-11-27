@@ -1444,6 +1444,97 @@ def test_input_model_custom_class(tmp_path: Path) -> None:
     )
 
 
+ARBITRARY_CLASSES_MODULE = "tests.data.python.input_model.structured_annotations"
+_ROOT_MODEL_ALIAS = ("--use-root-model-type-alias",)
+_TYPE_ALIAS = ("--use-type-alias",)
+_DATACLASS = ("--output-model-type", "pydantic_v2.dataclass")
+ARBITRARY_CLASS_CASES: dict[str, tuple[str, tuple[str, ...]]] = {
+    "issue": ("Holder", ()),
+    "containers": ("Containers", ()),
+    "containers-only": ("ListOnly", ()),
+    "containers-only-as-written": ("ListOnly", ("--use-x-python-type-as-written",)),
+    "nested": ("Outer", ()),
+    "holds-dataclass": ("OuterDataclass", ()),
+    "pydantic-dataclass-root": ("PydanticDataclassHolder", ()),
+    "dataclass-root": ("DataclassHolder", ()),
+    "typeddict-root": ("TypedDictHolder", ()),
+    "instance-of": ("InstanceOfOnly", ()),
+    "hooked": ("HookedOnly", ()),
+    "hooked-allowed": ("HookedAllowed", ()),
+    "user-dict": ("UserDictHolder", ()),
+    "extra-forbid": ("Forbid", ("--extra-fields", "forbid")),
+    "custom-base": ("Custom", ("--base-class", f"{ARBITRARY_CLASSES_MODULE}.Base")),
+    "type-override": ("Holder", ("--type-overrides", json.dumps({"Holder.thing": "typing.Any"}))),
+    "type-override-whole-type": (
+        "Holder",
+        ("--type-overrides", json.dumps({"Holder.thing": "typing.Any"}), "--type-overrides-replace-whole-type"),
+    ),
+    "reuse-foreign": ("Outer", ("--input-model-ref-strategy", "reuse-foreign")),
+    "reuse-all": (
+        "OuterDataclass",
+        ("--input-model-ref-strategy", "reuse-all", "--reuse-every-reached-input-model-type"),
+    ),
+    "subclass-of": ("SubclassOf", ()),
+    "optional-subclass-of": ("OptionalSubclassOf", ()),
+    "callable-of": ("CallableOf", ()),
+    "callable-returning": ("CallableReturning", ()),
+    "any-type": ("AnyType", ()),
+    "root-optional": ("RootOptional", ()),
+    "root-union": ("RootUnion", ()),
+    "root-in-model": ("HoldsRoot", ()),
+    "root-in-model-root-alias": ("HoldsRoot", _ROOT_MODEL_ALIAS),
+    "root-alias": ("RootOptional", _ROOT_MODEL_ALIAS),
+    "root-in-model-type-alias": ("HoldsRoot", _TYPE_ALIAS),
+    "preserved-union": ("PreservedUnion", ()),
+    "preserved-union-dataclass": ("PreservedUnion", _DATACLASS),
+    "optional-preserved-union": ("OptionalPreservedUnion", ()),
+    "list-beside-preserved": ("ListBesidePreserved", ()),
+    "constrained-branch": ("ConstrainedBranch", ()),
+    "preserved-union-root": ("PreservedUnionRoot", ()),
+    "preserved-union-root-alias": ("PreservedUnionRoot", _ROOT_MODEL_ALIAS),
+    "child": ("Child", ()),
+    "child-only": ("ChildOnly", ()),
+    "child-dataclass": ("Child", _DATACLASS),
+    "child-only-dataclass": ("ChildOnly", _DATACLASS),
+    "child-dataclass-extra-forbid": ("Child", (*_DATACLASS, "--extra-fields", "forbid")),
+}
+
+
+@pytest.mark.parametrize("case", ARBITRARY_CLASS_CASES)
+def test_input_model_arbitrary_class_fields(case: str, tmp_path: Path) -> None:
+    """Allow arbitrary types where a model builds a class Pydantic builds only with them, and import the module (#7562).
+
+    A class with its own schema, a subclass (``type[...]``), a callable and a class the config of a base allows write
+    as before.
+    """
+    model, extra_args = ARBITRARY_CLASS_CASES[case]
+    output = tmp_path / "output.py"
+    run_input_model_and_assert(
+        input_model=f"{ARBITRARY_CLASSES_MODULE}:{model}",
+        output_path=output,
+        extra_args=["--disable-timestamp", "--formatters", "builtin", *extra_args],
+    )
+    with _generated_model(output, "_generated_arbitrary_classes", model) as generated:
+        assert generated.__name__ == model
+
+
+@pytest.mark.parametrize("model", ["Holder", "PydanticDataclassHolder", "DataclassHolder", "TypedDictHolder"])
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_input_model_arbitrary_class_fields_by_output_type(model: str, output_model_type: str, tmp_path: Path) -> None:
+    """Allow arbitrary types in the Pydantic outputs of each root kind, and leave the other outputs as they were."""
+    output = tmp_path / "output.py"
+    run_input_model_and_assert(
+        input_model=f"{ARBITRARY_CLASSES_MODULE}:{model}",
+        output_path=output,
+        extra_args=["--disable-timestamp", "--formatters", "builtin", "--output-model-type", output_model_type],
+    )
+    with _generated_model(output, "_generated_arbitrary_classes", model) as generated:
+        assert generated.__name__ == model
+
+
 def test_input_model_union_callable(tmp_path: Path) -> None:
     """Test that Union[Callable, int] and raw Callable are preserved."""
     run_input_model_and_assert(

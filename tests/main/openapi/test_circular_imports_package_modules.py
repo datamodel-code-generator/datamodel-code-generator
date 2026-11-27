@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -90,6 +91,12 @@ FORWARDED_READ_OUTSIDE_CYCLE_MODELS = {
     "other.Other": ("other", "Other"),
     "pkg.api.Order": ("pkg.api", "Order"),
     "pkg.Warn": ("pkg", "Warn"),
+}
+FORWARDED_BESIDE_UNLOADED = "circular_imports_forwarded_class_beside_unloaded_submodule"
+FORWARDED_BESIDE_UNLOADED_MODELS = {
+    "pkg.report.Report": ("pkg.report", "Report"),
+    "pkg.api.Order": ("pkg.api", "Order"),
+    "pkg.Warn": ("pkg._internal", "Warn"),
 }
 DOTTED_MODULES = "circular_imports_exports_scope_dotted_modules"
 DOTTED_MODULES_PATH = JSON_SCHEMA_DATA_PATH / "circular_imports_exports_scope_dotted"
@@ -318,6 +325,31 @@ def test_circular_imports_forwarded_class_read_outside_cycle(output_dir: Path) -
         _open_api_verdicts(output_dir, FORWARDED_READ_OUTSIDE_CYCLE, FORWARDED_READ_OUTSIDE_CYCLE_MODELS),
         name="payloads",
     )
+
+
+def test_circular_imports_forwarded_class_beside_unloaded_submodule(output_dir: Path) -> None:
+    """Import a model of ``pkg/Warn.py`` from it in ``pkg.report``, where nothing loads the submodule first (#7573).
+
+    ``pkg.Warn`` and ``pkg.api.Order`` merge into ``pkg/_internal.py``, which reads nothing of ``pkg/Warn.py``, so no
+    import of ``pkg`` loads it: ``pkg/__init__.py`` forwards the class ``Warn``, and ``--all-exports-scope`` lets the
+    output through. ``pkg.report`` wrote ``from . import Warn`` with ``Warn.Detail``, which read the class and failed
+    to import; it now imports ``Detail`` from the submodule. Every module imports, and the models accept and reject
+    the payloads as the schema does. Once ``pkg.report`` is imported, the name ``pkg.Warn`` is the submodule
+    (``bindings``), as ``--all-exports-scope recursive`` output already behaves.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{FORWARDED_BESIDE_UNLOADED}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--all-exports-scope", "children"],
+    )
+    assert_output(
+        _open_api_verdicts(output_dir, FORWARDED_BESIDE_UNLOADED, FORWARDED_BESIDE_UNLOADED_MODELS),
+        name="payloads",
+    )
+    with _generated_package_module(output_dir, "pkg.report"):
+        kind = "class" if isinstance(sys.modules[f"{output_dir.name}.pkg"].Warn, type) else "module"
+        assert_output(f"pkg.Warn after importing pkg.report: {kind}\n", name="bindings")
 
 
 def test_circular_imports_exports_scope_dotted_modules(output_dir: Path) -> None:
