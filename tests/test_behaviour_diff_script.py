@@ -3102,6 +3102,17 @@ CELLS_CASES: dict[str, CellsCase] = {
         }
         | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/note.py",)),
     ),
+    "pass: output-text with an added stored package": CellsCase(
+        "pass",
+        "output-text, added package",
+        COMMENT_PLAIN
+        | {
+            "tests/main/test_models.refs": _cells_refs(CELLS_REFS | {"test_note": ["\tmain/jsonschema/note/"]}),
+            f"{CELLS_EXPECTED}/main/jsonschema/note/__init__.py": "",
+            f"{CELLS_EXPECTED}/main/jsonschema/note/model.py": CELLS_MODULE.format("int  # note"),
+        }
+        | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/note/",)),
+    ),
     "pass: options * covers the preset cells": CellsCase(
         "pass",
         "options * covers the preset cells",

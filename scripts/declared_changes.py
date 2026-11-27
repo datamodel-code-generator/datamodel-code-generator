@@ -249,8 +249,7 @@ class Side:
             if pattern is None:
                 if (path := f"{EXPECTED}{name}") in self.files:
                     value = unit_value(name, self.read(path))
-            else:
-                members = self.members(storage)
+            elif members := self.members(storage):
                 self.load(path for _, path in members)
                 value = {relative: unit_value(relative, self.read(path), in_tree=True) for relative, path in members}
             self._digests[storage] = None if value is None else unit_digest(storage, value)
