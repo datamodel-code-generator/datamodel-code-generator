@@ -349,7 +349,6 @@ ALLOWLISTS = (
         }),
     ),
     ("tests/generated_import_closure_allowlist.py", frozenset({"UNBOUND_NAME_VIOLATIONS"})),
-    ("scripts/check_architecture_boundaries.py", frozenset({"DEFAULT_ALLOWLIST"})),
     ("tests/test_checks_are_run.py", frozenset({"UNREACHED"})),
 )
 PLAIN_COMMENT_AREAS = frozenset({"src"})

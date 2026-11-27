@@ -2784,7 +2784,7 @@ def _load_private_inflect() -> Any:
     code = get_code("inflect")
     private_spec = copy.copy(source_spec)
     private_spec.name = _PRIVATE_INFLECT_MODULE
-    inflect_module = importlib.util.module_from_spec(private_spec)
+    inflect_module: types.ModuleType = importlib.util.module_from_spec(private_spec)
     typeguard_stub = types.ModuleType("typeguard")
     typeguard_stub.__dict__["typechecked"] = _noop_typechecked
     original_import = builtins.__import__

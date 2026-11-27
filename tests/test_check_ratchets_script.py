@@ -120,7 +120,6 @@ from pathlib import Path
 JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {"group": ("rule:tests/test_d.py",)}
 FROZEN_EXEMPT_FILES = frozenset({Path("test_d.py")})
 """,
-    "scripts/check_architecture_boundaries.py": 'DEFAULT_ALLOWLIST = {("a", "b"): Entry("reason")}\n',
 }
 HEKI_BASELINE = """version = 2
 

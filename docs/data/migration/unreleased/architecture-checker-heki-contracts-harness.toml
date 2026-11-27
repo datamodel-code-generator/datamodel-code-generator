@@ -1,0 +1,11 @@
+[[change]]
+id = "architecture-checker-heki-contracts-harness"
+category = "harness"
+title = "Run the layer fixtures through the heki architecture contracts"
+summary = "The heki layer fixtures report the architecture contracts' findings and the checks run on the tree no longer list the removed checker; the package writes the same output"
+refs = ["#1"]
+covers = [
+    "build_heki_contracts_script/heki_reports_every_import_of_the_package_root_and_main.txt",
+    "build_heki_contracts_script/heki_reports_the_imports_that_cross_a_layer.txt",
+    "checks_are_run/every_check_runs_on_the_tree.txt",
+]

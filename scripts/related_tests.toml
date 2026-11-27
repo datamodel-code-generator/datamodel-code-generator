@@ -97,7 +97,12 @@ id = "src-architecture-boundaries"
 prs = [6456]
 incident = "a new decision module imported a backend and added a store writer that no selected test saw"
 paths = ["src/*"]
-tests = ["tests/test_architecture_boundaries.py", "tests/checks/test_checks.py::test_check_seams", "tests/test_legacy_rows.py"]
+tests = [
+  "tests/test_architecture_boundaries.py",
+  "tests/test_build_heki_contracts_script.py::test_heki_contracts_are_written_from_the_records",
+  "tests/checks/test_checks.py::test_check_seams",
+  "tests/test_legacy_rows.py",
+]
 
 [[rule]]
 id = "src-public-api"
@@ -231,8 +236,8 @@ paths = [
   "scripts/_change_units.py",
   "scripts/_decision_home_reads.py",
   "scripts/_import_cycles.py",
+  "scripts/_package_layers.py",
   "scripts/_source_model.py",
-  "scripts/check_architecture_boundaries.py",
   "scripts/check_generation_store_usage.py",
   "scripts/check_pass_pipeline.py",
   "scripts/check_ratchets.py",

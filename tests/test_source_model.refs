@@ -2,8 +2,6 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_a_binding_the_model_misses_stops_the_check]
 	source_model/a_binding_the_model_misses_stops_the_check.txt
-[test_a_form_names_only_the_layers_the_guard_has]
-	source_model/a_form_names_only_the_layers_the_guard_has.txt
 [test_a_module_the_compiler_rejects_stops_the_check]
 	source_model/a_module_the_compiler_rejects_stops_the_check.txt
 [test_a_read_the_model_misses_stops_the_check]
@@ -15,7 +13,6 @@
 [test_compiled_stops_on_a_scope_without_its_code_object]
 	source_model/compiled_stops_on_a_scope_without_its_code_object.txt
 [test_every_rule_states_its_verdicts]
-architecture-boundaries	source_model/every_rule_states_its_verdicts[architecture-boundaries].txt
 assert-helper-usage	source_model/every_rule_states_its_verdicts[assert-helper-usage].txt
 change-units-typing-only	source_model/every_rule_states_its_verdicts[change-units-typing-only].txt
 changed-test-units	source_model/every_rule_states_its_verdicts[changed-test-units].txt
@@ -25,10 +22,12 @@ coverage-exclusions	source_model/every_rule_states_its_verdicts[coverage-exclusi
 decision-home-callers	source_model/every_rule_states_its_verdicts[decision-home-callers].txt	= source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
 expected-access	source_model/every_rule_states_its_verdicts[expected-access].txt
 generated-import-closure	source_model/every_rule_states_its_verdicts[generated-import-closure].txt
-generation-store-usage	source_model/every_rule_states_its_verdicts[generation-store-usage].txt
+generation-store-usage	source_model/every_rule_states_its_verdicts[generation-store-usage].txt	= source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
+heki-contract-classes	source_model/every_rule_states_its_verdicts[heki-contract-classes].txt
 import-cycle	source_model/every_rule_states_its_verdicts[import-cycle].txt
 legacy-row-reads	source_model/every_rule_states_its_verdicts[legacy-row-reads].txt
 os-selection	source_model/every_rule_states_its_verdicts[os-selection].txt
+package-layer-reads	source_model/every_rule_states_its_verdicts[package-layer-reads].txt
 pass-pipeline	source_model/every_rule_states_its_verdicts[pass-pipeline].txt
 pre-commit-hook-runs	source_model/every_rule_states_its_verdicts[pre-commit-hook-runs].txt
 private-scope-walk	source_model/every_rule_states_its_verdicts[private-scope-walk].txt

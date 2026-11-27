@@ -1299,7 +1299,7 @@ it, the `Phase` whose passes write it last today and its freeze point: the lates
 pass pipeline is in place. The finality checks still check each `Fact` at B1 unless a pass declares an exception.
 Bookkeeping rows name no fact and no store operation. The module docstring lists the three allowed exceptions to the
 kind rules (plan rows, rendered nullability, the schema-validator plan cache). The module imports only the standard
-library and `typing_extensions` (`scripts/check_architecture_boundaries.py` classifies it as the `facts` leaf layer,
+library and `typing_extensions` (`scripts/_package_layers.py` classifies it as the `facts` leaf layer,
 whose import boundary in `scripts/heki.toml` holds that), so the checkers can read it without importing the package.
 
 heki checks the writes against that table: `scripts/build_heki_contracts.py` turns the `fact`, `presentation` and
@@ -1320,11 +1320,11 @@ reference.
 `scripts/check_generation_store_usage.py` (with `tests/parser/test_generation_store_usage.py`) reads the table and
 the store mutations (`SITE_EFFECTS`, `NO_SITE_EFFECT`) through `scripts/_source_model.py` and checks the table itself:
 it fails when a row's kind, facts, freeze point or store operations contradict each other, when a model-graph class
-sets an attribute (in any method) without a row, when `parser/`, `model/` or `types.py` writes a `__dict__` key without
-a row (heki can judge a write only of a key some row names; a key the store writes needs none), and when a row names
-nothing the sources declare or write. Writes through the parser itself (`self`) and through schema objects
-(parameters annotated `JsonSchemaObject`, and the copies and `SCHEMA_OBJECT_TYPE.model_validate` results made from
-them) write no model-graph key. A module the source model cannot read is a problem of its own.
+sets an attribute (in any method) without a row, and when an attribute or cached property row names nothing the classes
+declare. A module the source model cannot read is a problem of its own. The `__dict__` keys are heki's: every
+`write-owners` contract reports a write of a key no row names (`unlisted-dict-keys`, `MUT201`, or `MUT205` on a value
+heki cannot tie to a class), the `bookkeeping` contract names the bookkeeping rows, which any function may write, and a
+row whose attribute or key nothing in `src/` has is an error (`unmatched-contract-entries`).
 
 heki's contracts are the one check of this rule: they judge every write site of `src/`, whether a test reaches it or
 not, and report a write through a receiver heki cannot resolve (`MUT205`) instead of passing it. The write guards of
@@ -2120,14 +2120,23 @@ paths:
   `types.py` exports, are views of its rows.
 
 heki holds the imports of these rules: `scripts/build_heki_contracts.py` writes one `[[import-boundaries]]` contract
-per rule into `scripts/heki.toml`, its importers the modules of a layer that `scripts/check_architecture_boundaries.py`
+per rule into `scripts/heki.toml`, its importers the modules of a layer that `scripts/_package_layers.py`
 classifies, and every import counts, lazy, by name and under `TYPE_CHECKING` too; an import heki cannot name is
-reported (`IMP202`), so the baseline counts the imports of modules only the run knows. `python
-scripts/check_architecture_boundaries.py` holds what an import boundary cannot name: semantic backend inspection, a
-root name read through the bound root package, a private name imported from a parser module, an import source no module
-name can be read from (`unreadable-import`, a relative import that leaves the top-level package) and a dynamic import
-through a star import or another object (`unjudged-dynamic-import`). No module of the package imports the
-package root, and none but `__main__.py` imports `__main__` (rule `root-import`): every import form, relative ones,
+reported (`IMP202`), so the baseline counts the imports of modules only the run knows: a relative import that leaves
+the top-level package, and a call that may be `importlib.import_module` or `__import__` through another object or a
+name bound to it on one path only. A private name imported from a parser module is an `IMP201` of the
+`private-parser-import` boundary. The architecture contracts of the same file (`architecture_contracts`) hold what an
+import boundary cannot name: parser code reads no member only a backend reads (`getattr` and `hasattr` included),
+asks the target version for no TypedDict construct, names no backend module by a `module=` argument or by the
+`__module__` of a class a backend derives from (three functions read it to tell this package's classes from others,
+and the contract allows them), and selects no output family; input-model code selects none either; shared model code
+reads no module of `sys.modules` (two functions that complete a model with the names of its own module read it, and
+the contract allows them); the functions of the configuration read no backend name, and its module body may read the
+pydantic v2 backend that holds the defaults of `ParserConfig` (it may read any of its names until heki attributes the
+body of a class to the class); the entry point reaches no private member of a parser except in `_build_parser` and
+`_parse_run` (the contract allows those two functions); and no module reads a name through the bound root package. No
+module of the package imports the package root, and none but `__main__.py` imports `__main__` (rule `root-import`):
+every import form, relative ones,
 `TYPE_CHECKING` and function-local ones included, and a read of a root name through a bound root package fail; the root
 re-exports the names of the modules that define them for users, so the package imports each name from its module. A
 submodule read through the root (`from datamodel_code_generator import enums`) is a module import where the root binds

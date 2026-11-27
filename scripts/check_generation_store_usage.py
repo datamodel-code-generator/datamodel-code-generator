@@ -5,15 +5,15 @@ the store mutation API
 (``GENERATION_STORE_MUTATION_METHODS``, the names of ``SITE_EFFECTS`` and ``NO_SITE_EFFECT`` in
 ``parser/generation.py``) and the attribute-to-fact table (``ATTRIBUTE_FACTS`` in ``scripts/fact_tables.py``, whose rows
 name the ``Phase`` members of ``parser/_facts.py``). It reports a row whose kind, facts, freeze point or store
-operations contradict each other, an attribute a model-graph class declares without a row, a row that names nothing
-the sources declare or write, and a ``__dict__`` key that ``parser/``, ``model/``, ``types.py`` or the store writes
-without a row: heki can judge a write only of an attribute or key some row names.
+operations contradict each other, an attribute a model-graph class declares without a row, and an attribute or cached
+property row that names nothing the classes declare: heki can judge a write only of an attribute some row names.
 
 heki checks the writes themselves: ``scripts/build_heki_contracts.py`` turns the rows into the ``write-owners``
 contracts of ``scripts/heki.toml``, and ``scripts/heki_baseline.toml`` records the writes outside store operations that
-exist today. A ``cached_property``, which writes its own name into ``__dict__``, is heki's too: the cache contract
-forbids one on every class the table describes and the classes deriving from them. A row of a ``__dict__`` key that
-the sources only read stays this check's: heki counts a read as naming the key.
+exist today. The ``__dict__`` keys are heki's alone: a write of a key no row names is a finding
+(``unlisted-dict-keys``), and so is a row whose key nothing writes (``unmatched-contract-entries``). A
+``cached_property``, which writes its own name into ``__dict__``, is heki's too: the cache contract forbids one on every
+class the table describes and the classes deriving from them.
 """
 
 from __future__ import annotations
@@ -26,56 +26,33 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-    from scripts._source_model import Binding, Reference
+    from scripts._source_model import Reference
     from scripts._source_model import Scope as ModelScope
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts._source_model import SourceModelError, SourceModule, Unreadable, annotation
+from scripts._source_model import SourceModelError, SourceModule, Unreadable
 
 ROOT = Path(__file__).resolve().parents[1]
 
 SOURCE_ROOT = Path("src/datamodel_code_generator")
-DEFAULT_TARGETS = (SOURCE_ROOT / "parser", SOURCE_ROOT / "model", SOURCE_ROOT / "types.py")
 GENERATION_STORE_MODULE = SOURCE_ROOT / "parser" / "generation.py"
 FACTS_MODULE = Path("scripts/fact_tables.py")
 PHASE_MODULE = SOURCE_ROOT / "parser" / "_facts.py"
 DECLARATION_MODULES = (SOURCE_ROOT / "types.py", SOURCE_ROOT / "reference.py", SOURCE_ROOT / "model")
 COMPILED_TEMPLATE_DIRECTORY = "_compiled_templates"
 
-Scope: TypeAlias = Literal["parser", "model"]
-
-CONTAINER_MUTATORS = frozenset({
-    "add",
-    "append",
-    "clear",
-    "discard",
-    "extend",
-    "insert",
-    "pop",
-    "popitem",
-    "remove",
-    "reverse",
-    "setdefault",
-    "sort",
-    "update",
-})
-KEYED_MUTATORS = frozenset({"pop", "setdefault"})
 SETATTR_ORIGINS = frozenset({"builtins.setattr", "builtins.object.__setattr__"})
 """What a call writes an attribute through, by origin: aliases of them, at any level, are the same call."""
 
 PARSER_STATE_OWNERS = frozenset({"ModuleContext", "Parser"})
-"""Owners whose rows describe parser run state: the declarations and ``__dict__`` keys of the model graph skip them."""
+"""Owners whose rows describe parser run state: the declarations of the model graph skip them."""
 
 GRAPH_ROOT_CLASSES = frozenset({"DataModel", "DataModelFieldBase", "DataType", "Reference"})
-NON_GRAPH_ANNOTATIONS = frozenset({"Callable", "JsonSchemaObject"})
-GRAPH_ANNOTATIONS = frozenset({"Any", "BaseClassDataType", "DataModel", "DataModelFieldBase", "DataType", "object"})
-SCHEMA_OBJECT_FACTORIES = frozenset({"JsonSchemaObject", "SCHEMA_OBJECT_TYPE"})
-SCHEMA_OBJECT_COPIES = frozenset({"copy", "model_copy"})
 PACKAGE = "datamodel_code_generator"
 
 ROW_ENUMS = {
@@ -364,18 +341,9 @@ def load_attribute_facts(path: Path | None = None) -> tuple[FactRow, ...]:
 ATTRIBUTE_FACTS = load_attribute_facts()
 
 
-def _dict_key_rows(rows: Iterable[FactRow]) -> frozenset[str]:
-    """Return the ``__dict__`` keys and cached properties that rows of model-graph owners name."""
-    return frozenset(
-        row.attribute
-        for row in rows
-        if row.owner not in PARSER_STATE_OWNERS and row.access in {"DICT_KEY", "CACHED_PROPERTY"}
-    )
-
-
 @dataclass(frozen=True)
 class Violation:
-    """A problem of the table: a row the sources contradict, or a declaration or ``__dict__`` key without a row."""
+    """A problem of the table: a row the sources contradict, or a declaration without a row."""
 
     path: Path
     line: int
@@ -387,20 +355,6 @@ class Violation:
     def format(self) -> str:
         """Format violation for CLI output."""
         return f"{self.path.as_posix()}:{self.line}:{self.column}: {self.message} (in {self.function})"
-
-
-@dataclass(frozen=True)
-class DictKeyWrite:
-    """A write of a ``__dict__`` entry with a named key.
-
-    ``key`` is the literal key, or the name of the constant that holds it.
-    """
-
-    path: Path
-    line: int
-    column: int
-    function: str
-    key: str
 
 
 def _attribute_chain(node: ast.AST) -> tuple[str, ...]:
@@ -415,17 +369,6 @@ def _attribute_chain(node: ast.AST) -> tuple[str, ...]:
     return tuple(names)
 
 
-def _key_text(node: ast.AST | None) -> str:
-    match node:
-        case ast.Constant(value=str() as text):
-            return text
-        case ast.Name(id=name) | ast.Attribute(attr=name) if name.isupper():
-            return name
-        case ast.Slice():
-            return ":"
-    return "..."
-
-
 def _bound_targets(target: ast.AST) -> Iterator[ast.AST]:
     """Yield the targets an assignment binds, looking into tuple, list and starred targets only."""
     match target:
@@ -438,22 +381,9 @@ def _bound_targets(target: ast.AST) -> Iterator[ast.AST]:
             yield target
 
 
-def _indexed_object(node: ast.expr) -> tuple[ast.expr, ast.AST | None]:
-    """Return the object a subscript chain indexes and the key next to it: ``x.__dict__["a"]["b"]`` gives ``"a"``."""
-    key = None
-    while isinstance(node, ast.Subscript):
-        node, key = node.value, node.slice
-    return node, key
-
-
 def _type_names(model: SourceModule, node: ast.expr | None) -> set[str]:
     """Return the names an annotation gives in its type positions: each name, and the last part of each chain."""
     return set() if node is None else {ast.unparse(item).rpartition(".")[2] for item in model.type_expressions(node)}
-
-
-def _is_non_graph_annotation(model: SourceModule, node: ast.expr | None) -> bool:
-    names = _type_names(model, node)
-    return bool(names & NON_GRAPH_ANNOTATIONS) and not names & GRAPH_ANNOTATIONS
 
 
 @cache
@@ -467,205 +397,6 @@ def _spelled(model: SourceModule, node: ast.AST) -> str | None:
     return reference.name if (reference := _spellings(model).get(node)) is not None else None
 
 
-@dataclass(frozen=True)
-class _Alias:
-    """A local name for a ``__dict__``, or for one entry of it (``key``)."""
-
-    key: ast.AST | None = None
-
-
-class DictKeyVisitor(ast.NodeVisitor):
-    """Visitor of a module's tree for the ``__dict__`` keys it writes on model-graph objects.
-
-    Names are read through the module's source model: each binding (of any form) replaces what its name held in its
-    scope, a read sees the latest binding of the scope the language resolves it to, and the binding is the key of what
-    the visitor tracks about values: the ``__dict__`` (or entry) an assignment aliases, and the schema objects that
-    parameters and assignments hold. Which binding reaches a read is the visitor's walk order, the one value-flow
-    question the model leaves to its callers. Writes through the parser itself (``self`` and ``cls`` in parser code)
-    and through schema objects are no model-graph writes.
-    """
-
-    def __init__(self, path: Path, model: SourceModule, scope: Scope = "parser") -> None:
-        """Create a visitor for ``path`` (read as ``model``) checked in ``scope``."""
-        self.path = path
-        self.model = model
-        self.scope = scope
-        self.writes: list[DictKeyWrite] = []
-        self._qualname: list[str] = []
-        self._opened = {item.node: item for item in model.scopes if item.kind in {"class", "function"}}
-        self._latest: dict[tuple[ModelScope, str], Binding] = {}
-        self._aliases: dict[Binding, _Alias] = {}
-        self._schema_objects: set[Binding] = set()
-
-    def visit(self, node: ast.AST) -> None:
-        """Let a binding replace what its name held, and track the names of the classes and functions node opens."""
-        if (binding := self.model.binding_at(node)) is not None and binding.kind != "annotation-only":
-            self._latest[binding.scope, binding.mangled] = binding
-        if (opened := self._opened.get(node)) is None:
-            super().visit(node)
-            return
-        self._qualname.append(opened.code_name)
-        if opened.kind == "class":
-            super().visit(node)
-        else:
-            self._schema_objects.update(
-                binding
-                for binding in self.model.bindings(scope=opened)
-                if binding.kind == "param" and _is_non_graph_annotation(self.model, annotation(binding))
-            )
-            enclosing = dict(self._latest)
-            super().visit(node)
-            self._latest = enclosing
-        self._qualname.pop()
-
-    def visit_Assign(self, node: ast.Assign) -> None:
-        """Check assignment targets and record local aliases."""
-        self.visit(node.value)
-        classified = self._classify(node.value)
-        for target in node.targets:
-            self._check_target(target)
-            self._record_binding(target, classified)
-            self.visit(target)
-
-    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
-        """Check annotated assignment targets."""
-        self._check_target(node.target)
-        if node.value is not None:
-            self.visit(node.value)
-            self._record_binding(node.target, self._classify(node.value))
-        self.visit(node.target)
-        self.visit(node.annotation)
-
-    def visit_AugAssign(self, node: ast.AugAssign) -> None:
-        """Check augmented assignment targets, including in-place operators on aliases.
-
-        An in-place operator keeps the object a name holds, so the new binding keeps the alias.
-        """
-        target = node.target
-        if (alias := self._alias_read(target)) is not None:
-            self._record(node, alias.key)
-            self._record_binding(target, (False, alias))
-        elif self.model.binding_at(target) is None:
-            self._check_target(target)
-        self.generic_visit(node)
-
-    def visit_Delete(self, node: ast.Delete) -> None:
-        """Check deleted entries."""
-        for target in node.targets:
-            self._check_target(target)
-        self.generic_visit(node)
-
-    def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
-        """Record aliases bound by assignment expressions."""
-        self.visit(node.value)
-        self._record_binding(node.target, self._classify(node.value))
-        self.visit(node.target)
-
-    def visit_Call(self, node: ast.Call) -> None:
-        """Check mutating method calls on a ``__dict__``, an alias of one or an entry of either."""
-        if isinstance(node.func, ast.Attribute) and node.func.attr in CONTAINER_MUTATORS:
-            container, entry_key = _indexed_object(owner := node.func.value)
-            if container is not owner:
-                key = entry_key
-            else:
-                key = node.args[0] if node.func.attr in KEYED_MUTATORS and node.args else None
-            self._check_container(node, container, key)
-        self.generic_visit(node)
-
-    def _check_target(self, target: ast.AST) -> None:
-        match target:
-            case ast.Tuple(elts=items) | ast.List(elts=items):
-                for item in items:
-                    self._check_target(item)
-            case ast.Starred(value=starred):
-                self._check_target(starred)
-            case ast.Subscript():
-                container, key = _indexed_object(target)
-                self._check_container(target, container, key)
-
-    def _check_container(self, node: ast.AST, container: ast.expr, key: ast.AST | None) -> None:
-        if (alias := self._alias_of(container)) is not None:
-            self._record(node, key if alias.key is None else alias.key)
-
-    def _record(self, node: ast.AST, key: ast.AST | None) -> None:
-        """Record a write of a named key; a computed key is heki's to report (``MUT205``)."""
-        if (text := _key_text(key)) != "...":
-            self.writes.append(
-                DictKeyWrite(
-                    path=self.path,
-                    line=getattr(node, "lineno", 0),
-                    column=getattr(node, "col_offset", 0) + 1,
-                    function=".".join(self._qualname) or "<module>",
-                    key=text,
-                )
-            )
-
-    def _binding_read(self, node: ast.AST) -> Binding | None:
-        """Return the binding a name read sees: the latest one, in walk order, of the scope the name resolves to."""
-        if (reference := _spellings(self.model).get(node)) is None:
-            return None
-        resolution = self.model.resolve(reference.node)
-        while resolution is not None:
-            if resolution.scope is not None and (found := self._latest.get((resolution.scope, reference.mangled))):
-                return found
-            resolution = resolution.fallback
-        return None
-
-    def _alias_read(self, node: ast.AST) -> _Alias | None:
-        return self._aliases.get(binding) if (binding := self._binding_read(node)) is not None else None
-
-    def _is_schema_object_value(self, node: ast.expr) -> bool:
-        match node:
-            case ast.Call(func=ast.Attribute(attr="model_validate", value=factory)):
-                return bool(set(_attribute_chain(factory)) & SCHEMA_OBJECT_FACTORIES)
-            case ast.Call(func=ast.Attribute(attr="_schema_object", value=receiver)):
-                return _spelled(self.model, receiver) in {"self", "parser"}
-            case ast.Call(func=ast.Attribute(attr=method, value=receiver)) if method in SCHEMA_OBJECT_COPIES:
-                return self._binding_read(receiver) in self._schema_objects
-        return False
-
-    def _classify(self, value: ast.expr) -> tuple[bool, _Alias | None]:
-        """Return whether ``value`` is a schema object, and the ``__dict__`` it names, read before it binds."""
-        schema = self._is_schema_object_value(value)
-        return schema, None if schema else self._alias_of(value)
-
-    def _record_binding(self, target: ast.AST, classified: tuple[bool, _Alias | None]) -> None:
-        schema, alias = classified
-        if (binding := self.model.binding_at(target)) is None:
-            return
-        self._latest[binding.scope, binding.mangled] = binding
-        if schema:
-            self._schema_objects.add(binding)
-        elif alias is not None:
-            self._aliases[binding] = alias
-
-    def _alias_of(self, value: ast.expr) -> _Alias | None:
-        """Return the ``__dict__``, or the entry of one, that ``value`` names, following existing aliases."""
-        match value:
-            case ast.Subscript():
-                container, key = _indexed_object(value)
-                if (alias := self._alias_of(container)) is None:
-                    return None
-                return alias if alias.key is not None else _Alias(key)
-            case ast.Attribute(attr="__dict__", value=receiver) if not self._excluded(receiver):
-                return _Alias()
-            case ast.Call(func=function, args=[receiver, ast.Constant(value="__dict__"), *_]) if _spelled(
-                self.model, function
-            ) == "getattr" and not self._excluded(receiver):
-                return _Alias()
-            case ast.Call(func=function, args=[receiver]) if _spelled(
-                self.model, function
-            ) == "vars" and not self._excluded(receiver):
-                return _Alias()
-        return self._alias_read(value)
-
-    def _excluded(self, receiver: ast.expr) -> bool:
-        """Whether writes through ``receiver`` are no model-graph writes: the parser itself or a schema object."""
-        if (name := _spelled(self.model, receiver)) in {"self", "cls"}:
-            return self.scope == "parser"
-        return name is not None and self._binding_read(receiver) in self._schema_objects
-
-
 def iter_python_files(paths: Iterable[Path]) -> list[Path]:
     """Return the Python files below ``paths``, without the compiled templates."""
     files: list[Path] = []
@@ -677,31 +408,8 @@ def iter_python_files(paths: Iterable[Path]) -> list[Path]:
     return [path for path in files if COMPILED_TEMPLATE_DIRECTORY not in path.parts]
 
 
-def classify_path(path: Path) -> Scope:
-    """Return the scope a file is read in: ``model`` for ``model/`` and ``types.py``, else ``parser``."""
-    try:
-        relative = path.resolve().relative_to((ROOT / SOURCE_ROOT).resolve())
-    except ValueError:
-        return "parser"
-    return "model" if relative.parts[0] == "model" or relative.parts == ("types.py",) else "parser"
-
-
 def _unreadable(path: Path, error: SourceModelError) -> Violation:
     return Violation(path, 0, 0, f"the source model cannot read this module: {error}", target="unreadable-source")
-
-
-def dict_key_writes(files: Iterable[tuple[Path, Scope]]) -> tuple[list[DictKeyWrite], list[Violation]]:
-    """Return the ``__dict__`` key writes of scoped files, and a problem for each file the model cannot read."""
-    writes: list[DictKeyWrite] = []
-    problems: list[Violation] = []
-    for path, scope in files:
-        if isinstance(model := _model_or_error(path), SourceModelError):
-            problems.append(_unreadable(path, model))
-            continue
-        visitor = DictKeyVisitor(path, model, scope)
-        visitor.visit(model.tree)
-        writes.extend(visitor.writes)
-    return writes, problems
 
 
 @dataclass(frozen=True)
@@ -802,17 +510,11 @@ def _self_attribute_writes(model: SourceModule, function: ast.AST) -> Iterator[t
 
 
 def table_problems(
-    *,
-    rows: tuple[FactRow, ...] | None = None,
-    declaration_paths: Iterable[Path] | None = None,
-    key_writes: Iterable[DictKeyWrite] | None = None,
-    store_keys: frozenset[str] = frozenset(),
+    *, rows: tuple[FactRow, ...] | None = None, declaration_paths: Iterable[Path] | None = None
 ) -> list[Violation]:
-    """Report model-graph attributes and ``__dict__`` keys without a row, and rows that name nothing real.
+    """Report model-graph attributes without a row, and attribute and cached property rows the classes do not declare.
 
-    A ``__dict__`` key row is stale when neither ``key_writes`` nor the store (``store_keys``) writes its key; without
-    ``key_writes`` no key row is checked. A key the store writes needs no row: heki lets the store module write any
-    attribute.
+    A ``__dict__`` key row is heki's: ``unmatched-contract-entries`` reports one whose key nothing writes.
     """
     table = ATTRIBUTE_FACTS if rows is None else rows
     paths = [ROOT / path for path in DECLARATION_MODULES] if declaration_paths is None else declaration_paths
@@ -841,29 +543,10 @@ def table_problems(
                             target=attribute,
                         )
                     )
-    writes = None if key_writes is None else list(key_writes)
-    keyed = _dict_key_rows(table)
-    problems.extend(
-        Violation(
-            path=write.path,
-            line=write.line,
-            column=write.column,
-            message=f"__dict__[{write.key}] has no ATTRIBUTE_FACTS row in {FACTS_MODULE.as_posix()}",
-            function=write.function,
-            target=write.key,
-        )
-        for write in writes or ()
-        if write.key not in keyed
-    )
-    written = None if writes is None else {write.key for write in writes} | store_keys
     for row in table:
-        if row.owner in PARSER_STATE_OWNERS:
+        if row.owner in PARSER_STATE_OWNERS or row.access == "DICT_KEY":
             continue
-        if row.access == "DICT_KEY":
-            stale = written is not None and row.attribute not in written
-        else:
-            stale = row.declared_name not in declared_by_owner.get(row.owner, ())
-        if stale:
+        if row.declared_name not in declared_by_owner.get(row.owner, ()):
             problems.append(
                 Violation(
                     path=FACTS_MODULE,
@@ -879,16 +562,8 @@ def table_problems(
 
 
 def check_default_targets() -> list[Violation]:
-    """Check the table against the declarations of the package and the ``__dict__`` keys it and the store write."""
-    store = (ROOT / GENERATION_STORE_MODULE).resolve()
-    files = [
-        (path, classify_path(path))
-        for path in iter_python_files(ROOT / target for target in DEFAULT_TARGETS)
-        if path.resolve() != store
-    ]
-    writes, unreadable = dict_key_writes(files)
-    store_writes, _ = dict_key_writes([(store, "parser")])
-    return [*unreadable, *table_problems(key_writes=writes, store_keys=frozenset(w.key for w in store_writes))]
+    """Check the table against the declarations of the package."""
+    return table_problems()
 
 
 def main(argv: list[str] | None = None) -> int:

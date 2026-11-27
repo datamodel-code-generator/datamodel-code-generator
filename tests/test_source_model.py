@@ -11,7 +11,6 @@ import re
 import subprocess
 import sys
 import tempfile
-import typing
 from collections import Counter
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -25,9 +24,10 @@ from coverage.python import PythonParser
 from scripts import _behaviour_classify as behaviour_classify
 from scripts import _decision_home_reads as home_reads
 from scripts import _import_cycles as import_cycles
+from scripts import _package_layers as package_layers
 from scripts import _source_model as source_model
 from scripts import (
-    check_architecture_boundaries,
+    build_heki_contracts,
     check_generation_store_usage,
     check_pass_pipeline,
     check_ratchets,
@@ -61,7 +61,7 @@ PYTHON = (sys.version_info.major, sys.version_info.minor)
 OLDEST_PYTHON = (3, 11)
 """The oldest Python the package supports, the ``min-python`` of a form that names none."""
 _DIRECTIVE = re.compile(
-    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|layers|bases"
+    r"^(questions|min-python|module|path|keywords|constants|codes|consumers|binding-nodes|citations|bases"
     r"|nested-names|assignments|annotations|segments|decorators)"
     r": *(.*)$",
     re.MULTILINE,
@@ -717,55 +717,6 @@ def _source_rules(form: Path) -> list[Finding]:
         ]
 
 
-ARCHITECTURE_LAYERS: tuple[check_architecture_boundaries.Layer, ...] = (
-    "entrypoint",
-    "parser",
-    "config",
-    "input-model",
-    "reference",
-    "shared-model",
-)
-"""The layers a form runs under unless it names its own: those with rules of their own on names."""
-
-
-def _architecture_boundaries(form: Path) -> list[Finding]:
-    """Run the layer rules of the layers above over a form's modules, as files of a temporary tree."""
-    with tempfile.TemporaryDirectory() as folder:
-        root = Path(folder)
-        paths = []
-        for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
-            target = root / (path.relative_to(form) if form.is_dir() else path.name.removesuffix(".txt"))
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-            paths.append(target)
-        asked = [item.strip() for item in _directives(form).get("layers", "").split(",") if item.strip()]
-        if unknown := sorted(set(asked) - set(typing.get_args(check_architecture_boundaries.Layer))):
-            msg = f"{form.name}: layers that are none of the guard's: {unknown}"
-            raise ValueError(msg)
-        found = []
-        for name in asked or ARCHITECTURE_LAYERS:
-            violations = check_architecture_boundaries.check_files([(path, name) for path in paths], allowlist={})
-            found += [
-                Finding(
-                    f"{name}/{violation.rule}",
-                    _site(form, place, violation.line),
-                    f"{name}: {place}:{violation.line}: {violation.rule}: {violation.target} (in {violation.qualname})",
-                )
-                for violation in violations
-                for place in [violation.path.removeprefix(root.as_posix()).lstrip("/")]
-            ]
-        return found
-
-
-def test_a_form_names_only_the_layers_the_guard_has(tmp_path: Path) -> None:
-    """A layer the guard does not have stops the form, instead of selecting no run and finding nothing."""
-    form = tmp_path / "form.py"
-    form.write_text('"""A form.\nlayers: parser, shared_model\n"""\n', encoding="utf-8")
-    with pytest.raises(ValueError, match="layers") as error:
-        _architecture_boundaries(form)
-    assert_output(str(error.value) + "\n")
-
-
 def _where_disagreements(form: Path) -> list[Finding]:
     """Compare what `scripts.where` answers on a form's modules with the model's own answers and with every file read.
 
@@ -896,37 +847,22 @@ def _check_runs(form: Path) -> list[Finding]:
         ]
 
 
-def _unquoted(target: str) -> str:
-    """Return a target without whitespace and double quotes, which a verdict's site list cannot hold."""
-    return re.sub(r"[\s\"]", "", target)
-
-
 def _generation_store_usage(form: Path) -> list[Finding]:
-    """Read the ``__dict__`` keys a form's modules write, as parser and as model code, as the fact table check does.
+    """Read the attributes a form's classes declare, as the fact table check reads the classes of the model graph.
 
-    A module the model cannot read is a finding of its own.
+    Each attribute a class deriving from a model-graph class declares is a finding of a table without rows, and a
+    module the model cannot read is a finding of its own. A one-file form is read as the module it stands for, so the
+    check, which reads ``.py`` files only, also reads a grammar-gated ``.py.txt`` form.
     """
-    paths = sorted(form.rglob("*.py")) if form.is_dir() else [form]
-    found = []
-    for scope in typing.get_args(check_generation_store_usage.Scope):
-        writes, problems = check_generation_store_usage.dict_key_writes([(path, scope) for path in paths])
-        readings = [
-            *(
-                (write.path, write.line, f"__dict__[{write.key}]", f"writes the key (in {write.function})")
-                for write in writes
-            ),
-            *((problem.path, problem.line, problem.target, problem.message) for problem in problems),
-        ]
-        for path, line, target, text in readings:
-            place = path.relative_to(form.parent).as_posix().removesuffix(".txt")
-            found.append(
-                Finding(
-                    f"{scope}/{_unquoted(target)}",
-                    _site(form, place, line),
-                    f"{scope}: {place}:{line}: {target} {text}",
-                )
-            )
-    return found
+    with tempfile.TemporaryDirectory() as folder:
+        base = form.parent if form.is_dir() else Path(folder)
+        paths = sorted(form.rglob("*.py")) if form.is_dir() else [base / form.name.removesuffix(".txt")]
+        if not form.is_dir():
+            paths[0].write_text(form.read_text(encoding="utf-8"), encoding="utf-8")
+        problems = check_generation_store_usage.table_problems(rows=(), declaration_paths=paths)
+        places = [problem.path.relative_to(base).as_posix() for problem in problems]
+    pairs = zip(problems, places, strict=True)
+    return [Finding(p.target, _site(form, at, p.line), f"{at}:{p.line}: {p.message}") for p, at in pairs]
 
 
 def _pass_pipeline(form: Path) -> list[Finding]:
@@ -1205,6 +1141,79 @@ def _decision_home_contracts(form: Path) -> list[Finding]:
         ]
 
 
+def _form_as_package(form: Path, root: Path) -> where.Repo:
+    """Place a form's modules as modules of the package under ``root`` and return the repository read over them."""
+    package = root / "src" / where.PACKAGE
+    package.mkdir(parents=True)
+    for path in sorted(form.rglob("*.py")) if form.is_dir() else [form]:
+        target = package / (form.name / path.relative_to(form) if form.is_dir() else path.name.removesuffix(".txt"))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    return where.Repo(root, where.Page([], [], [], []))
+
+
+def _package_layer_reads(form: Path) -> list[Finding]:
+    """Return the classes of a form with a Protocol base, and each import of it that `resolve` follows on.
+
+    The form's modules stand as modules of the package, so an import of one of them from another is followed on to
+    the module that defines the name.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        repo = _form_as_package(form, Path(folder))
+        index = package_layers.PackageIndex(repo.root / where.PACKAGE_DIR)
+        found = []
+        for rel in sorted(build_heki_contracts._package_modules(repo)):
+            place = rel.removeprefix(where.PACKAGE_DIR)
+            model = repo.model(rel)
+            found += [
+                Finding("protocol-base", _site(form, place, scope.line), f"{place}:{scope.line}: {scope.qualname}")
+                for scope in model.scopes
+                if scope.kind == "class" and package_layers.protocol_bases(model, scope)
+            ]
+            imports = [
+                binding
+                for bindings in model.module_scope.bindings.values()
+                for binding in bindings
+                if binding.kind == "import-from" and binding.origin
+            ]
+            found += [
+                Finding("resolved-import", _site(form, place, binding.line), f"{place}:{binding.line}: {resolved}")
+                for binding in imports
+                if (resolved := index.resolve(binding.origin or "")) != binding.origin
+            ]
+        return found
+
+
+def _heki_contract_classes(form: Path) -> list[Finding]:
+    """Return the classes of a form the heki contracts read: the bases of each by origin, the members of a Protocol.
+
+    The form's modules stand as modules of the package, as `_decision_home_contracts` places them under ``scripts/``.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        repo = _form_as_package(form, Path(folder))
+        classes = build_heki_contracts._Classes(repo)
+        protocols = build_heki_contracts._Protocols(repo)
+        found = []
+        for rel, module in sorted(build_heki_contracts._package_modules(repo).items()):
+            place = rel.removeprefix(where.PACKAGE_DIR)
+            for scope in repo.model(rel).scopes:
+                if scope.kind != "class" or "<locals>" in scope.qualname:
+                    continue
+                name = f"{module}.{scope.qualname}"
+                members = sorted(
+                    member
+                    for owners in protocols.members.values()
+                    for member in owners
+                    if member.startswith(f"{name}.")
+                )
+                found += [
+                    Finding(rule, _site(form, place, scope.line), f"{place}:{scope.line}: {listed}")
+                    for rule, listed in (("class-bases", classes.bases[name]), ("protocol-members", members))
+                    if listed
+                ]
+        return found
+
+
 RULES: dict[str, RuleRun] = {
     "source-model-compiler-check": RuleRun(
         "scripts._source_model", frozenset({"bindings", "references"}), _compiler_check
@@ -1214,11 +1223,6 @@ RULES: dict[str, RuleRun] = {
         "scripts.check_source_rules",
         frozenset({"bindings", "references", "imports", "suppressions", "extents"}),
         _source_rules,
-    ),
-    "architecture-boundaries": RuleRun(
-        "scripts.check_architecture_boundaries",
-        frozenset({"bindings", "references", "imports"}),
-        _architecture_boundaries,
     ),
     "where-agrees-with-the-model": RuleRun(
         "scripts.where", frozenset({"bindings", "references", "imports", "extents"}), _where_disagreements
@@ -1236,7 +1240,9 @@ RULES: dict[str, RuleRun] = {
         _legacy_row_reads,
     ),
     "generation-store-usage": RuleRun(
-        "scripts.check_generation_store_usage", frozenset({"bindings", "references"}), _generation_store_usage
+        "scripts.check_generation_store_usage",
+        frozenset({"bindings", "imports", "references"}),
+        _generation_store_usage,
     ),
     "generated-import-closure": RuleRun(
         "tests.test_generated_import_closure", frozenset({"bindings", "references", "extents"}), _unbound_names
@@ -1269,6 +1275,12 @@ RULES: dict[str, RuleRun] = {
     ),
     "os-selection": RuleRun(
         "scripts.os_selection", frozenset({"bindings", "references", "extents"}), _os_selection_reads
+    ),
+    "package-layer-reads": RuleRun(
+        "scripts._package_layers", frozenset({"bindings", "references"}), _package_layer_reads
+    ),
+    "heki-contract-classes": RuleRun(
+        "scripts.build_heki_contracts", frozenset({"bindings", "references"}), _heki_contract_classes
     ),
 }
 """Every rule that reads Python through the model; `verdicts.toml` states its verdict on each form of its questions."""

@@ -90,15 +90,8 @@ def _findings(violations: Iterable[Any]) -> list[tuple[int, str, str, str]]:
     return [(item.line, item.function, item.target, item.message) for item in violations]
 
 
-def _key_writes(source: Path, scope: str = "parser") -> str:
-    checker = _load_checker()
-    writes, problems = checker.dict_key_writes([(source, scope)])
-    assert problems == []
-    return "".join(f"{write.line} {write.function} {write.key}\n" for write in writes)
-
-
 def test_generation_sources_match_the_table() -> None:
-    """The table, the declarations of the model graph and the ``__dict__`` keys the package writes agree."""
+    """The table and the declarations of the model graph agree."""
     checker = _load_checker()
 
     assert [violation.format() for violation in checker.check_default_targets()] == snapshot([])
@@ -106,9 +99,9 @@ def test_generation_sources_match_the_table() -> None:
 
 
 def test_cli_reports_table_problems(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    """A key row the sources never write fails the command line run, which prints each problem."""
+    """A row naming an attribute no class declares fails the command line run, which prints each problem."""
     checker = _load_checker()
-    row = checker.FactRow("DataModel", "_NEVER_WRITTEN_KEY", "CACHE", (), "PARSE", None, (), "DICT_KEY")
+    row = checker.FactRow("DataModel", "never_declared", "CACHE", (), "PARSE", None, (), "ATTRIBUTE")
     monkeypatch.setattr(checker, "ATTRIBUTE_FACTS", (*checker.ATTRIBUTE_FACTS, row))
 
     failing = checker.main([])
@@ -118,7 +111,7 @@ def test_cli_reports_table_problems(monkeypatch: pytest.MonkeyPatch, capsys: pyt
         [
             "ATTRIBUTE_FACTS problems found:",
             (
-                "scripts/fact_tables.py:0:0: ATTRIBUTE_FACTS row DataModel._NEVER_WRITTEN_KEY names nothing the "
+                "scripts/fact_tables.py:0:0: ATTRIBUTE_FACTS row DataModel.never_declared names nothing the "
                 "sources declare or write (in ATTRIBUTE_FACTS)"
             ),
         ],
@@ -126,207 +119,14 @@ def test_cli_reports_table_problems(monkeypatch: pytest.MonkeyPatch, capsys: pyt
 
 
 def test_a_module_the_model_cannot_read_is_a_problem(tmp_path: Path) -> None:
-    """A module the source model refuses gives no writes and a problem of its own."""
+    """A module the source model refuses gives no declarations and a problem of its own."""
     checker = _load_checker()
     source = tmp_path / "refused.py"
     source.write_text("def f():\n    nonlocal x\n    x = 1\n")
 
-    writes, problems = checker.dict_key_writes([(source, "parser")])
+    problems = checker.table_problems(rows=(), declaration_paths=[source])
 
-    assert (writes, [problem.target for problem in problems]) == ([], ["unreadable-source"])
-
-
-def test_dict_key_writes_name_every_write_form(tmp_path: Path) -> None:
-    """Every form that writes a named ``__dict__`` key counts, through aliases and entries; a computed key does not."""
-    source = tmp_path / "writes.py"
-    source.write_text(
-        """
-def write(field, name, pair):
-    field.__dict__["literal"] = 1
-    field.__dict__[CONSTANT_KEY] = 1
-    field.__dict__[module.NAMED_KEY] = 1
-    field.__dict__[name] = 1
-    field.__dict__[:] = 1
-    field.__dict__["annotated"]: int = 1
-    field.__dict__["bare"]: int
-    field.__dict__["first"], other = pair
-    [*field.__dict__["starred"]] = pair
-    field.__dict__["added"] += 1
-    del field.__dict__["deleted"]
-    field.__dict__.pop("popped", None)
-    field.__dict__.setdefault(DEFAULT_KEY, 1)
-    field.__dict__.pop()
-    field.__dict__.update({})
-    field.__dict__["entry"].append(1)
-    field.__dict__.get("read")
-    field.extras["not_a_dict_key"] = 1
-    vars(field)["vars"] = 1
-    values = field.__dict__
-    values["alias"] = 1
-    values.pop("alias_popped")
-    values |= {}
-    copied = values
-    copied["copied"] = 1
-    entry = values["alias_entry"]
-    entry.update({})
-    entry |= {}
-    computed = values[name]
-    computed.clear()
-    got = getattr(field, "__dict__")
-    got["getattr"] = 1
-    getattr(field, "__dict__")["getattr_direct"] = 1
-    state = vars(field)
-    state["vars_alias"] = 1
-    if (walrus := field.__dict__) is not None:
-        walrus["walrus"] = 1
-    rebound = values
-    rebound = []
-    rebound["rebound"] = 1
-    name: str
-    other.attribute = name
-""",
-    )
-
-    assert_output(_key_writes(source))
-
-
-def test_dict_key_writes_skip_parser_state_and_schema_objects(tmp_path: Path) -> None:
-    """Writes to the parser itself, to schema objects and to callables are no model-graph writes."""
-    source = tmp_path / "skipped.py"
-    source.write_text(
-        """
-class Parser:
-    def method(self, obj: JsonSchemaObject, action: Callable[[], str], quoted: "JsonSchemaObject | None") -> None:
-        self.__dict__["state"] = 1
-        vars(self)["state"] = 1
-        own = getattr(self, "__dict__")
-        own["state"] = 1
-        getattr(self, "__dict__")["state"] = 1
-        state = vars(self)
-        state["state"] = 1
-        obj.__dict__["schema"] = 1
-        quoted.__dict__["schema"] = 1
-        action.__dict__["marker"] = True
-        merged = self.SCHEMA_OBJECT_TYPE.model_validate({})
-        merged.__dict__["merged"] = 1
-        copied = obj.model_copy()
-        copied.__dict__["copied"] = 1
-        other = field.copy()
-        other.__dict__["other_copy"] = 1
-        obj = build()
-        obj.__dict__["rebuilt"] = 1
-        build().__dict__["built"] = 1
-
-
-def concern_function(parser: Host) -> None:
-    merged = parser._schema_object({})
-    merged.__dict__["merged"] = 1
-    unrelated = parser.make({})
-    unrelated.__dict__["unrelated"] = 1
-""",
-    )
-
-    assert _key_writes(source) == snapshot("""\
-19 Parser.method other_copy
-21 Parser.method rebuilt
-22 Parser.method built
-29 concern_function unrelated
-""")
-
-
-def test_dict_key_writes_follow_rebound_names(tmp_path: Path) -> None:
-    """A rebound schema-object name writes model-graph keys again; an alias stays an alias inside nested scopes."""
-    source = tmp_path / "rebound.py"
-    source.write_text(
-        """
-def loop(obj: JsonSchemaObject, items):
-    for obj in items:
-        obj.__dict__["loop"] = 1
-
-
-def context(obj: JsonSchemaObject, manager):
-    with manager as obj:
-        obj.__dict__["context"] = 1
-
-
-def comprehension(obj: JsonSchemaObject, items):
-    [obj for obj in items]
-    obj.__dict__["comprehension"] = 1
-
-
-def handler(obj: JsonSchemaObject):
-    try:
-        pass
-    except ValueError as obj:
-        obj.__dict__["handler"] = 1
-
-
-def unpacking(obj: JsonSchemaObject, pair):
-    obj, other = pair
-    obj.__dict__["unpacking"] = 1
-
-
-def augmented(obj: JsonSchemaObject, field):
-    obj += field
-    obj.__dict__["augmented"] = 1
-
-
-async def asynchronous(obj: JsonSchemaObject, items):
-    async for obj in items:
-        obj.__dict__["asynchronous"] = 1
-
-
-def enclosing(field):
-    values = field.__dict__
-
-    def inner():
-        values["closure"] = 1
-
-    values = []
-    values["local"] = 1
-    return inner
-""",
-    )
-
-    assert _key_writes(source) == snapshot("""\
-4 loop loop
-9 context context
-21 handler handler
-26 unpacking unpacking
-31 augmented augmented
-36 asynchronous asynchronous
-43 enclosing.inner closure
-""")
-
-
-def test_dict_key_writes_of_model_code(tmp_path: Path) -> None:
-    """Model code writes its own keys through ``self``; a cached property is heki's (the cache contract forbids it)."""
-    source = tmp_path / "model.py"
-    source.write_text(
-        """
-from functools import cached_property
-
-
-class Field:
-    def mark(self):
-        self.__dict__["_marked"] = True
-
-    @cached_property
-    def path(self):
-        return ""
-
-    @property
-    def plain(self):
-        return ""
-
-    class Inner:
-        @functools.cached_property
-        def nested(self):
-            return ""
-""",
-    )
-
-    assert _key_writes(source, "model") == snapshot("7 Field.mark _marked\n")
+    assert [problem.target for problem in problems] == ["unreadable-source"]
 
 
 def test_checker_uses_generation_store_api_surface() -> None:
@@ -471,7 +271,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "MemberUse": ("CALL", "READ", "WRITE"),
     })
     assert Counter(row.kind for row in checker.ATTRIBUTE_FACTS) == snapshot(
-        Counter({"FACT": 75, "PRESENTATION": 61, "BOOKKEEPING": 33, "CACHE": 11})
+        Counter({"FACT": 75, "PRESENTATION": 61, "BOOKKEEPING": 35, "CACHE": 11})
     )
     assert sorted({row.owner for row in checker.ATTRIBUTE_FACTS}) == snapshot([
         "AnnotatedConstraintDataType",
@@ -639,9 +439,9 @@ def test_attribute_facts_module_needs_the_row_class(tmp_path: Path) -> None:
 
 
 def test_table_problems_report_unclassified_attributes_and_stale_rows(tmp_path: Path) -> None:
-    """Every declared attribute and written ``__dict__`` key of the model graph needs a row; every row names something.
+    """Every declared attribute of the model graph needs a row; every attribute row names something.
 
-    A key the store writes counts as written, and without the writes no key row is checked.
+    A ``__dict__`` key row is heki's to judge (``unmatched-contract-entries``), and so is a key written without a row.
     """
     checker = _load_checker()
     declarations = tmp_path / "declarations.py"
@@ -703,21 +503,11 @@ class Derived(Base):
         row("DataModel", "method"),
         row("DataModel", 'covered["key"]', "ITEM"),
         row("DataModel", "gone"),
-        row("DataModel", "_WRITTEN_KEY", "DICT_KEY"),
         row("DataModel", "_UNWRITTEN_KEY", "DICT_KEY"),
-        row("DataModel", "_STORE_KEY", "DICT_KEY"),
         row("Parser", "results"),
-        row("Parser", "_PARSER_KEY", "DICT_KEY"),
     )
-    writes = [
-        checker.DictKeyWrite(declarations, 26, 9, "DataModel.method", "_WRITTEN_KEY"),
-        checker.DictKeyWrite(declarations, 27, 9, "DataModel.method", "_PARSER_KEY"),
-    ]
 
-    problems = checker.table_problems(
-        rows=rows, declaration_paths=[declarations], key_writes=writes, store_keys=frozenset({"_STORE_KEY"})
-    )
-    unchecked = checker.table_problems(rows=rows[-3:-1], declaration_paths=[])
+    problems = checker.table_problems(rows=rows, declaration_paths=[declarations])
 
     assert _findings(problems) == snapshot([
         (
@@ -781,48 +571,18 @@ class Derived(Base):
             "Derived.shadowed has no ATTRIBUTE_FACTS row in scripts/fact_tables.py",
         ),
         (
-            27,
-            "DataModel.method",
-            "_PARSER_KEY",
-            "__dict__[_PARSER_KEY] has no ATTRIBUTE_FACTS row in scripts/fact_tables.py",
-        ),
-        (
             0,
             "ATTRIBUTE_FACTS",
             "gone",
             "ATTRIBUTE_FACTS row DataModel.gone names nothing the sources declare or write",
         ),
-        (
-            0,
-            "ATTRIBUTE_FACTS",
-            "_UNWRITTEN_KEY",
-            "ATTRIBUTE_FACTS row DataModel._UNWRITTEN_KEY names nothing the sources declare or write",
-        ),
     ])
-    assert unchecked == []
 
 
-def test_checked_scopes_follow_the_source_layout(tmp_path: Path) -> None:
-    """``model/`` and ``types.py`` are checked as model code, everything else as parser code."""
+def test_declarations_leave_out_the_compiled_templates(tmp_path: Path) -> None:
+    """The declarations are read from Python modules, without the compiled templates."""
     checker = _load_checker()
     source_root = checker.ROOT / "src" / "datamodel_code_generator"
-    paths = [
-        source_root / "parser" / "base.py",
-        source_root / "model" / "base.py",
-        source_root / "model" / "pydantic_v2" / "base_model.py",
-        source_root / "types.py",
-        source_root / "reference.py",
-        tmp_path / "outside.py",
-    ]
-
-    assert [checker.classify_path(path) for path in paths] == snapshot([
-        "parser",
-        "model",
-        "model",
-        "model",
-        "parser",
-        "parser",
-    ])
     compiled = sorted((source_root / "model" / "_compiled_templates").glob("*.py"))[:1]
     assert checker.iter_python_files([tmp_path / "notes.txt", *compiled]) == []
 
