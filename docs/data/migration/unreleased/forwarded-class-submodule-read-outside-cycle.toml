@@ -53,3 +53,21 @@ covers = [
     "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_circular_imports~ef7608c1.errors.txt",
     "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_circular_imports_forwarded_class_read_outside_cycle.yaml].txt",
 ]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/submodule_named_like_forwarded_class_files",
+    "tests/data/jsonschema/submodule_named_like_forwarded_class_read_outside_cycle.json",
+    "tests/data/jsonschema/submodule_named_like_root_forwarded_class_read_outside_cycle.json",
+]
+backends = "*"
+options = "*"
+aspects = ["import-path-removed", "type"]
+input_file_type = "jsonschema"
+
+[[change.cells]]
+input = ["tests/data/openapi/circular_imports_forwarded_class_read_outside_cycle.yaml"]
+backends = "*"
+options = "*"
+aspects = ["import-path-removed", "type"]
+input_file_type = "openapi"
