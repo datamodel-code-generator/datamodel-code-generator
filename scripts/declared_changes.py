@@ -577,9 +577,9 @@ def _revalidated(stem: str, records: dict[str, Record], base_records: dict[str, 
     return {label for other in records.values() if other is record or other.extends == stem for label in other.covers}
 
 
-def _cells_named(record: Record, base: Side) -> bool:
-    """Return whether the record must name the cells its category requires: it extends another and the base lacks it."""
-    return record.extends is not None and record.id not in base.records
+def _added(record: Record, base: Side) -> bool:
+    """Return whether the change adds the record: the gate holds a category's required cells to the records it adds."""
+    return record.id not in base.records
 
 
 def _record_problems(
@@ -595,7 +595,7 @@ def _record_problems(
     if record is None:
         return problems
     where = f"unreleased/{stem}.toml"
-    problems = rule_problems(record, fragment=True, added=_cells_named(record, base), records=records)
+    problems = rule_problems(record, fragment=True, added=_added(record, base), records=records)
     if not covers_written(text, record):
         problems.append(f"{where}: its covers are not written as '{SCRIPT} declare' writes them")
     problems += [f"{where}: {problem}" for label in record.covers if (problem := label_problem(label))]
@@ -987,7 +987,7 @@ def declare(repo: Path, ns: argparse.Namespace) -> int:
     assert record is not None, "_new_fragment writes an entry that parses"
     print(f"{path.relative_to(repo).as_posix()} covers {len(labels)} more stored outputs")
     records = _unreleased(head, tag) | {record.id: record}
-    found = rule_problems(record, fragment=True, added=_cells_named(record, base), records=records)
+    found = rule_problems(record, fragment=True, added=_added(record, base), records=records)
     print("".join(f"  still needed: {problem}\n" for problem in found), end="")
     return 0
 

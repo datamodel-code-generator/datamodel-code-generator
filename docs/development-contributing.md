@@ -372,7 +372,9 @@ change brings back to the latest tag needs no record, and a record that still co
 prints one `declare` command per kind of stored output (model output, notices, listings, internals), with `--base`
 when the base is not the merge base with `origin/main`, `--extends` for an output a lower layer's record covers, and
 the id of the record the change adds when it has one. `new-surface` covers model output only where the latest release
-has none. In a change that touches `src/`, a changed label a `harness` record covers, other than internal output,
+has none. A record the change adds is held to the cell rules of its category as the gate holds it: cells where the
+category requires them (`crash-fix`, `output-text`, `notice`), none where it forbids them, and the selector keys it
+needs. In a change that touches `src/`, a changed label a `harness` record covers, other than internal output,
 needs the gate's verdict (`python scripts/behaviour_diff.py gate <base> --tier pr --verdicts FILE`, passed to the check
 with `--verdicts FILE`): a label the gate refused, or has no verdict for at these contents, fails. The check also lists
 the outputs that moved since the latest tag with no unreleased record, judged by the same rule for each change since
