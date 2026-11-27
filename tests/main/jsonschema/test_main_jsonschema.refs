@@ -16205,6 +16205,28 @@ typed-dict	main/jsonschema/main_jsonschema/x_python_type_binding_collisions[type
 	main/jsonschema/main_jsonschema/x_python_type_nested_unknown_type.py
 [test_x_python_type_no_schema_type]
 	main/jsonschema/main_jsonschema/x_python_type_no_schema_type.py
+[test_x_python_type_object_root]
+allow-extra-fields	main/jsonschema/main_jsonschema/x_python_type_object_root[allow-extra-fields].py
+as-written	main/jsonschema/main_jsonschema/x_python_type_object_root[as-written].py
+collapse-root-models	main/jsonschema/main_jsonschema/x_python_type_object_root[collapse-root-models].py
+dataclass	main/jsonschema/main_jsonschema/x_python_type_object_root[dataclass].py
+default	main/jsonschema/main_jsonschema/x_python_type_object_root[default].py	= main/jsonschema/main_jsonschema/x_python_type_object_root[as-written].py
+extra-fields-allow	main/jsonschema/main_jsonschema/x_python_type_object_root[extra-fields-allow].py	= main/jsonschema/main_jsonschema/x_python_type_object_root[allow-extra-fields].py
+extra-fields-forbid	main/jsonschema/main_jsonschema/x_python_type_object_root[extra-fields-forbid].py
+msgspec	main/jsonschema/main_jsonschema/x_python_type_object_root[msgspec].py
+preset	main/jsonschema/main_jsonschema/x_python_type_object_root[preset].py
+pydantic-dataclass	main/jsonschema/main_jsonschema/x_python_type_object_root[pydantic-dataclass].py
+root-model-type-alias	main/jsonschema/main_jsonschema/x_python_type_object_root[root-model-type-alias].py
+type-alias	main/jsonschema/main_jsonschema/x_python_type_object_root[type-alias].py
+typed-dict	main/jsonschema/main_jsonschema/x_python_type_object_root[typed-dict].py
+[test_x_python_type_object_root_allof]
+allof_child_of_held_class	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof_child_of_held_class].py
+allof_wrapper_of_class_in_unread_file	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof_wrapper_of_class_in_unread_file].py
+allof_wrapper_of_held_class	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof_wrapper_of_held_class].py
+[test_x_python_type_object_root_template_data]
+all-models-allow	main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[all-models-allow].py	= main/jsonschema/main_jsonschema/x_python_type_object_root[allow-extra-fields].py
+name-key-allow	main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[name-key-allow].py
+name-key-forbid	main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[name-key-forbid].py	= main/jsonschema/main_jsonschema/x_python_type_object_root[as-written].py
 [test_x_python_type_qualified_spans]
 	main/jsonschema/main_jsonschema/x_python_type_qualified_spans.py
 [test_x_python_type_structured_binding]

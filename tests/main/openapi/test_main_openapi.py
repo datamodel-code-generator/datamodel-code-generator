@@ -18364,3 +18364,25 @@ def test_directory_input_type_of_top_level_files_does_not_depend_on_the_listing(
                 expected_stderr=inferred_message.format("jsonschema") + "\n",
                 name="model",
             )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--openapi-as-definitions", "paths-bodies"], id="paths-bodies"),
+        pytest.param(["--extra-fields", "allow"], id="extra-fields-allow"),
+    ],
+)
+def test_x_python_type_object_component(extra_args: list[str], output_file: Path) -> None:
+    """Build the object schemas of a document that hold nothing and name an x-python-type as roots of that type (#7581).
+
+    A component, an inline request body and an inline response body are one rule: ``parse_object`` builds the root.
+    A component that keeps keys (``additionalProperties: true``, ``--extra-fields allow``) stays an empty model.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "x_python_type_object_root.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", "paths", *extra_args],
+    )

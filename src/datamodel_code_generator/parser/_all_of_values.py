@@ -102,6 +102,7 @@ __all__ = [
     "collect_all_of_value_parts",
     "conjoined_declarations",
     "handle_allof_root_model_with_constraints",
+    "holds_nothing_but_python_type",
     "holds_union_member",
     "intersect_all_of_value_parts",
     "intersect_typed_value_parts",
@@ -326,6 +327,9 @@ class AllOfValuesHost(LightweightTypesHost, Protocol):
 
     def _has_pattern_properties_validator(self, obj: JsonSchemaObject) -> bool:
         """Return whether schema runtime validation owns patternProperties dispatch."""
+
+    def holds_nothing_but_python_type(self, obj: JsonSchemaObject, path: str) -> bool:
+        """Return whether the schema at ``path`` is built as a root of its ``x-python-type`` (``parse_object``)."""
 
     def _inherited_override_row(self, parent: dict[str, Any], child: dict[str, Any]) -> dict[str, Any]:
         """Return ``parser/_intersection.py:inherited_override_row`` under the merge mode of this parse."""
@@ -883,21 +887,34 @@ def schema_signature(parser: AllOfValuesHost, prop_schema: JsonSchemaObject | bo
     return json.dumps(prop_schema.model_dump(exclude_unset=True, by_alias=True), sort_keys=True, default=repr)
 
 
-def is_root_model_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> bool:
+def is_root_model_schema(parser: AllOfValuesHost, obj: JsonSchemaObject, ref: str | None = None) -> bool:
     """Check if schema represents a root model (primitive type with constraints).
 
     Based on parse_raw_obj() else branch conditions. Returns True when
-    the schema would be processed by parse_root_type().
+    the schema would be processed by parse_root_type(), or, for the schema that the reference ``ref`` names, when
+    ``parse_object`` builds a root of its ``x-python-type`` (``holds_nothing_but_python_type``).
     """
-    return not (
-        obj.is_array
-        or obj.allOf
-        or obj.oneOf
-        or obj.anyOf
-        or obj.properties
-        or _declares_key_keywords(obj)
-        or obj.type == "object"
-    ) and not parser._reads_enum(obj)
+    return (ref is not None and holds_nothing_but_python_type(parser, obj, ref)) or (
+        not (
+            obj.is_array
+            or obj.allOf
+            or obj.oneOf
+            or obj.anyOf
+            or obj.properties
+            or _declares_key_keywords(obj)
+            or obj.type == "object"
+        )
+        and not parser._reads_enum(obj)
+    )
+
+
+def holds_nothing_but_python_type(parser: AllOfValuesHost, schema: JsonSchemaObject, ref: str) -> bool:
+    """Return whether the schema that ``ref`` names is built as a root of its ``x-python-type``, not as a model.
+
+    The decision is ``parse_object``'s, asked of the schema at the reference's path, so an allOf over such a schema
+    reads a root where it reads one for any other root.
+    """
+    return parser.holds_nothing_but_python_type(schema, _schema_refs.ref_path(parser, ref))
 
 
 def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
@@ -934,7 +951,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
     else:
         ref_schema = parser._load_ref_schema_object(cast("str", ref_item.ref))
 
-    if not is_root_model_schema(parser, ref_schema):
+    if not is_root_model_schema(parser, ref_schema, ref_item.ref):
         return None
 
     constraint_items: list[JsonSchemaObject] = []
@@ -1463,7 +1480,8 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, site: ValueSite) -> JsonSc
                 else item.has_constraint or narrows_literals
             )
         )
-        scalar_or_array = (
+        holds_python_type = bool(ref) and holds_nothing_but_python_type(parser, schema, ref or "")
+        scalar_or_array = holds_python_type or (
             schema.type
             and schema.type != "object"
             and not (schema.enum and not (materialize_siblings and (supports_literal_validation or narrows_literals)))
@@ -1472,7 +1490,7 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, site: ValueSite) -> JsonSc
             single_value
             and scalar_or_array
             and not (schema.allOf or schema.anyOf or schema.oneOf)
-            and not schema_requires_model_type(parser, schema)
+            and (holds_python_type or not schema_requires_model_type(parser, schema))
         ):
             merged_root: JsonSchemaObject | None = None
             if materialize_siblings:

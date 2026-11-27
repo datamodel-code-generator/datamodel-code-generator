@@ -158,6 +158,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._constraint_applicability import ConstraintOptions, OutputKeywords, RenderDrop
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
+    from datamodel_code_generator._user_keys import ModelNames
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
@@ -476,10 +477,31 @@ GENERIC_BASE_CLASS_PATH: str = "#/__datamodel_code_generator__/generic_base_clas
 GENERIC_BASE_CLASS_NAME: str = "__generic_base_class__"
 
 
-def _copy_all_model_data(source: dict[str, Any], target: dict[str, Any]) -> None:
+def _copy_all_model_data(source: Mapping[str, object], target: dict[str, object]) -> None:
     """Copy ALL_MODEL data to target dict, deep copying mutable containers only."""
     for key, value in source.items():
         target[key] = deepcopy(value) if isinstance(value, (dict, list, set)) else value
+
+
+def _model_template_data(
+    extra_template_data: dict[str, dict[str, Any]],
+    path_key: str,
+    reference: ModelNames | None,
+    parsed: Mapping[str, object] | None = None,
+) -> dict[str, object]:
+    """Return the template data a model starts with, the one home of the order it is assembled in.
+
+    It is the entry of the model's schema path (``path_key``), ``parsed`` (what the parser stores for the schema on that
+    entry, where it is not stored yet), the entry of the name of its ``reference`` (none where the model has no
+    reference yet) and the ``#all#`` entry over them, each over the earlier ones. ``DataModel.__init__`` takes it, so a
+    reader before the model exists (``keeps_extra_keys``) sees what the model gets.
+    """
+    data = {**extra_template_data[path_key], **(parsed or {})}
+    if reference is not None:
+        data.update(extra_template_data[template_data_keys(reference)[1]])
+    if all_model_extra_template_data := extra_template_data.get(ALL_MODEL):
+        _copy_all_model_data(all_model_extra_template_data, data)
+    return data
 
 
 ConstraintsBaseT = TypeVar("ConstraintsBaseT", bound="ConstraintsBase")
@@ -2982,9 +3004,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if extra_template_data is not None:
             # The supplied defaultdict will either create a new entry,
             # or already contain a predefined entry for this type
-            path_key, name_key = template_data_keys(self.reference)
+            path_key = template_data_keys(self.reference)[0]
             self.extra_template_data = extra_template_data[path_key]
-            self.extra_template_data.update(extra_template_data[name_key])
+            self.extra_template_data.update(_model_template_data(extra_template_data, path_key, self.reference))
         else:
             self.extra_template_data = defaultdict(dict)
 
@@ -2994,10 +3016,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             if base_class.reference:
                 add_child(base_class.reference, self)
 
-        if extra_template_data is not None:
-            all_model_extra_template_data = extra_template_data.get(ALL_MODEL)
-            if all_model_extra_template_data:
-                _copy_all_model_data(all_model_extra_template_data, self.extra_template_data)
         self.dataclass_arguments: DataclassArguments = self._with_template_value(
             "dataclass_arguments", dataclass_arguments if dataclass_arguments is not None else {}
         )

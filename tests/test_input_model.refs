@@ -37,9 +37,20 @@ pydantic-dataclass-root	input_model/arbitrary_class_fields[pydantic-dataclass-ro
 reuse-all	input_model/arbitrary_class_fields[reuse-all].txt
 reuse-foreign	input_model/arbitrary_class_fields[reuse-foreign].txt
 root-alias	input_model/arbitrary_class_fields[root-alias].txt
+root-class	input_model/arbitrary_class_fields[root-class].txt
+root-class-root-alias	input_model/arbitrary_class_fields[root-class-root-alias].txt	= input_model/arbitrary_class_fields[root-class].txt
+root-held	input_model/arbitrary_class_fields[root-held].txt
+root-held-collapse	input_model/arbitrary_class_fields[root-held-collapse].txt
+root-held-hooked	input_model/arbitrary_class_fields[root-held-hooked].txt
+root-held-preset	input_model/arbitrary_class_fields[root-held-preset].txt
+root-held-reuse-foreign	input_model/arbitrary_class_fields[root-held-reuse-foreign].txt
+root-held-reuse-model	input_model/arbitrary_class_fields[root-held-reuse-model].txt	= input_model/arbitrary_class_fields[root-held].txt
+root-held-type-alias	input_model/arbitrary_class_fields[root-held-type-alias].txt
+root-hooked	input_model/arbitrary_class_fields[root-hooked].txt
 root-in-model	input_model/arbitrary_class_fields[root-in-model].txt
 root-in-model-root-alias	input_model/arbitrary_class_fields[root-in-model-root-alias].txt	= input_model/arbitrary_class_fields[root-in-model].txt
 root-in-model-type-alias	input_model/arbitrary_class_fields[root-in-model-type-alias].txt
+root-instance-of	input_model/arbitrary_class_fields[root-instance-of].txt
 root-optional	input_model/arbitrary_class_fields[root-optional].txt	= input_model/arbitrary_class_fields[root-alias].txt
 root-union	input_model/arbitrary_class_fields[root-union].txt
 subclass-of	input_model/arbitrary_class_fields[subclass-of].txt
@@ -50,22 +61,27 @@ user-dict	input_model/arbitrary_class_fields[user-dict].txt
 [test_input_model_arbitrary_class_fields_by_output_type]
 dataclasses.dataclass-DataclassHolder	input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-DataclassHolder].txt
 dataclasses.dataclass-Holder	input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-Holder].txt
+dataclasses.dataclass-HoldsRootThing	input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-HoldsRootThing].txt
 dataclasses.dataclass-PydanticDataclassHolder	input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-PydanticDataclassHolder].txt
 dataclasses.dataclass-TypedDictHolder	input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-TypedDictHolder].txt
 msgspec.Struct-DataclassHolder	input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-DataclassHolder].txt
 msgspec.Struct-Holder	input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-Holder].txt
+msgspec.Struct-HoldsRootThing	input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-HoldsRootThing].txt
 msgspec.Struct-PydanticDataclassHolder	input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-PydanticDataclassHolder].txt
 msgspec.Struct-TypedDictHolder	input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-TypedDictHolder].txt
 pydantic_v2.BaseModel-DataclassHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-DataclassHolder].txt	= input_model/arbitrary_class_fields[dataclass-root].txt
 pydantic_v2.BaseModel-Holder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-Holder].txt	= input_model/arbitrary_class_fields[issue].txt
+pydantic_v2.BaseModel-HoldsRootThing	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-HoldsRootThing].txt	= input_model/arbitrary_class_fields[root-held].txt
 pydantic_v2.BaseModel-PydanticDataclassHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-PydanticDataclassHolder].txt	= input_model/arbitrary_class_fields[pydantic-dataclass-root].txt
 pydantic_v2.BaseModel-TypedDictHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-TypedDictHolder].txt	= input_model/arbitrary_class_fields[typeddict-root].txt
 pydantic_v2.dataclass-DataclassHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-DataclassHolder].txt
 pydantic_v2.dataclass-Holder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-Holder].txt
+pydantic_v2.dataclass-HoldsRootThing	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-HoldsRootThing].txt
 pydantic_v2.dataclass-PydanticDataclassHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-PydanticDataclassHolder].txt
 pydantic_v2.dataclass-TypedDictHolder	input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-TypedDictHolder].txt
 typing.TypedDict-DataclassHolder	input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-DataclassHolder].txt
 typing.TypedDict-Holder	input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-Holder].txt
+typing.TypedDict-HoldsRootThing	input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-HoldsRootThing].txt
 typing.TypedDict-PydanticDataclassHolder	input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-PydanticDataclassHolder].txt
 typing.TypedDict-TypedDictHolder	input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-TypedDictHolder].txt
 [test_input_model_callable_types]
@@ -1149,6 +1165,10 @@ overridden-reuse-foreign	input_model/reuse_same_named_classes[overridden-reuse-f
 two-models-reuse-all	input_model/reuse_same_named_classes[two-models-reuse-all].txt
 [test_input_model_reuse_same_named_discriminator_mapping]
 	input_model/reuse_same_named_discriminator_mapping.txt
+[test_input_model_root_of_arbitrary_class_holds_its_value]
+HoldsRootThing	input_model/root_of_arbitrary_class_holds_its_value[HoldsRootThing].txt	= input_model/arbitrary_class_fields[root-held].txt
+RootInstanceOf	input_model/root_of_arbitrary_class_holds_its_value[RootInstanceOf].txt	= input_model/arbitrary_class_fields[root-instance-of].txt
+RootThing	input_model/root_of_arbitrary_class_holds_its_value[RootThing].txt	= input_model/arbitrary_class_fields[root-class].txt
 [test_input_model_single_multi_level_inheritance]
 	input_model/single_multi_level_inheritance.txt
 [test_input_model_single_no_inheritance]

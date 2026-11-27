@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.enums import TargetPydanticVersion
+from datamodel_code_generator.model._decisions.extra_keys import CONFIG_EXTRA_KEYS, ConfigExtra, get_config_extra
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -21,15 +22,7 @@ class ConfigAttribute(NamedTuple):
     invert: bool
 
 
-ConfigExtra = Literal["'allow'", "'forbid'", "'ignore'"]
 ConfigParameterValue = bool | ConfigExtra | Literal['"python-re"'] | dict[str, Any]
-_CONFIG_EXTRA_KEYS: frozenset[str] = frozenset({
-    "additionalProperties",
-    "allow_extra_fields",
-    "extra_fields",
-    "force_extra_allow",
-    "unevaluatedProperties",
-})
 
 
 def config_attributes(*, by_name: str, frozen: bool) -> list[ConfigAttribute]:
@@ -50,34 +43,6 @@ def config_attributes(*, by_name: str, frozen: bool) -> list[ConfigAttribute]:
         ),
         ConfigAttribute("use_attribute_docstrings", "use_attribute_docstrings", invert=False),
     ]
-
-
-def get_config_extra(extra_template_data: dict[str, Any]) -> ConfigExtra | None:
-    """Get extra field configuration for ConfigDict."""
-    if extra_template_data.get("force_extra_allow"):
-        return "'allow'"
-
-    additional_properties = extra_template_data.get("additionalProperties")
-    unevaluated_properties = extra_template_data.get("unevaluatedProperties")
-    allow_extra_fields = extra_template_data.get("allow_extra_fields")
-    extra_fields = extra_template_data.get("extra_fields")
-
-    config_extra: ConfigExtra | None = None
-    if allow_extra_fields or extra_fields == "allow":
-        config_extra = "'allow'"
-    elif extra_fields == "forbid":
-        config_extra = "'forbid'"
-    elif extra_fields == "ignore":
-        config_extra = "'ignore'"
-    elif additional_properties is True:
-        config_extra = "'allow'"
-    elif additional_properties is False:
-        config_extra = "'forbid'"
-    elif unevaluated_properties is True:
-        config_extra = "'allow'"
-    elif unevaluated_properties is False:
-        config_extra = "'forbid'"
-    return config_extra
 
 
 def get_config_attributes(
@@ -150,7 +115,7 @@ def build_base_config_parameters(
     )
     if (
         all_data_types == ()
-        and not (include_extra and not _CONFIG_EXTRA_KEYS.isdisjoint(extra_template_data))
+        and not (include_extra and not CONFIG_EXTRA_KEYS.isdisjoint(extra_template_data))
         and not any(from_ in extra_template_data for from_, _, _ in config_attributes)
     ):
         return {}

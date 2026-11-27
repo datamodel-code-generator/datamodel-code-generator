@@ -1,0 +1,83 @@
+[[change]]
+id = "fix-7581"
+category = "default-fix"
+title = "A fieldless object that names an x-python-type is a root of that type"
+summary = "An object schema that declares no property, no map, no validator and keeps no unknown keys, and whose x-python-type names a class it does not fit (--input-model writes a Pydantic root of a plain class, an InstanceOf class or a class that builds its own schema this way), was written as an empty model that held nothing and accepted any object. It is now the root of that class under the same name, as a field of the same schema already took the class: a Pydantic RootModel[Any] with root: <class> and arbitrary_types_allowed=True, or a type alias of the class in dataclass, TypedDict and msgspec output. Inline OpenAPI request and response bodies follow the same rule. An object keeps unknown keys, and stays a model, where its schema, --extra-fields allow, --allow-extra-fields or an --extra-template-data entry (by schema path, class name or #all#) allows them and no --extra-fields forbid or ignore overrides it. The empty model held no value, but some working output changes. Under --collapse-root-models and the dated presets the former empty class name is inlined into its holders like any root model. A definition that held only an allOf over such an object (a description beside one $ref) is a root of that class, as it is over a string root, and a model that extends such an object no longer has it as a base, as over any root model. The owner decided this exception to the default rule on 2026-11-27 (the empty model, and the working output that changes with it)."
+refs = ["#1", "#7581"]
+decision = ["#1"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "input_model/arbitrary_class_fields[root-class-root-alias].txt",
+    "input_model/arbitrary_class_fields[root-class].txt",
+    "input_model/arbitrary_class_fields[root-held-collapse].txt",
+    "input_model/arbitrary_class_fields[root-held-hooked].txt",
+    "input_model/arbitrary_class_fields[root-held-preset].txt",
+    "input_model/arbitrary_class_fields[root-held-reuse-foreign].txt",
+    "input_model/arbitrary_class_fields[root-held-reuse-model].txt",
+    "input_model/arbitrary_class_fields[root-held-type-alias].txt",
+    "input_model/arbitrary_class_fields[root-held].txt",
+    "input_model/arbitrary_class_fields[root-hooked].txt",
+    "input_model/arbitrary_class_fields[root-instance-of].txt",
+    "input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-HoldsRootThing].txt",
+    "input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-HoldsRootThing].txt",
+    "input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-HoldsRootThing].txt",
+    "input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-HoldsRootThing].txt",
+    "input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-HoldsRootThing].txt",
+    "input_model/root_of_arbitrary_class_holds_its_value[HoldsRootThing].txt",
+    "input_model/root_of_arbitrary_class_holds_its_value[RootInstanceOf].txt",
+    "input_model/root_of_arbitrary_class_holds_its_value[RootThing].txt",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[allow-extra-fields].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[as-written].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[collapse-root-models].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[dataclass].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[default].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[extra-fields-allow].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[extra-fields-forbid].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[msgspec].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[preset].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[pydantic-dataclass].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[root-model-type-alias].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[type-alias].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[typed-dict].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof_child_of_held_class].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof_wrapper_of_class_in_unread_file].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof_wrapper_of_held_class].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[all-models-allow].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[name-key-allow].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[name-key-forbid].py",
+    "main/openapi/main_openapi/x_python_type_object_component[default].py",
+    "main/openapi/main_openapi/x_python_type_object_component[extra-fields-allow].py",
+    "main/openapi/main_openapi/x_python_type_object_component[paths-bodies].py",
+]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/x_python_type_object_root.json"]
+backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
+options = "*"
+aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "type"]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/x_python_type_object_root_allof_child.json",
+    "tests/data/jsonschema/x_python_type_object_root_allof_wrapper.json",
+]
+backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
+options = "*"
+aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "type"]
+
+[[change.cells]]
+input = ["tests/data/openapi/x_python_type_object_root.json"]
+backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
+options = "*"
+aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "type"]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/x_python_type_object_root_external/main.json",
+    "tests/data/jsonschema/x_python_type_object_root_external/other.json",
+]
+backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
+options = "*"
+aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "required", "type"]

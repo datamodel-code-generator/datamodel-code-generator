@@ -1881,7 +1881,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`parser/graphql.py`; `parser/openapi.py:OpenAPIParser.parse_all_parameters`; `parser/jsonschema.py` (the "
             "root models, `parse_object`, allOf, `JsonSchemaParser._extra_template_data_for_reference`); "
             "`parser/_inherited_schemas.py:parse_inherited_schema_fields`; `parser/_rw_split.py`; "
-            "`model/base.py:DataModel.__init__` (template data keys); `model/scalar.py:_DataTypeScalarBase.__init__`; "
+            "`model/base.py:DataModel.__init__`, `model/base.py:_model_template_data` (template data keys); "
+            "`model/scalar.py:_DataTypeScalarBase.__init__`; "
             "`_target_naming.py:TargetNames.alias`"
         ),
         sites=(
@@ -1909,6 +1910,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/jsonschema.py", "JsonSchemaParser._extra_template_data_for_reference"),
             Home("parser/_inherited_schemas.py", "parse_inherited_schema_fields"),
             Home("model/base.py", "DataModel.__init__"),
+            Home("model/base.py", "_model_template_data"),
             Home("model/scalar.py", "_DataTypeScalarBase.__init__"),
             Home("_target_naming.py", "TargetNames.alias"),
             Home("parser/_passes/plans.py"),
@@ -1916,6 +1918,29 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/avro.py"),
             Home("parser/graphql.py"),
             Home("parser/_rw_split.py"),
+        ),
+    ),
+    DecisionHome(
+        decision=(
+            "whether a model keeps the keys it does not declare (`extra='allow'`), forbids or ignores them: read from "
+            "the template data the model starts with (`model/base.py:_model_template_data`: the entry of its schema "
+            "path with what the parser stored for the schema's `additionalProperties` and `unevaluatedProperties`, the "
+            "entry of its name and `#all#`), where `extra_fields` and `allow_extra_fields` come before the schema's "
+            "keywords"
+        ),
+        homes=(
+            Home("model/_decisions/extra_keys.py", "get_config_extra"),
+            Home("model/_decisions/extra_keys.py", "keeps_extra_keys"),
+        ),
+        core="`model/_decisions/extra_keys.py`: `get_config_extra`, `keeps_extra_keys`",
+        adapters=(
+            "`model/pydantic_v2/_config.py:build_base_config_parameters` (the `extra` of the config, from the data of "
+            "the model); `parser/jsonschema.py:JsonSchemaParser._keeps_extra_keys` (the same data before the model "
+            "exists, for `holds_nothing_but_python_type`)"
+        ),
+        sites=(
+            Home("model/pydantic_v2/_config.py", "build_base_config_parameters"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._keeps_extra_keys"),
         ),
     ),
     DecisionHome(

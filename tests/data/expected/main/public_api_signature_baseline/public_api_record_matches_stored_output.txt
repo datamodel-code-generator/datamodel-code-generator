@@ -4192,6 +4192,7 @@ class JsonSchemaParser(Parser['JSONSchemaParserConfig', 'JsonSchemaFeatures'])
     def parse_one_of(self, name: str, obj: JsonSchemaObject, path: list[str]) -> list[DataType]
     def parse_all_of(self, name: str, obj: JsonSchemaObject, path: list[str], ignore_duplicate_model: bool=False) -> DataType
     def parse_object_fields(self, obj: JsonSchemaObject, path: list[str], module_name: Optional[str]=None, class_name: Optional[str]=None, *, output_names: tuple[str, ...]=()) -> list[DataModelFieldBase]
+    def holds_nothing_but_python_type(self, obj: JsonSchemaObject, path: str) -> bool
     def parse_object(self, name: str, obj: JsonSchemaObject, path: list[str], singular_name: bool=False, unique: bool=True) -> DataType
     def parse_pattern_properties(self, name: str, pattern_properties: dict[str, JsonSchemaObject | bool], path: list[str], *, property_names: JsonSchemaObject | bool | None=None) -> DataType
     def parse_property_names(self, name: str, property_names: JsonSchemaObject | bool, additional_properties: JsonSchemaObject | bool | None, path: list[str], parent_obj: JsonSchemaObject | None=None) -> DataType

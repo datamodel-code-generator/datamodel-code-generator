@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "wrapped": {"$ref": "#/$defs/Wrapped"},
+    "wrappedOpen": {"$ref": "#/$defs/WrappedOpen"},
+    "both": {"$ref": "#/$defs/Both"},
+    "inline": {
+      "allOf": [{"$ref": "#/$defs/Plain"}],
+      "description": "An allOf at a field is the reference."
+    }
+  },
+  "$defs": {
+    "Plain": {"type": "object", "x-python-type": "logging.Logger"},
+    "Open": {"type": "object", "additionalProperties": true, "x-python-type": "logging.Logger"},
+    "Wrapped": {
+      "allOf": [{"$ref": "#/$defs/Plain"}],
+      "description": "A definition over a class no schema describes."
+    },
+    "WrappedOpen": {
+      "allOf": [{"$ref": "#/$defs/Open"}],
+      "description": "A definition over a model that keeps keys."
+    },
+    "Both": {
+      "allOf": [
+        {"$ref": "#/$defs/Plain"},
+        {"type": "object", "x-python-type": "logging.Logger"}
+      ]
+    }
+  }
+}

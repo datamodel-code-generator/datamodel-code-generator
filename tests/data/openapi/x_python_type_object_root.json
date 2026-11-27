@@ -1,0 +1,35 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Python type roots", "version": "1.0"},
+  "paths": {
+    "/things": {
+      "post": {
+        "operationId": "createThing",
+        "requestBody": {
+          "content": {
+            "application/json": {"schema": {"type": "object", "x-python-type": "logging.Logger"}}
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored thing",
+            "content": {
+              "application/json": {"schema": {"type": "object", "x-python-type": "logging.Logger"}}
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Thing": {"type": "object", "x-python-type": "logging.Logger"},
+      "Open": {"type": "object", "additionalProperties": true, "x-python-type": "logging.Logger"},
+      "Basket": {
+        "type": "object",
+        "properties": {"thing": {"$ref": "#/components/schemas/Thing"}},
+        "required": ["thing"]
+      }
+    }
+  }
+}

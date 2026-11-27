@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "plain": {"$ref": "#/$defs/Plain"},
+    "described": {"$ref": "#/$defs/Described"},
+    "closed": {"$ref": "#/$defs/Closed"},
+    "requiredOnly": {"$ref": "#/$defs/RequiredOnly"},
+    "emptyProperties": {"$ref": "#/$defs/EmptyProperties"},
+    "number": {"$ref": "#/$defs/Number"},
+    "withProperties": {"$ref": "#/$defs/WithProperties"},
+    "minProperties": {"$ref": "#/$defs/MinProperties"},
+    "map": {"$ref": "#/$defs/Map"},
+    "open": {"$ref": "#/$defs/Open"},
+    "unevaluatedOpen": {"$ref": "#/$defs/UnevaluatedOpen"},
+    "nullable": {"$ref": "#/$defs/Nullable"},
+    "compatible": {"$ref": "#/$defs/Compatible"},
+    "noType": {"$ref": "#/$defs/NoType"},
+    "plainWithSibling": {"$ref": "#/$defs/Plain", "description": "A reference stays a reference."},
+    "inline": {"type": "object", "x-python-type": "logging.Logger"}
+  },
+  "required": ["plain"],
+  "$defs": {
+    "Plain": {"type": "object", "x-python-type": "logging.Logger"},
+    "Described": {
+      "type": "object",
+      "description": "A class no schema describes.",
+      "x-python-type": "logging.Handler"
+    },
+    "Closed": {"type": "object", "additionalProperties": false, "x-python-type": "logging.Logger"},
+    "RequiredOnly": {"type": "object", "required": ["a"], "x-python-type": "logging.Logger"},
+    "EmptyProperties": {"type": "object", "properties": {}, "x-python-type": "logging.Logger"},
+    "Number": {"type": "object", "x-python-type": "decimal.Decimal"},
+    "WithProperties": {
+      "type": "object",
+      "properties": {"a": {"type": "integer"}},
+      "x-python-type": "logging.Logger"
+    },
+    "MinProperties": {"type": "object", "minProperties": 1, "x-python-type": "logging.Logger"},
+    "Map": {
+      "type": "object",
+      "additionalProperties": {"type": "integer"},
+      "x-python-type": "logging.Logger"
+    },
+    "Open": {"type": "object", "additionalProperties": true, "x-python-type": "logging.Logger"},
+    "UnevaluatedOpen": {"type": "object", "unevaluatedProperties": true, "x-python-type": "logging.Logger"},
+    "Nullable": {"type": ["object", "null"], "x-python-type": "logging.Logger"},
+    "Compatible": {"type": "object", "x-python-type": "dict[str, int]"},
+    "NoType": {"x-python-type": "logging.Logger"}
+  }
+}

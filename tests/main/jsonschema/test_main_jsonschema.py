@@ -29010,6 +29010,90 @@ def test_x_python_type_no_schema_type(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+        pytest.param(["--preset", "standard-py314-20261125"], id="preset"),
+        pytest.param(["--use-root-model-type-alias"], id="root-model-type-alias"),
+        pytest.param(["--use-type-alias"], id="type-alias"),
+        pytest.param(["--use-x-python-type-as-written"], id="as-written"),
+        pytest.param(["--extra-fields", "allow"], id="extra-fields-allow"),
+        pytest.param(["--extra-fields", "forbid"], id="extra-fields-forbid"),
+        pytest.param(["--allow-extra-fields"], id="allow-extra-fields"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="pydantic-dataclass"),
+        pytest.param(["--output-model-type", "dataclasses.dataclass"], id="dataclass"),
+        pytest.param(["--output-model-type", "typing.TypedDict"], id="typed-dict"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+    ],
+)
+def test_x_python_type_object_root(extra_args: list[str], output_file: Path) -> None:
+    """Build an object that holds nothing and names an x-python-type as a root of that type (#7581).
+
+    A definition of type object without properties, a dict root or kept keys was an empty model. It is the root of its
+    class now, as a field of the same schema takes the class (owner exception to the default rule, 2026-11-27). An
+    object with properties, size keywords, typed values, a type that fits ``object``, a type list, no type, or kept
+    keys (``additionalProperties: true``, ``--extra-fields allow``, ``--allow-extra-fields``) is built as before, and a
+    reference to a changed definition stays a reference.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root.json",
+        output_path=output_file,
+        input_file_type=None,
+        extra_args=extra_args,
+    )
+
+
+@pytest.mark.parametrize(
+    "template_data",
+    [
+        pytest.param({"Plain": {"extra_fields": "allow"}}, id="name-key-allow"),
+        pytest.param({"#all#": {"extra_fields": "allow"}}, id="all-models-allow"),
+        pytest.param({"Plain": {"extra_fields": "forbid"}}, id="name-key-forbid"),
+    ],
+)
+def test_x_python_type_object_root_template_data(
+    template_data: dict[str, dict[str, str]], output_file: Path, tmp_path: Path
+) -> None:
+    """Keep the keys of an empty object where --extra-template-data allows them, however it names it (#7581).
+
+    The model asks the template data its schema path, its name and ``#all#`` give it (``_model_template_data``), so the
+    entry of the class name keeps ``Plain`` an empty model that allows extra keys; the same entry forbidding them
+    leaves the root.
+    """
+    extra_template_data = tmp_path / "extra-template-data.json"
+    extra_template_data.write_text(json.dumps(template_data), encoding="utf-8")
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root.json",
+        output_path=output_file,
+        input_file_type=None,
+        extra_args=["--extra-template-data", str(extra_template_data)],
+    )
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        pytest.param("x_python_type_object_root_allof_wrapper.json", id="allof_wrapper_of_held_class"),
+        pytest.param("x_python_type_object_root_allof_child.json", id="allof_child_of_held_class"),
+        pytest.param("x_python_type_object_root_external/main.json", id="allof_wrapper_of_class_in_unread_file"),
+    ],
+)
+def test_x_python_type_object_root_allof(schema: str, output_file: Path) -> None:
+    """Read an allOf over an object that holds nothing as an allOf over the root that object is (#7581).
+
+    A definition of one reference and a description is a root of that reference, as it is over a string root, and one
+    over a model that keeps keys stays a subclass; an allOf of two such members is the root of the class. A model that
+    extends one loses the base as it does over any root (``allof_child_of_held_class`` is the case the owner decides).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / schema,
+        output_path=output_file,
+        input_file_type=None,
+    )
+
+
 def test_x_python_type_custom_fqpath(output_file: Path) -> None:
     """Test x-python-type with custom fully qualified path not in predefined imports."""
     run_main_and_assert(

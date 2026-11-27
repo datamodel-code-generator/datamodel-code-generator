@@ -1,0 +1,14 @@
+[[change]]
+id = "fix-7581-api"
+category = "api"
+title = "JsonSchemaParser.holds_nothing_but_python_type"
+summary = "JsonSchemaParser has a method holds_nothing_but_python_type(obj, path) that returns whether parse_object builds the object schema at a schema path as a root of its x-python-type instead of an empty model. Nothing is removed or renamed. Subclasses that define a method of this name override it."
+refs = ["#7581"]
+decision = ["#7581"]
+source = "release-note"
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.parser.jsonschema.JsonSchemaParser"] }
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

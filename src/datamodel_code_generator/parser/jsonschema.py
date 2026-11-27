@@ -214,6 +214,7 @@ from datamodel_code_generator.model._decisions.enum_kind import (
 from datamodel_code_generator.model._decisions.enum_kind import holds_member_value as holds_member_value
 from datamodel_code_generator.model._decisions.enum_kind import is_literal_kind as is_literal_kind
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind as literal_value_kind
+from datamodel_code_generator.model._decisions.extra_keys import keeps_extra_keys
 from datamodel_code_generator.model._decisions.literal_default import const_type as const_type
 from datamodel_code_generator.model._decisions.tag_value import FieldTag as FieldTag
 from datamodel_code_generator.model._decisions.tag_value import distinct_tags as distinct_tags
@@ -225,6 +226,7 @@ from datamodel_code_generator.model.base import (
     UNDEFINED,
     _field_source_name,
     _mark_forbids_unknown_fields,
+    _model_template_data,
     _with_field_origin,
     sanitize_module_name,
 )
@@ -569,6 +571,11 @@ def _is_counted_map(item: JsonSchemaObject) -> bool:
 _EXTERNAL_REF_MAPPING_IMPORT = ImportProducer("external-ref-mapping")
 _X_PYTHON_IMPORT = ImportProducer("x-python-import")
 _EXTRA_FIELDS_KEYS = ("extra_fields", "allow_extra_fields")
+_PYTHON_TYPE_ROOT_KEY = "_python_type_root"
+"""Marks a fieldless object ``parse_object`` builds as a root of its ``x-python-type``, which types the root even when
+the class is known only as text. A class given as text is unknown to the run and its root has no released form but the
+empty class, so it is treated as arbitrary: the root takes the form that imports for every class. A text class a field
+or a root of another kind names is not marked (#7593 reads this rule)."""
 _DEFAULT_LEFT_OFF_KEY = "_default_left_off"
 _BRANCH_REFERENCE_KEY = "_branch_reference"
 """Marks the ``$ref`` branch ``_parse_ref_branch_model`` reads as an allOf member with the class its site types it as,
@@ -2729,29 +2736,34 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if self.use_msgspec_forbid_unknown_fields and _all_of_values.inline_sources_close(self, (obj,)):
             _mark_forbids_unknown_fields(self.extra_template_data[path])
+        self.extra_template_data[path].update(self._stored_additional_properties(obj))
         additional_properties = self._model_additional_properties(obj)
-        if isinstance(additional_properties, bool):
-            self._output_model_context.store_additional_properties_value(
+        if not isinstance(additional_properties, JsonSchemaObject) or not self.use_closed_typed_dict:
+            return
+        if additional_props_type := self._extra_items_type(additional_properties):  # pragma: no branch
+            context = self._output_model_context
+            _rw_split.store_extra_items_type(
+                self,
                 self.extra_template_data[path],
-                value=additional_properties,
+                additional_props_type,
+                reference_classes_required=context.requires_additional_properties_reference_classes,
                 target_python_version=self.target_python_version,
             )
-        elif isinstance(additional_properties, JsonSchemaObject):
+
+    def _stored_additional_properties(self, obj: JsonSchemaObject) -> dict[str, object]:
+        """Return the closedness ``set_additional_properties`` stores in the template data for ``obj``, if it has one.
+
+        A boolean ``additionalProperties`` is stored as it is, a schema as ``True``.
+        """
+        additional_properties = self._model_additional_properties(obj)
+        stored: dict[str, object] = {}
+        if additional_properties is not None:
             self._output_model_context.store_additional_properties_value(
-                self.extra_template_data[path],
-                value=True,
+                stored,
+                value=additional_properties if isinstance(additional_properties, bool) else True,
+                target_python_version=self.target_python_version,
             )
-            if not self.use_closed_typed_dict:
-                return
-            if additional_props_type := self._extra_items_type(additional_properties):  # pragma: no branch
-                context = self._output_model_context
-                _rw_split.store_extra_items_type(
-                    self,
-                    self.extra_template_data[path],
-                    additional_props_type,
-                    reference_classes_required=context.requires_additional_properties_reference_classes,
-                    target_python_version=self.target_python_version,
-                )
+        return stored
 
     def _warn_closed_pattern_properties(self, path: str, obj: JsonSchemaObject) -> None:
         """Warn once per schema object whose closed model rejects the keys its patternProperties admit.
@@ -2790,10 +2802,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def set_unevaluated_properties(self, path: str, obj: JsonSchemaObject) -> None:
         """Set unevaluated properties flag in extra template data."""
+        self.extra_template_data[path].update(self._stored_unevaluated_properties(obj))
+
+    @staticmethod
+    def _stored_unevaluated_properties(obj: JsonSchemaObject) -> dict[str, object]:
+        """Return the template data that ``set_unevaluated_properties`` stores for ``obj``.
+
+        A boolean ``unevaluatedProperties`` is stored as it is; a schema is stored as ``True`` where
+        ``additionalProperties`` is unset.
+        """
         if isinstance(obj.unevaluatedProperties, bool):
-            self.extra_template_data[path]["unevaluatedProperties"] = obj.unevaluatedProperties
-        elif isinstance(obj.unevaluatedProperties, JsonSchemaObject) and obj.additionalProperties is None:
-            self.extra_template_data[path]["unevaluatedProperties"] = True
+            return {"unevaluatedProperties": obj.unevaluatedProperties}
+        if isinstance(obj.unevaluatedProperties, JsonSchemaObject) and obj.additionalProperties is None:
+            return {"unevaluatedProperties": True}
+        return {}
 
     def set_title(self, path: str, obj: JsonSchemaObject) -> None:
         """Set title in extra template data."""
@@ -3052,10 +3074,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return _type_overrides.python_type_data_type(
             self,
             python_type,
-            needs_arbitrary_types=isinstance(
-                x_python_type := obj.extras.get("x-python-type"), PythonTypeSchemaAnnotation
-            )
-            and x_python_type.arbitrary_types,
+            needs_arbitrary_types=x_python_type.arbitrary_types
+            if isinstance(x_python_type := obj.extras.get("x-python-type"), PythonTypeSchemaAnnotation)
+            else obj.__dict__.get(_PYTHON_TYPE_ROOT_KEY, False),
         )
 
     def _apply_title_as_name(self, name: str, obj: JsonSchemaObject) -> str:
@@ -6030,6 +6051,45 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return obj.model_copy(update=updates) if updates else obj
 
+    def _parses_fieldless_object_as_dict(self, obj: JsonSchemaObject) -> bool:
+        """Return whether an object without declared fields is a dict root: a typed map or size or name keywords."""
+        if isinstance(obj.additionalProperties, JsonSchemaObject):
+            return True
+        return _value_keywords.should_parse_empty_object_as_dict(self, obj)
+
+    def _keeps_extra_keys(self, obj: JsonSchemaObject, path: str) -> bool:
+        """Return whether the model of ``obj`` at schema ``path`` keeps the keys it does not declare.
+
+        It asks what the model asks (``keeps_extra_keys``) of the template data the model starts with
+        (``_model_template_data``): the schema's closedness stored as ``set_additional_properties`` and
+        ``set_unevaluated_properties`` store it, and the entries of ``--extra-template-data`` for its schema path, its
+        name (where the reference of the path has one) and ``#all#``.
+        """
+        return keeps_extra_keys(
+            _model_template_data(
+                self.extra_template_data,
+                path,
+                self.model_resolver.references.get(path),
+                {**self._stored_additional_properties(obj), **self._stored_unevaluated_properties(obj)},
+            )
+        )
+
+    def holds_nothing_but_python_type(self, obj: JsonSchemaObject, path: str) -> bool:
+        """Return whether the schema ``obj`` at ``path`` would be an empty model that its ``x-python-type`` types.
+
+        Such a model has no properties, validators, dict root or kept keys, so the type the schema names is what it
+        stands for, as it is for a field of the same schema; a model that keeps keys, or whose type fits ``object``,
+        keeps its form.
+        """
+        return (
+            obj.type == "object"
+            and self._overriding_python_type(obj) is not None
+            and not obj.properties
+            and not self._parses_fieldless_object_as_dict(obj)
+            and not self._should_parse_object_with_schema_validators(obj)
+            and not self._keeps_extra_keys(obj, path)
+        )
+
     def parse_object(
         self,
         name: str,
@@ -6038,26 +6098,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         singular_name: bool = False,  # noqa: FBT001, FBT002
         unique: bool = True,  # noqa: FBT001, FBT002
     ) -> DataType:
-        """Parse object schema into a data model."""
-        with self._model_frame() as frame:
-            merged_copy = _MERGED_REF_TARGET_KEY in obj.__dict__
-            if self.generate_schema_validators:
-                obj = self._merge_conditional_properties(obj)
-            if not unique:
-                warn(
-                    f"{self.__class__.__name__}.parse_object() ignore `unique` argument."
-                    f"An object name must be unique."
-                    f"This argument will be removed in a future version",
-                    stacklevel=2,
-                )
-            name = self._apply_title_as_name(name, obj)
-            reference = self.model_resolver.add(
-                path,
-                name,
-                class_name=True,
-                singular_name=singular_name,
-                loaded=True,
+        """Parse object schema into a data model.
+
+        An object that would be a model holding nothing, and whose ``x-python-type`` types it, is a root of that type
+        instead (``holds_nothing_but_python_type``).
+        """
+        merged_copy = _MERGED_REF_TARGET_KEY in obj.__dict__
+        if self.generate_schema_validators:
+            obj = self._merge_conditional_properties(obj)
+        if not unique:
+            warn(
+                f"{self.__class__.__name__}.parse_object() ignore `unique` argument."
+                f"An object name must be unique."
+                f"This argument will be removed in a future version",
+                stacklevel=2,
             )
+        name = self._apply_title_as_name(name, obj)
+        reference = self.model_resolver.add(
+            path,
+            name,
+            class_name=True,
+            singular_name=singular_name,
+            loaded=True,
+        )
+        if self.holds_nothing_but_python_type(obj, reference.path):
+            obj.__dict__[_PYTHON_TYPE_ROOT_KEY] = True
+            return self.parse_root_type(name, obj, path)
+        with self._model_frame() as frame:
             class_name = class_key("reference-name", reference)
             self.set_title(reference.path, obj)
             self.set_schema_id(reference.path, obj)
@@ -6076,10 +6143,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ):
                 extra_field.target_python_version = self.target_python_version
                 fields.insert(0, extra_field)
-            should_parse_dict_root = not has_declared_fields and (
-                isinstance(obj.additionalProperties, JsonSchemaObject)
-                or _value_keywords.should_parse_empty_object_as_dict(self, obj)
-            )
+            should_parse_dict_root = not has_declared_fields and self._parses_fieldless_object_as_dict(obj)
             if not should_parse_dict_root:
                 data_model_type_class = self.data_model_type
             else:

@@ -2398,3 +2398,7 @@ cli	main/openapi/main_openapi/numeric_union_preserves_nullable_warning[cli].py	=
 	main/openapi/main_openapi/validation_refused_with_no_allow_remote_refs.txt
 [test_webhooks_ref_with_external_schema]
 	main/openapi/main_openapi/webhooks_ref_with_external_schema.py
+[test_x_python_type_object_component]
+default	main/openapi/main_openapi/x_python_type_object_component[default].py
+extra-fields-allow	main/openapi/main_openapi/x_python_type_object_component[extra-fields-allow].py
+paths-bodies	main/openapi/main_openapi/x_python_type_object_component[paths-bodies].py	= main/openapi/main_openapi/x_python_type_object_component[default].py
