@@ -73,6 +73,7 @@ from datamodel_code_generator._records import mutable_record, record
 from datamodel_code_generator._reference_graph import EdgeKind, reference_graph
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.model.base import (
+    _HINT_BODY_TYPES_KEY,
     NULLABLE_WITHOUT_DEFAULT_KEY,
     _apply_literal_default,
     _path_identity_keys,
@@ -94,7 +95,7 @@ from datamodel_code_generator.parser._sites import (
     site_of,
 )
 from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, SCHEMA_PATH_KEY
-from datamodel_code_generator.types import _hint_null
+from datamodel_code_generator.types import _copy_data_type, _hint_null
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Generator, Iterable, Iterator, Mapping, Sequence
@@ -208,6 +209,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "omit_field_default",
     "record_alias_resolution_scope",
     "record_dropped_multiple_of",
+    "record_hint_body_types",
     "record_nullable_without_default",
     "record_raw_schema_default",
     "record_site_constraints",
@@ -1904,6 +1906,19 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @staticmethod
+    def record_hint_body_types(field_: DataModelFieldBase, data_types: Iterable[DataType]) -> None:
+        """Give a field a copy of each type naming a model that its hint writes from a type alias body.
+
+        Every copy of the hint holds these in place of the body's types (``_hint_body_types``), so the expression its
+        module names a model by, which no other holder of the body shares, reaches each of them.
+        """
+        field_.__dict__[_HINT_BODY_TYPES_KEY] = {
+            id(data_type): (data_type, _copy_data_type(data_type, register_references=False, link_parents=False))
+            for data_type in {id(data_type): data_type for data_type in data_types}.values()
+        }
+        bump_field(field_)
+
+    @staticmethod
     def record_raw_schema_default(field_: DataModelFieldBase) -> None:
         """Record that the property a field is built from declares no default, which ``--default-values`` gives."""
         field_.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = _RAW_SCHEMA_DEFAULT_UNDEFINED
@@ -2736,6 +2751,10 @@ class GraphBuilder:
     def record_alias_resolution_scope(self, field_: DataModelFieldBase, scope: ClassScope | None) -> None:
         """Record the class scope under which ``--aliases`` names the field, through the store."""
         self._store.record_alias_resolution_scope(field_, scope)
+
+    def record_hint_body_types(self, field_: DataModelFieldBase, data_types: Iterable[DataType]) -> None:
+        """Give a field a copy of each type naming a model that its hint writes from alias bodies through the store."""
+        self._store.record_hint_body_types(field_, data_types)
 
     def record_raw_schema_default(self, field_: DataModelFieldBase) -> None:
         """Record that the property a field is built from declares no default, through the store."""

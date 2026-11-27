@@ -1,0 +1,13 @@
+Named
+valid: valid
+digits: string_pattern_mismatch
+long: string_too_long
+no items: too_short
+Both
+valid: string_pattern_mismatch
+maybe: string_pattern_mismatch
+short maybe: string_too_short
+long: string_too_long
+no items: too_short
+four items: too_long
+lookahead: string_pattern_mismatch

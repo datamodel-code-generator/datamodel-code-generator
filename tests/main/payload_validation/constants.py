@@ -531,6 +531,7 @@ EXCLUDED_CASES: dict[str, str] = {
         (
             "openapi/inherited_lookaround_dataclass_modules.yaml::components.schemas.d.Local",
             "openapi/inherited_lookaround_dataclass_modules.yaml::components.schemas.d.Wide",
+            "openapi/python_engine_beside_rejected_in_other_modules.yaml::components.schemas.c.Both",
         ),
         "a pattern uses \\p{...}, which Python's re rejects, and the suite checks patterns with re",
     ),

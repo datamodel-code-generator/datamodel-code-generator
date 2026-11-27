@@ -17,7 +17,7 @@ symbol types.py:DataType.type_hint
     src/datamodel_code_generator/model/pydantic_base.py x9
     src/datamodel_code_generator/model/pydantic_v2/base_model.py x3
     src/datamodel_code_generator/model/pydantic_v2/root_model.py x2
-    src/datamodel_code_generator/model/pydantic_v2/types.py x2
+    src/datamodel_code_generator/model/pydantic_v2/types.py x3
     src/datamodel_code_generator/model/runtime_validation.py x2
     src/datamodel_code_generator/model/typed_dict.py x3
     src/datamodel_code_generator/parser/_object_maps.py x3

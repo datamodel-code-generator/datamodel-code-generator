@@ -188,6 +188,11 @@ _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY = "additionalPropertiesType"
 _FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY = "_forbid_unknown_fields"
 """Set under --use-msgspec-forbid-unknown-fields on a model whose schema admits no property but its own, and on every
 model with --extra-fields forbid."""
+_REDECLARED_FIELDS_KEY: Final = "redeclared_python_rejected_fields"
+"""The copies of inherited fields a Pydantic dataclass writes without a pattern its engine cannot build (#7452)."""
+_HINT_BODY_TYPES_KEY: Final = "_hint_body_types"
+"""The copy a field keeps of each type naming a model that its hint writes from a type alias body, beside the type, by
+the ``id`` of the type (``GenerationStore.record_hint_body_types``)."""
 # This key remains part of the legacy template contract, including custom outputs.
 _USE_TYPED_DICT_BACKPORT_TEMPLATE_DATA_KEY = "use_typeddict_backport"
 _USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY = "use_closed_typed_dict"
@@ -955,6 +960,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     def _hint_data_type(self) -> DataType:
         """Return the type the field's hint writes: its own, unless its backend writes a copy of it."""
         return self.data_type
+
+    @property
+    def _alias_body_named_types(self) -> list[DataType]:
+        """The types naming a model that the hint writes from the bodies of type aliases: none of its own."""
+        return []
 
     def _write_own_pre_render_nullability(self) -> None:
         """Write the pre-render nullability of the field's own type when its hint renders that type."""
@@ -3298,7 +3308,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def imports(self) -> tuple[Import, ...]:
         """Get all imports required by this model and its fields: the fields' kept imports, then the model's own."""
         return chain_as_tuple(
-            (i for f in self._class_body_fields() for i in field_imports(f)),
+            (i for f in _class_body_fields(self) for i in field_imports(f)),
             self._additional_imports,
         )
 
@@ -3822,7 +3832,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     @property
     def _custom_template_fields(self) -> Sequence[DataModelFieldBase | _RenderedDataModelField]:
         """Return custom-template fields, allocating proxies only when escaping changes a docstring."""
-        fields = self._class_body_fields()
+        fields = _class_body_fields(self)
         if not any(
             field.use_field_description or field.use_field_description_example or field.use_inline_field_description
             for field in fields
@@ -3888,12 +3898,50 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return fields with docstrings prepared for built-in templates."""
         return [
             _RenderedDataModelField(field, self._format_docstring(field.docstring, self.FIELD_DOCSTRING_INDENT))
-            for field in self._class_body_fields()
+            for field in _class_body_fields(self)
         ]
 
-    def _class_body_fields(self) -> list[DataModelFieldBase]:
-        """Return the fields the class body writes: the model's own."""
-        return self.fields
+
+def _redeclared_fields(model: DataModel) -> Sequence[DataModelFieldBase]:
+    """Return the copies of inherited fields the class body of a model writes before its own fields.
+
+    A Pydantic dataclass writes them (``_REDECLARED_FIELDS_KEY``) where it builds an inherited pattern with an engine
+    that cannot build it.
+    """
+    return model._internal_template_data.get(_REDECLARED_FIELDS_KEY, ())  # noqa: SLF001
+
+
+def _hint_body_types(field: DataModelFieldBase) -> Mapping[int, tuple[DataType, DataType]]:
+    """Return each type naming a model that the hint of a field writes from a type alias body, with the field's copy.
+
+    By the ``id`` of the type; none until the hint is decided (``GenerationStore.record_hint_body_types``).
+    """
+    return field.__dict__.get(_HINT_BODY_TYPES_KEY, {})
+
+
+def _hint_body_named_types(field: DataModelFieldBase) -> list[DataType]:
+    """Return the types naming a model that the hint of a field writes from the bodies of type aliases.
+
+    The field's backend decides them (``DataModelFieldBase._alias_body_named_types``) once its hint is decided.
+    """
+    return field._alias_body_named_types  # noqa: SLF001
+
+
+def _hint_types_beyond_fields(model: DataModel) -> Iterator[DataType]:
+    """Yield the types the class body of a model writes that the types of its fields (``all_data_types``) leave out.
+
+    Those are the types of the inherited fields it redeclares (``_redeclared_fields``), and the copies its fields keep
+    of the types naming a model that their hints write from type alias bodies (``_hint_body_types``).
+    """
+    for field in _redeclared_fields(model):
+        yield from field.data_type.all_data_types
+    for field in _class_body_fields(model):
+        yield from (copy for _, copy in _hint_body_types(field).values())
+
+
+def _class_body_fields(model: DataModel) -> list[DataModelFieldBase]:
+    """Return the fields the class body of a model writes: the inherited ones it redeclares, then its own."""
+    return [*redeclared, *model.fields] if (redeclared := _redeclared_fields(model)) else model.fields
 
 
 def _model_package_class(cls: type) -> bool:
