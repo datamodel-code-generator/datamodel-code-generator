@@ -3,7 +3,7 @@ id = "heki-090-hook-pin"
 category = "internal"
 title = "Run heki 0.9.0 in the pre-commit hook"
 summary = "The stored pins of the pre-commit hooks name heki 0.9.0; the package writes the same output."
-refs = ["#1"]
+refs = ["#7553"]
 covers = [
     "pre_commit_hooks/hook_dependency_pins_are_locked_versions.txt",
 ]
