@@ -15,7 +15,10 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
   operations and the generation store module may write the attributes, and each write is judged in the scope that
   holds it. A ``__dict__`` key row names the value of its constant, and the cache contract forbids a
   ``cached_property`` on every owner of a row outside the parser run state and the classes deriving from them, as a
-  cached property writes its own name into ``__dict__``: the baseline keeps today's, which cache rows name.
+  cached property writes its own name into ``__dict__``: the baseline keeps today's, which cache rows name. Each of
+  these contracts reports a write of a ``__dict__`` key that no row names (``unlisted-dict-keys``), so a new key
+  needs its row first; the ``bookkeeping`` contract names the bookkeeping rows, which any function may write. A row
+  whose attribute or key the package no longer has is an error (``unmatched-contract-entries``).
 - ``call-owners`` (``MUT204``, ``MUT207``) of the store operations: each operation that
   ``GENERATION_STORE_MUTATION_METHODS`` names is called only in the store module, where ``GraphBuilder`` calls it for
   the passes, and only the store module makes a ``GraphBuilder``.
@@ -186,6 +189,9 @@ RULES = ("EFF201", "IMP101", "IMP201", "IMP202", "MUT201", "MUT202", "MUT203", "
 FAIL = ("IMP101",)
 """The rules whose reports fail the check whatever their tier (``[lint] fail``): ``IMP101`` reports a cycle as a
 warning, and the contracts fail through their own ``fail = true`` (`failing`)."""
+UNMATCHED_ENTRIES = "error"
+"""What heki does with a contract entry that names nothing in src: an error, so a row whose attribute or key the code no
+longer has fails the check, in every run, also one over part of the package."""
 SHARED_PRODUCERS = (
     ("parser/_schema_graph.py", "SchemaGraphBuilder.schema"),
     ("parser/_schema_graph.py", "SchemaGraphBuilder.pointer_value"),
@@ -502,31 +508,42 @@ def _methods(
     return methods
 
 
-def _store_methods(repo: Repo) -> dict[StoreMember | DecisionAccessor, list[str]]:
-    """Return the ``CALL`` rows of ``STORE_MEMBERS``, each with the scopes of the method and of its overrides."""
-    return _methods(repo, (member for member in STORE_MEMBERS if member.use is MemberUse.CALL), "STORE_MEMBERS")
+def _store_methods(
+    repo: Repo, members: Iterable[StoreMember] | None = None
+) -> dict[StoreMember | DecisionAccessor, list[str]]:
+    """Return the ``CALL`` rows of ``members``, each with the scopes of the method and of its overrides.
+
+    ``members`` defaults to ``STORE_MEMBERS``, read when the function runs.
+    """
+    rows = STORE_MEMBERS if members is None else members
+    return _methods(repo, (member for member in rows if member.use is MemberUse.CALL), "STORE_MEMBERS")
 
 
-def _store_hooks(repo: Repo) -> list[str]:
+def _store_hooks(repo: Repo, members: Iterable[StoreMember] | None = None) -> list[str]:
     """Return the scopes of the methods that write the graph for the store operations, overrides included."""
-    return sorted({scope for scopes in _store_methods(repo).values() for scope in scopes})
+    return sorted({scope for scopes in _store_methods(repo, members).values() for scope in scopes})
 
 
-def write_owner_contracts(repo: Repo) -> list[str]:
+def write_owner_contracts(
+    repo: Repo, rows: Iterable[AttributeFact] = ATTRIBUTE_FACTS, members: Iterable[StoreMember] | None = None
+) -> list[str]:
     """Return the ``write-owners`` contracts of the fact rows.
 
     The cache contract forbids a ``cached_property`` on every owner of a row outside the parser run state and on the
-    classes deriving from one: a cached property writes its own name into ``__dict__``, outside the store.
+    classes deriving from one: a cached property writes its own name into ``__dict__``, outside the store. Each
+    contract reports a write of a ``__dict__`` key no row names; the last one, ``bookkeeping``, names the bookkeeping
+    rows and lets every function write them.
     """
-    hooks = _store_hooks(repo)
+    hooks = _store_hooks(repo, members)
+    table = tuple(rows)
     groups: dict[tuple[str, tuple[str, ...]], list[str]] = defaultdict(list)
-    for row in ATTRIBUTE_FACTS:
+    for row in table:
         if row.kind not in WRITE_KINDS or (row.owner in PARSER_STATE_OWNERS and not row.store_ops):
             continue
         groups[row.kind.value, tuple(sorted(row.store_ops))].append(
             f"{row.owner}.{_attribute(repo, row.attribute, row.access)}"
         )
-    described = sorted({row.owner for row in ATTRIBUTE_FACTS if row.owner not in PARSER_STATE_OWNERS})
+    described = sorted({row.owner for row in table if row.owner not in PARSER_STATE_OWNERS})
     contracts: list[str] = []
     for (kind, operations), targets in sorted(groups.items()):
         cached = described if kind == FactKind.CACHE.value else []
@@ -540,8 +557,15 @@ def write_owner_contracts(repo: Repo) -> list[str]:
                 unresolved="report",
                 fresh_objects="report",
                 attribution="lexical",
+                unlisted_dict_keys="report",
             )
         )
+    bookkeeping = {
+        f"{row.owner}.{_attribute(repo, row.attribute, row.access)}"
+        for row in table
+        if row.kind is FactKind.BOOKKEEPING
+    }
+    contracts.append(_table("write-owners", name="bookkeeping", targets=sorted(bookkeeping), allowed_writers=["*"]))
     return contracts
 
 
@@ -1585,6 +1609,7 @@ def generate() -> str:
         "[lint]",
         f"select = {_array(RULES)}",
         f"fail = {_array(FAIL)}",
+        f"unmatched-contract-entries = {_quote(UNMATCHED_ENTRIES)}",
         "",
         "[imports]",
         f"cycle-edges = {_array(IMPORT_EDGES)}",

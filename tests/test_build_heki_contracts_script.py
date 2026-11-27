@@ -26,10 +26,15 @@ from scripts import build_heki_contracts, check_ratchets
 from scripts.decision_homes import BuilderHome, DecisionHome, Home, Mark
 from scripts.fact_tables import (
     ATTRIBUTE_FACTS,
+    Access,
+    AttributeFact,
     DecisionAccessor,
     Fact,
+    FactKind,
+    FreezePoint,
     LedgerWriter,
     MemberUse,
+    Phase,
     RenderFact,
     StoreMember,
 )
@@ -152,9 +157,27 @@ the store, and ``Reference.__init__`` builds its bookkeeping: heki allows them a
 """
 
 
-def _contracts_file(path: Path, contracts: Iterable[str]) -> None:
-    """Write ``contracts`` failing as scripts/heki.toml writes them, so their findings fail the run as they do there."""
-    path.write_text("\n".join(build_heki_contracts.failing(contracts)), encoding="utf-8")
+def _contracts_file(path: Path, contracts: Iterable[str], *, unmatched: bool = False) -> None:
+    """Write ``contracts`` failing as scripts/heki.toml writes them, so their findings fail the run as they do there.
+
+    With ``unmatched``, an entry that names nothing is what scripts/heki.toml makes it too.
+    """
+    lint = (
+        ["[lint]", f'unmatched-contract-entries = "{build_heki_contracts.UNMATCHED_ENTRIES}"', ""] if unmatched else []
+    )
+    path.write_text("\n".join([*lint, *build_heki_contracts.failing(contracts)]), encoding="utf-8")
+
+
+def _seeded_contracts(path: Path) -> Path:
+    """Write the contracts of the repository to ``path/heki.toml`` with unmatched entries ignored, and return it.
+
+    A seeded package has few of the classes and keys the contracts name, so the entries naming the others would be
+    errors of their own, which fail the run whatever it finds.
+    """
+    unmatched = f'unmatched-contract-entries = "{build_heki_contracts.UNMATCHED_ENTRIES}"\n'
+    text = CONTRACTS.read_text(encoding="utf-8").replace(unmatched, 'unmatched-contract-entries = "ignore"\n', 1)
+    (config := path / "heki.toml").write_text(text, encoding="utf-8")
+    return config
 
 
 def _heki(*args: str, cwd: Path, config: Path = CONTRACTS) -> subprocess.CompletedProcess[str]:
@@ -218,7 +241,7 @@ def test_heki_reports_fact_writes_outside_the_store_operations_and_environment_r
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
 
-    result = _heki("--output-format", "json", cwd=tmp_path)
+    result = _heki("--output-format", "json", cwd=tmp_path, config=_seeded_contracts(tmp_path))
 
     found = sorted(
         (Path(item["path"]).as_posix(), item["qualname"], item["rule_code"], item["target"], item.get("sites") or 1)
@@ -311,7 +334,9 @@ def test_heki_reports_the_import_cycles_of_every_import(tmp_path: Path) -> None:
     (tmp_path / BASELINE.name).write_text("version = 3\n", encoding="utf-8")
     (config := tmp_path / "module_level_cycles.toml").write_text(MODULE_LEVEL_CYCLES, encoding="utf-8")
 
-    result = _heki("--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path)
+    result = _heki(
+        "--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path, config=_seeded_contracts(tmp_path)
+    )
     module_level = _heki("--output-format", "json", cwd=tmp_path, config=config)
 
     body = (f"{PACKAGE}/body_b.py", "IMP101", f"{PACKAGE_NAME}.body_a, {PACKAGE_NAME}.body_b")
@@ -507,7 +532,9 @@ def test_heki_reports_a_write_of_an_object_the_schema_graph_shares(tmp_path: Pat
         (tmp_path / name).write_text(text, encoding="utf-8")
     (tmp_path / BASELINE.name).write_text("version = 3\n", encoding="utf-8")
 
-    result = _heki("--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path)
+    result = _heki(
+        "--baseline", BASELINE.name, "--output-format", "json", cwd=tmp_path, config=_seeded_contracts(tmp_path)
+    )
 
     found = sorted(
         (Path(item["path"]).as_posix(), item["qualname"], item["rule_code"]) for item in json.loads(result.stdout)
@@ -592,7 +619,7 @@ def test_heki_reports_every_form_of_a_fact_write_outside_the_store(tmp_path: Pat
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
 
-    result = _heki("--output-format", "json", cwd=tmp_path)
+    result = _heki("--output-format", "json", cwd=tmp_path, config=_seeded_contracts(tmp_path))
 
     found = [
         (item["qualname"], item["rule_code"], item["target"], item["line"])
@@ -685,7 +712,7 @@ def test_heki_reports_a_cached_property_on_a_class_the_table_describes(tmp_path:
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
 
-    result = _heki("--output-format", "json", cwd=tmp_path)
+    result = _heki("--output-format", "json", cwd=tmp_path, config=_seeded_contracts(tmp_path))
 
     found = [
         (Path(item["path"]).name, item["qualname"], item["rule_code"], item["line"])
@@ -699,6 +726,353 @@ def test_heki_reports_a_cached_property_on_a_class_the_table_describes(tmp_path:
             ("cached.py", "Type.label", "MUT201", 15),
             ("cached.py", "Field.label", "MUT201", 21),
             ("cached.py", "Link.label", "MUT201", 27),
+        ],
+    ), result.stderr
+
+
+SEEDED_KEY_WRITES = """\
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from datamodel_code_generator import types
+from datamodel_code_generator.types import _BOOKKEEPING_KEY, _LISTED_KEY
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+    from datamodel_code_generator.model.enum import Enum
+    from datamodel_code_generator.parser.schema import JsonSchemaObject
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
+
+_NEW_KEY = "_new_constant"
+
+
+def literal(data_type: DataType) -> None:
+    data_type.__dict__["_new_literal"] = 1
+
+
+def constant(data_type: DataType) -> None:
+    data_type.__dict__.setdefault(_NEW_KEY, 1)
+
+
+def untyped(data_type) -> None:
+    data_type.__dict__["_new_untyped"] = 1
+
+
+def loop(data_types: list) -> None:
+    for data_type in data_types:
+        data_type.__dict__["_new_loop"] = 1
+
+
+def any_value(data_type: Any) -> None:
+    data_type.__dict__["_new_any"] = 1
+
+
+def listed(data_type: DataType) -> None:
+    data_type.__dict__[_LISTED_KEY] = 1
+
+
+def bookkeeping(data_type: DataType) -> None:
+    data_type.__dict__[_BOOKKEEPING_KEY] = 1
+
+
+def through_vars(data_type: DataType) -> None:
+    vars(data_type)["_new_vars"] = 1
+
+
+def through_getattr(data_type: DataType) -> None:
+    getattr(data_type, "__dict__")["_new_getattr"] = 1
+
+
+def through_an_alias(data_type: DataType) -> None:
+    namespace = data_type.__dict__
+    namespace["_new_alias"] = 1
+
+
+def through_a_walrus(data_type: DataType) -> None:
+    (namespace := data_type.__dict__)["_new_walrus"] = 1
+    del namespace
+
+
+def deleted(data_type: DataType) -> None:
+    del data_type.__dict__["_new_deleted"]
+
+
+def popped(data_type: DataType) -> None:
+    data_type.__dict__.pop("_new_popped", None)
+
+
+def augmented(data_type: DataType) -> None:
+    data_type.__dict__["_new_augmented"] += 1
+
+
+def in_a_tuple(data_type: DataType) -> None:
+    first, data_type.__dict__["_new_tuple"] = 1, 2
+    del first
+
+
+def through_an_annotated_alias(data_type: DataType) -> None:
+    namespace: dict[str, Any] = data_type.__dict__
+    namespace["_new_annotated_alias"] = 1
+
+
+def through_a_rebound_alias(data_type: DataType, other: DataType) -> None:
+    namespace = other.__dict__
+    namespace = data_type.__dict__
+    namespace["_new_rebound"] = 1
+
+
+def optional(data_type: DataType | None) -> None:
+    if data_type is not None:
+        data_type.__dict__["_new_optional"] = 1
+
+
+def field(field: DataModelFieldBase) -> None:
+    field.__dict__["_new_field"] = 1
+
+
+def model(model: DataModel) -> None:
+    model.__dict__["_new_model"] = 1
+
+
+def subclass(model: Enum) -> None:
+    model.__dict__["_new_subclass"] = 1
+
+
+def model_vars(model: DataModel) -> None:
+    vars(model).setdefault("_new_model_vars", 1)
+
+
+def reference(reference: Reference) -> None:
+    reference.__dict__["_new_reference"] = 1
+
+
+def module_constant(data_type: DataType) -> None:
+    data_type.__dict__[types._MODULE_KEY] = 1
+
+
+def annotated_target(data_type: DataType) -> None:
+    data_type.__dict__["_new_annotated"]: int = 1
+
+
+def starred_target(data_type: DataType, pair: list) -> None:
+    [*data_type.__dict__["_new_starred"]] = pair
+
+
+def alias_popped(data_type: DataType) -> None:
+    namespace = data_type.__dict__
+    namespace.pop("_new_alias_popped")
+
+
+def alias_of_an_alias(data_type: DataType) -> None:
+    namespace = data_type.__dict__
+    copied = namespace
+    copied["_new_copied"] = 1
+
+
+def vars_alias(data_type: DataType) -> None:
+    state = vars(data_type)
+    state["_new_vars_alias"] = 1
+
+
+def getattr_alias(data_type: DataType) -> None:
+    got = getattr(data_type, "__dict__")
+    got["_new_getattr_alias"] = 1
+
+
+def closure_direct(data_type: DataType):
+    def inner() -> None:
+        data_type.__dict__["_new_closure_direct"] = 1
+
+    return inner
+
+
+def rebound_in_a_loop(schema: JsonSchemaObject, items: list) -> None:
+    for schema in items:
+        schema.__dict__["_new_rebound_loop"] = 1
+
+
+def built(build) -> None:
+    build().__dict__["_new_built"] = 1
+
+
+def computed(data_type: DataType, name: str) -> None:
+    data_type.__dict__[name] = 1
+
+
+def no_key(data_type: DataType) -> None:
+    data_type.__dict__.update({})
+    data_type.__dict__.get("_new_read")
+
+
+def callable_namespace(action: Callable[[], str]) -> None:
+    action.__dict__["_marker"] = True
+
+
+def entry_append(data_type: DataType) -> None:
+    data_type.__dict__["_listed"].append(1)
+
+
+def entry_item(data_type: DataType) -> None:
+    data_type.__dict__["_listed"]["x"] = 1
+
+
+def entry_alias(data_type: DataType) -> None:
+    entry = data_type.__dict__["_listed"]
+    entry["x"] = 1
+
+
+def entry_augmented(data_type: DataType) -> None:
+    entry = data_type.__dict__["_listed"]
+    entry += [1]
+
+
+def schema_object(schema: JsonSchemaObject) -> None:
+    schema.__dict__["_schema_key"] = 1
+
+
+class ParserState:
+    def own(self) -> None:
+        self.__dict__["_state_key"] = 1
+"""
+"""Writes of ``__dict__`` keys by a pass, one form per function: keys no row names on typed, untyped and ``Any``
+values, a key a fact row names and a bookkeeping key, then every way to reach the namespace (``vars``, ``getattr``, an
+alias, a walrus, an annotated and a rebound alias), every write (``del``, ``pop``, ``+=``, a tuple target), the
+namespace of each owner and of a subclass, a key constant read from its module, an annotated and a starred target, a
+pop through an alias, an alias of an alias, aliases of ``vars`` and ``getattr``, a write in a closure, a schema-object
+name rebound by a loop, a call result, a computed key and calls that write no key, mutations of an entry, and the
+namespaces of a callable, a schema object and a class no row describes."""
+SEEDED_KEYS = {
+    "pyproject.toml": SEEDED_PACKAGE["pyproject.toml"],
+    f"{PACKAGE}/__init__.py": "",
+    f"{PACKAGE}/types.py": (
+        '_LISTED_KEY = "_listed"\n_BOOKKEEPING_KEY = "_bookkeeping"\n_GONE_KEY = "_gone"\n'
+        '_GONE_BOOKKEEPING_KEY = "_gone_bookkeeping"\n_READ_ONLY_KEY = "_read_only"\n_MODULE_KEY = "_new_module"\n\n\n'
+        'class DataType:\n    def __init__(self) -> None:\n        self.type = ""\n\n'
+        "    def read(self) -> object:\n        return self.__dict__.get(_READ_ONLY_KEY)\n"
+    ),
+    f"{PACKAGE}/model/__init__.py": "",
+    f"{PACKAGE}/model/base.py": (
+        "class DataModel:\n    def __init__(self) -> None:\n        self.fields: list[str] = []\n\n\n"
+        'class DataModelFieldBase:\n    def __init__(self) -> None:\n        self.name = ""\n'
+    ),
+    f"{PACKAGE}/model/enum.py": (
+        "from datamodel_code_generator.model.base import DataModel\n\n\n"
+        'class Enum(DataModel):\n    def mark(self) -> None:\n        self.__dict__["_new_own"] = 1\n'
+    ),
+    f"{PACKAGE}/reference.py": 'class Reference:\n    def __init__(self) -> None:\n        self.path = ""\n',
+    f"{PACKAGE}/parser/__init__.py": "",
+    f"{PACKAGE}/parser/schema.py": "class JsonSchemaObject:\n    pass\n",
+    f"{PACKAGE}/parser/generation.py": (
+        "from datamodel_code_generator.types import DataType\n\n\n"
+        "class GenerationStore:\n    def mark(self, data_type: DataType) -> None:\n"
+        '        data_type.__dict__["_store_key"] = 1\n'
+    ),
+    f"{PACKAGE}/parser/keys.py": SEEDED_KEY_WRITES,
+}
+"""A package whose ``parser/keys.py`` holds `SEEDED_KEY_WRITES` and whose ``Enum`` writes a key of its own; the key
+constants of ``types.py`` name the keys of `SEEDED_KEY_ROWS`, of which ``DataType.read`` only reads one."""
+
+
+def _key_row(owner: str, attribute: str, kind: FactKind, access: Access = Access.DICT_KEY) -> AttributeFact:
+    """Return a row of `SEEDED_KEY_ROWS`: a fact or presentation row with its facts, else one with none."""
+    facts = {FactKind.FACT: (Fact.FIELD_TYPES,), FactKind.PRESENTATION: (RenderFact.IMPORT_ALIASES,)}.get(kind, ())
+    frozen = {FactKind.FACT: FreezePoint.B1, FactKind.PRESENTATION: FreezePoint.RENDER}.get(kind)
+    return AttributeFact(owner, attribute, kind, facts, Phase.MODULES, frozen, access=access)
+
+
+SEEDED_KEY_ROWS = [
+    _key_row("DataType", "type", FactKind.FACT, Access.ATTRIBUTE),
+    _key_row("DataModel", "fields", FactKind.FACT, Access.ATTRIBUTE),
+    _key_row("DataModelFieldBase", "name", FactKind.FACT, Access.ATTRIBUTE),
+    _key_row("Reference", "path", FactKind.FACT, Access.ATTRIBUTE),
+    _key_row("DataType", "_LISTED_KEY", FactKind.PRESENTATION),
+    _key_row("DataType", "_BOOKKEEPING_KEY", FactKind.BOOKKEEPING),
+    _key_row("DataType", "_GONE_KEY", FactKind.PRESENTATION),
+    _key_row("DataType", "_GONE_BOOKKEEPING_KEY", FactKind.BOOKKEEPING),
+    _key_row("DataType", "_READ_ONLY_KEY", FactKind.CACHE),
+    _key_row("DataModel", "gone_cached", FactKind.CACHE, Access.CACHED_PROPERTY),
+    _key_row("DataType", "gone_attribute", FactKind.PRESENTATION, Access.ATTRIBUTE),
+]
+"""Rows for the seeded package: one attribute of each owner, a presentation and a bookkeeping key that a pass writes,
+and five rows that name nothing the package has: a presentation key and a bookkeeping key no code writes, a cache
+key only read, a cached property no class declares and an attribute no class declares."""
+
+
+@needs("heki")
+@pytest.mark.allow_direct_assert("the findings heki gives on a seeded package are its verdict, not a stored output")
+def test_heki_reports_unlisted_dict_keys_and_rows_that_name_nothing(tmp_path: Path) -> None:
+    """A write of a ``__dict__`` key no row names is a finding, in every form; a row naming nothing is an error.
+
+    On an owner of a row or a subclass of one the write is ``MUT201``, on a value heki cannot tie to a class
+    ``MUT205``; a key a fact row names is judged by that row's contract, a bookkeeping key any function may write, and
+    the store module any key. A write whose key heki cannot read, or a call on the namespace that may write one, is
+    ``MUT205`` on the class. A mutation of an entry writes no key: the entry exists only after a write of its key, which
+    is judged. The namespaces of a callable, a schema object and a class no row describes are none of the contracts'.
+    """
+    for name, text in SEEDED_KEYS.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    repo = build_heki_contracts.Repo(tmp_path, build_heki_contracts.Page([], [], [], []))
+    contracts = tmp_path / "contracts.toml"
+    _contracts_file(contracts, build_heki_contracts.write_owner_contracts(repo, SEEDED_KEY_ROWS, ()), unmatched=True)
+
+    result = _heki("--output-format", "json", cwd=tmp_path, config=contracts)
+
+    found = [
+        (Path(item["path"]).name, item["qualname"], item["rule_code"], item["target"], item["line"])
+        for item in json.loads(result.stdout)
+    ]
+    entry = r"^error: `([a-z-]+)` entry `([^`]+)` of write-owners `([^`]+)`"
+    unmatched = re.findall(entry, result.stderr, re.MULTILINE)
+    assert (result.returncode, found, unmatched) == (
+        1,
+        [
+            ("enum.py", "Enum.mark", "MUT201", "Enum._new_own", 6),
+            ("keys.py", "literal", "MUT201", "DataType._new_literal", 21),
+            ("keys.py", "constant", "MUT201", "DataType._new_constant", 25),
+            ("keys.py", "untyped", "MUT205", "_new_untyped", 29),
+            ("keys.py", "loop", "MUT205", "_new_loop", 34),
+            ("keys.py", "any_value", "MUT205", "_new_any", 38),
+            ("keys.py", "listed", "MUT201", "DataType._listed", 42),
+            ("keys.py", "through_vars", "MUT201", "DataType._new_vars", 50),
+            ("keys.py", "through_getattr", "MUT201", "DataType._new_getattr", 54),
+            ("keys.py", "through_an_alias", "MUT201", "DataType._new_alias", 59),
+            ("keys.py", "through_a_walrus", "MUT201", "DataType._new_walrus", 63),
+            ("keys.py", "deleted", "MUT201", "DataType._new_deleted", 68),
+            ("keys.py", "popped", "MUT201", "DataType._new_popped", 72),
+            ("keys.py", "augmented", "MUT201", "DataType._new_augmented", 76),
+            ("keys.py", "in_a_tuple", "MUT201", "DataType._new_tuple", 80),
+            ("keys.py", "through_an_annotated_alias", "MUT201", "DataType._new_annotated_alias", 86),
+            ("keys.py", "through_a_rebound_alias", "MUT201", "DataType._new_rebound", 92),
+            ("keys.py", "optional", "MUT201", "DataType._new_optional", 97),
+            ("keys.py", "field", "MUT201", "DataModelFieldBase._new_field", 101),
+            ("keys.py", "model", "MUT201", "DataModel._new_model", 105),
+            ("keys.py", "subclass", "MUT201", "Enum._new_subclass", 109),
+            ("keys.py", "model_vars", "MUT201", "DataModel._new_model_vars", 113),
+            ("keys.py", "reference", "MUT201", "Reference._new_reference", 117),
+            ("keys.py", "module_constant", "MUT201", "DataType._new_module", 121),
+            ("keys.py", "annotated_target", "MUT201", "DataType._new_annotated", 125),
+            ("keys.py", "starred_target", "MUT201", "DataType._new_starred", 129),
+            ("keys.py", "alias_popped", "MUT201", "DataType._new_alias_popped", 134),
+            ("keys.py", "alias_of_an_alias", "MUT201", "DataType._new_copied", 140),
+            ("keys.py", "vars_alias", "MUT201", "DataType._new_vars_alias", 145),
+            ("keys.py", "getattr_alias", "MUT201", "DataType._new_getattr_alias", 150),
+            ("keys.py", "closure_direct.<locals>.inner", "MUT201", "DataType._new_closure_direct", 155),
+            ("keys.py", "rebound_in_a_loop", "MUT205", "_new_rebound_loop", 162),
+            ("keys.py", "built", "MUT205", "_new_built", 166),
+            ("keys.py", "computed", "MUT205", "DataType", 170),
+            ("keys.py", "no_key", "MUT205", "DataType", 174),
+        ],
+        [
+            ("targets", "DataModel.gone_cached", "cache:no store operation"),
+            ("targets", "DataType._read_only", "cache:no store operation"),
+            ("targets", "DataType._gone", "presentation:no store operation"),
+            ("targets", "DataType.gone_attribute", "presentation:no store operation"),
+            ("targets", "DataType._gone_bookkeeping", "bookkeeping"),
         ],
     ), result.stderr
 

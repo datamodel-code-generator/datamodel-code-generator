@@ -25,7 +25,7 @@ coverage-exclusions	source_model/every_rule_states_its_verdicts[coverage-exclusi
 decision-home-callers	source_model/every_rule_states_its_verdicts[decision-home-callers].txt	= source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
 expected-access	source_model/every_rule_states_its_verdicts[expected-access].txt
 generated-import-closure	source_model/every_rule_states_its_verdicts[generated-import-closure].txt
-generation-store-usage	source_model/every_rule_states_its_verdicts[generation-store-usage].txt
+generation-store-usage	source_model/every_rule_states_its_verdicts[generation-store-usage].txt	= source_model/every_rule_states_its_verdicts[source-model-compiler-check].txt
 import-cycle	source_model/every_rule_states_its_verdicts[import-cycle].txt
 legacy-row-reads	source_model/every_rule_states_its_verdicts[legacy-row-reads].txt
 os-selection	source_model/every_rule_states_its_verdicts[os-selection].txt

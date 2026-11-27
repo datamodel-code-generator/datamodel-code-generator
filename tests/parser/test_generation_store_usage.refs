@@ -22,5 +22,3 @@ owner-none	parser/generation_store_usage/attribute_facts_rows_are_validated[owne
 presentation-with-fact	parser/generation_store_usage/attribute_facts_rows_are_validated[presentation-with-fact].txt
 unknown-store-op	parser/generation_store_usage/attribute_facts_rows_are_validated[unknown-store-op].txt
 wrong-enum	parser/generation_store_usage/attribute_facts_rows_are_validated[wrong-enum].txt
-[test_dict_key_writes_name_every_write_form]
-	parser/generation_store_usage/dict_key_writes_name_every_write_form.txt

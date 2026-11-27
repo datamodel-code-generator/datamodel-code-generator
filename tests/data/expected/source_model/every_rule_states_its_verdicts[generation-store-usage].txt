@@ -1,5 +1,0 @@
-verdict problems: none
-undeclared questions: none
-bindings/name_mangling: model: name_mangling.py:12: __dict__[plain] writes the key (in Parser.__init__)
-references/entrypoint_parser_private_access: parser: entrypoint_parser_private_access.py:11: __dict__[_formatter_cwd] writes the key (in mutate_parser)
-references/entrypoint_parser_private_access: model: entrypoint_parser_private_access.py:11: __dict__[_formatter_cwd] writes the key (in mutate_parser)

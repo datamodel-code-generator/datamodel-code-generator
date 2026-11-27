@@ -902,31 +902,16 @@ def _unquoted(target: str) -> str:
 
 
 def _generation_store_usage(form: Path) -> list[Finding]:
-    """Read the ``__dict__`` keys a form's modules write, as parser and as model code, as the fact table check does.
+    """Read the attributes a form's classes declare, as the fact table check reads the classes of the model graph.
 
-    A module the model cannot read is a finding of its own.
+    Each attribute a class deriving from a model-graph class declares is a finding of a table without rows, and a
+    module the model cannot read is a finding of its own.
     """
     paths = sorted(form.rglob("*.py")) if form.is_dir() else [form]
-    found = []
-    for scope in typing.get_args(check_generation_store_usage.Scope):
-        writes, problems = check_generation_store_usage.dict_key_writes([(path, scope) for path in paths])
-        readings = [
-            *(
-                (write.path, write.line, f"__dict__[{write.key}]", f"writes the key (in {write.function})")
-                for write in writes
-            ),
-            *((problem.path, problem.line, problem.target, problem.message) for problem in problems),
-        ]
-        for path, line, target, text in readings:
-            place = path.relative_to(form.parent).as_posix().removesuffix(".txt")
-            found.append(
-                Finding(
-                    f"{scope}/{_unquoted(target)}",
-                    _site(form, place, line),
-                    f"{scope}: {place}:{line}: {target} {text}",
-                )
-            )
-    return found
+    problems = check_generation_store_usage.table_problems(rows=(), declaration_paths=paths)
+    places = [problem.path.relative_to(form.parent).as_posix().removesuffix(".txt") for problem in problems]
+    pairs = zip(problems, places, strict=True)
+    return [Finding(_unquoted(p.target), _site(form, at, p.line), f"{at}:{p.line}: {p.message}") for p, at in pairs]
 
 
 def _pass_pipeline(form: Path) -> list[Finding]:
@@ -1236,7 +1221,9 @@ RULES: dict[str, RuleRun] = {
         _legacy_row_reads,
     ),
     "generation-store-usage": RuleRun(
-        "scripts.check_generation_store_usage", frozenset({"bindings", "references"}), _generation_store_usage
+        "scripts.check_generation_store_usage",
+        frozenset({"bindings", "imports", "references"}),
+        _generation_store_usage,
     ),
     "generated-import-closure": RuleRun(
         "tests.test_generated_import_closure", frozenset({"bindings", "references", "extents"}), _unbound_names
