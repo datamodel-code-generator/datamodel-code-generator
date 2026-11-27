@@ -1835,7 +1835,7 @@ def _select_surrogate_regex_engines(models: list[DataModel], alias_users: type[D
     The default engine reads a lone surrogate as U+FFFD, so a model wants Python's engine for one in a pattern of its
     fields (``_surrogate_pattern_scopes``) or of a type alias it reaches as ``finalize_type_alias_users`` reads it,
     and the patterns of the config decide (``selects_python_engine``): those it builds (``_config_pattern_engines``)
-    and those of every model that takes the config (``_takes_config_of``). Where one of them runs on the default
+    and those of every model the engine reaches (``_takes_engine_of``). Where one of them runs on the default
     engine as written, switching would change how Python reads it or refuse it at import, so the model keeps the
     default engine and warns.
     """
@@ -1854,7 +1854,7 @@ def _select_surrogate_regex_engines(models: list[DataModel], alias_users: type[D
     takers: defaultdict[int, list[_PydanticV2Model]] = defaultdict(list)
     for model in holders:
         for base in _find_base_classes(model):
-            if model._takes_config_of(base):  # noqa: SLF001
+            if model._takes_engine_of(base):  # noqa: SLF001
                 takers[id(base)].append(model)
     for model in holders:
         through_alias = isinstance(model, alias_users) and _uses_reached_alias(model, reached)
@@ -2074,6 +2074,10 @@ class _PydanticV2Model(DataModel):
     def _takes_config_of(self, base: DataModel) -> bool:  # noqa: ARG002, PLR6301
         """Return whether the model applies the config of a base it names: a model merges the config of every base."""
         return True
+
+    def _takes_engine_of(self, base: DataModel) -> bool:
+        """Return whether the engine a base selects reaches the model: it applies the config of the base."""
+        return self._takes_config_of(base)
 
     def _bases_without_inherited_config(self) -> Sequence[BaseClassDataType]:  # noqa: PLR6301
         """Return the bases whose config the model does not take: none, as a model takes the config of every base."""

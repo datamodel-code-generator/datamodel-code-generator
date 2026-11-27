@@ -946,6 +946,19 @@ generator does not read gives no items. Pydantic model output is the same either
             {},
             id="surrogate-taker",
         ),
+        pytest.param(
+            SURROGATE_TAKER_SCHEMA,
+            ["--allow-population-by-field-name"],
+            {"Tailed": {"regex_engine": '"python-re"'}},
+            {
+                "model": {
+                    "Marked": {"replacements": {"mark": "a\ufffd\ufffd\ufffdb"}},
+                    "Tailed": {"newline": {"tail": "ab\n"}},
+                }
+            },
+            {},
+            id="surrogate-taker-names-engine",
+        ),
     ],
 )
 def test_dataclass_config_keeps_the_items_of_its_first_base(
@@ -974,6 +987,8 @@ def test_dataclass_config_keeps_the_items_of_its_first_base(
     it out too, as for a subclass with no config of its own. ``opaque-base``: a configured base class the generator
     does not read gives no item. ``surrogate-taker``: ``Tailed`` applies the config of ``Marked``, so its default
     engine pattern keeps ``Marked`` on the default engine, which reads the lone surrogate as U+FFFD, with a warning.
+    ``surrogate-taker-names-engine``: a ``Tailed`` that names ``python-re`` itself keeps it whatever ``Marked`` selects,
+    so it does not keep ``Marked`` on the default engine.
     """
     monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
     if isinstance(schema, dict):

@@ -416,6 +416,15 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
             self._set_internal_template_data(_REDECLARED_FIELDS_KEY, redeclared)
 
     @override
+    def _takes_engine_of(self, base: DataModel) -> bool:
+        """Return whether the engine a base selects reaches the dataclass: not where its own config names one.
+
+        With ``--keep-inherited-dataclass-config`` a config of its own takes the other items of the base, and an
+        engine it names stays whatever the base selects. Without it a dataclass with a config of its own takes none.
+        """
+        return self._takes_config_of(base) and "regex_engine" not in dict(self._rendered_config_items())
+
+    @override
     def _takes_config_of(self, base: DataModel) -> bool:
         """Return whether the dataclass applies the config of a base: its first, where it has no config of its own.
 

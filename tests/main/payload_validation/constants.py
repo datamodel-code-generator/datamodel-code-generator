@@ -700,6 +700,25 @@ MISSING_SENTINEL_PAYLOAD_CASE_IDS = (
     "jsonschema/missing_sentinel_payload.json",
     "openapi/missing_sentinel_nullable.yaml::components.schemas.MissingSentinelNullable",
 )
+INHERITED_DATACLASS_CONFIG_PAYLOAD_CASE_IDS = tuple(
+    f"openapi/inherited_dataclass_config/schema.yaml::components.schemas.{name}"
+    for name in (
+        "a.Closed",
+        "a.Code",
+        "a.Deep",
+        "a.Guard",
+        "a.Guarded",
+        "a.Leaf",
+        "a.Mid",
+        "a.Open",
+        "a.Plain",
+        "a.Tagged",
+        "a.Two",
+        "b.Remote",
+        "b.Word",
+        "b.Worded",
+    )
+)
 TYPE_ALIAS_TYPE_PAYLOAD_ARGS = ("--use-type-alias", "--target-python-version", "3.11")
 """Write roots as ``TypeAliasType``: Pydantic before 2.10 cannot build models that use ``type`` statements."""
 PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str, ...]]] = {
@@ -712,6 +731,10 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
     **{
         case_id: {PayloadBackend.PYDANTIC_V2: ("--use-missing-sentinel",)}
         for case_id in MISSING_SENTINEL_PAYLOAD_CASE_IDS
+    },
+    **{
+        case_id: {PayloadBackend.PYDANTIC_V2_DATACLASS: ("--keep-inherited-dataclass-config",)}
+        for case_id in INHERITED_DATACLASS_CONFIG_PAYLOAD_CASE_IDS
     },
     **{
         f"jsonschema/type_alias_lookaround/{name}.json": {PayloadBackend.PYDANTIC_V2: TYPE_ALIAS_TYPE_PAYLOAD_ARGS}

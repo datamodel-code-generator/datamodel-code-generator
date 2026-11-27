@@ -1859,6 +1859,11 @@ def _nested_model_factory(field: DataModelFieldBase, model_cls: type[DataModel])
     return None
 
 
+def _keep_inherited_dataclass_config(extra_template_data: defaultdict[str, dict[str, object]]) -> None:
+    """Record ``--keep-inherited-dataclass-config`` for every model, which a Pydantic dataclass reads."""
+    extra_template_data[ALL_MODEL][_KEEP_INHERITED_DATACLASS_CONFIG_TEMPLATE_DATA_KEY] = True
+
+
 def _set_nested_model_default_factory_order(models: list[DataModel], metadata: NestedFactoryMetadata) -> None:
     """Publish the declaration order and the reference cycle of each model for the nested model factories."""
     for model in models:
