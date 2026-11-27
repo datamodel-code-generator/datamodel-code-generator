@@ -1566,7 +1566,7 @@ class Generations:
                     python = self.compare_release._base_python(  # ruff: ignore[private-member-access]
                         version, Path(sys.executable), self.cache_dir
                     )
-                side = self.compare_release.Side(version, python, source)
+                side = self.compare_release.Side(version, python, source, "system" if version == HEAD else "path")
                 self.runners[version] = self.compare_release.Runner(
                     side, self.compare_release.run_environment(source), import_check=False, timeout=GENERATION_TIMEOUT
                 )

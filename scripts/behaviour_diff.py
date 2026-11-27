@@ -2450,14 +2450,14 @@ def build_gate(ns: argparse.Namespace) -> Gate:
     )
     gate = Gate(
         base=compare_release.Runner(
-            compare_release.Side("base", base.python, base.package),
+            compare_release.Side("base", base.python, base.package, "path"),
             base.env(),
             import_check=False,
             timeout=ns.timeout,
             memory_mb=ns.memory_mb,
         ),
         candidate=compare_release.Runner(
-            compare_release.Side("cand", candidate.python, candidate.root / "src"),
+            compare_release.Side("cand", candidate.python, candidate.root / "src", "system"),
             candidate.env,
             import_check=False,
             timeout=ns.timeout,
@@ -2483,7 +2483,7 @@ def build_gate(ns: argparse.Namespace) -> Gate:
     )
     if plan is not None:
         gate.rerun = compare_release.Runner(
-            compare_release.Side("cand", candidate.python, candidate.root / "src"),
+            compare_release.Side("cand", candidate.python, candidate.root / "src", "system"),
             candidate.env,
             import_check=False,
             timeout=ns.timeout,
@@ -2736,7 +2736,7 @@ def catalog_main(ns: argparse.Namespace) -> int:
         root = ns.cache_dir.absolute() / "family-inputs" / _stable(str(candidate.root))[:12]
         named = family_cells(family_cases(python, candidate, root)[0], root, pairs)
         cells += [cell for cell in named if _selected(cell.label, ns.select)]
-    side = compare_release.Side("catalog", base.python, base.package)
+    side = compare_release.Side("catalog", base.python, base.package, "system")
     runner = compare_release.Runner(side, base.env(), import_check=False, timeout=ns.timeout, memory_mb=ns.memory_mb)
     catalog = _cell_catalog.record(runner, cells, revision, ns.j)
     catalog.write(ns.out)
@@ -2763,7 +2763,7 @@ def record_main(ns: argparse.Namespace) -> int:
         name = python.parent.parent.name if ns.python is None else f"python-{_stable(environment)[:12]}"
         cache = compare_release.OutputCache(cache_dir / "outputs" / f"record-{ns.version}-{name}")
     runner = compare_release.Runner(
-        compare_release.Side("rec", python, package),
+        compare_release.Side("rec", python, package, "path"),
         env,
         import_check=False,
         timeout=ns.timeout,

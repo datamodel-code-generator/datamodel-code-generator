@@ -1,0 +1,4 @@
+reversed=False: exit=0 cached base outputs: 0 of 1, 1 stored
+reversed=False: exit=0 cached base outputs: 1 of 1, 1 stored
+reversed=True: exit=0 cached base outputs: 1 of 1, 1 stored
+reversed=True: exit=0 cached base outputs: 1 of 1, 1 stored
