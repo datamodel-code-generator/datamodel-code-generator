@@ -1055,6 +1055,7 @@ PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS = (
     *LITERAL_PATTERN_INTERSECTION_CASE_IDS,
     "jsonschema/lookaround_mixed_constraints.json",
     "jsonschema/root_alias_constraints/lookaround.json",
+    "openapi/inherited_dataclass_config/schema.yaml::components.schemas.b.Word",
 )
 """Lookaround aliases validated on their own: only a compiled pattern carries the engine without a config."""
 PYDANTIC_V2_DATACLASS_BARE_PYTHON_RE_ALIAS_CASE_IDS = (
