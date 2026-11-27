@@ -153,10 +153,8 @@ the store, and ``Reference.__init__`` builds its bookkeeping: heki allows them a
 
 
 def _contracts_file(path: Path, contracts: Iterable[str]) -> None:
-    """Write ``contracts`` under the fail-on of scripts/heki.toml, so their findings fail the run as they do there."""
-    path.write_text(
-        "\n".join(["[lint]", f'fail-on = "{build_heki_contracts.FAIL_ON}"', "", *contracts]), encoding="utf-8"
-    )
+    """Write ``contracts`` failing as scripts/heki.toml writes them, so their findings fail the run as they do there."""
+    path.write_text("\n".join(build_heki_contracts.failing(contracts)), encoding="utf-8")
 
 
 def _heki(*args: str, cwd: Path, config: Path = CONTRACTS) -> subprocess.CompletedProcess[str]:
@@ -267,7 +265,7 @@ SEEDED_CYCLES = {
 MODULE_LEVEL_CYCLES = """\
 [lint]
 select = ["IMP101"]
-fail-on = "warning"
+fail = ["IMP101"]
 
 [imports]
 cycle-edges = ["body"]

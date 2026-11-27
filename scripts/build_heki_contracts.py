@@ -68,7 +68,7 @@ that holds it (``attribution = "lexical"``), as the guards of those records do:
 - ``IMP101``: no new import cycle of the package, and no module joins a cycle or merges two (``[imports] cycle-edges``
   names every kind: module and class level, in a function, lazy and under ``TYPE_CHECKING``). heki reports each group of
   modules that import each other once, its modules as the target, so the baseline holds today's groups and a changed
-  group is a new report. heki reports it as a warning, so ``fail-on = "warning"`` makes it fail the check. A cycle of
+  group is a new report. heki reports it as a warning, so ``[lint] fail`` names it to fail the check. A cycle of
   the imports that run while their modules load inside a group adds no report: the ``heki`` lane refuses every such
   cycle with ``IMP101`` over those imports alone (``tests/test_build_heki_contracts_script.py``).
 - ``import-boundaries`` (``IMP201``, ``IMP202``) of the layers of the package (`_classify_source_path` of
@@ -183,8 +183,9 @@ IMPORT_LEDGER = "parser/_imports_plan.py"
 """The module of the import ledger (``ModuleImportLedger``), the one writer of the imports of a module."""
 WRITE_KINDS = (FactKind.FACT, FactKind.PRESENTATION, FactKind.CACHE)
 RULES = ("EFF201", "IMP101", "IMP201", "IMP202", "MUT201", "MUT202", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
-FAIL_ON = "warning"
-"""The severity that fails the check: contract findings are heuristic warnings, which heki's default lets pass."""
+FAIL = ("IMP101",)
+"""The rules whose reports fail the check whatever their tier (``[lint] fail``): ``IMP101`` reports a cycle as a
+warning, and the contracts fail through their own ``fail = true`` (`failing`)."""
 SHARED_PRODUCERS = (
     ("parser/_schema_graph.py", "SchemaGraphBuilder.schema"),
     ("parser/_schema_graph.py", "SchemaGraphBuilder.pointer_value"),
@@ -298,7 +299,7 @@ HEKI_KEY_DEFAULTS: Mapping[str, Mapping[str, object]] = {
     "import-boundaries": {"type-checking": "ignore", "reach": "statement", "unresolved": "ignore"},
 }
 """The value heki takes for a key a table of a kind leaves out, for the keys whose default is a value and not a choice
-of what to judge (heki 0.8.0, the "Default" column of the key tables of each kind on
+of what to judge (heki 0.9.0, the "Default" column of the key tables of each kind on
 https://heki.koxudaxi.dev/configuration/: write-owners, read-owners, call-owners, effect-boundaries, import-boundaries).
 The installed package carries no configuration text, so the page is the one source; ``message``, ``fail`` and the keys
 that select what a table judges (targets, scopes, importers, allowed-*, forbidden-*, forbid, read-targets, ...) are not
@@ -358,6 +359,15 @@ def kind_defaults(contracts: Iterable[str]) -> tuple[list[str], list[str]]:
         "\n".join([f"[{kind}-defaults]", *(f"{key} = {_value(value)}" for key, value in keys.items())]) + "\n"
         for kind, keys in defaults.items()
     ], written
+
+
+def failing(contracts: Iterable[str]) -> list[str]:
+    """Return the contracts, each with ``fail = true``.
+
+    heki reports every finding of the package as heuristic, which fails a run only where its contract sets ``fail``
+    (or ``[lint] fail`` names its rule): every contract here is a check the package keeps, so each one fails it.
+    """
+    return [contract.removesuffix("\n") + "\nfail = true\n" for contract in contracts]
 
 
 def _same(defaults: Mapping[str, object], documented: Mapping[str, object], key: str, value: object) -> bool:
@@ -1322,6 +1332,11 @@ KNOWN_FINDINGS: Final = (
     ),
     *(KnownFinding(f"pass:override_required_field:{row}", _FRESH_COPY) for row in _COPIED_ROWS),
     KnownFinding("pass:apply_discriminator_type:DataModelFieldBase._alias_resolution_class_name", _FRESH_FIELD),
+    KnownFinding(
+        "pass:restore_inherited_field_names_for_unique_aliases:DataModel.fields",
+        "a heki that judges the names a helper handed model.fields writes on its entries (rename_field) as writes of "
+        "the fields, as it judges the same writes in a loop over model.fields",
+    ),
 )
 """The findings of the pass boundaries that the baseline keeps; the baseline holds exactly these.
 
@@ -1329,7 +1344,9 @@ Constructor ordering, after B1, gives a required field back the ``init`` entry (
 dataclass field plan will hold it. The import passes write the backend config of the template data and the order of
 the nested default factories after B2, where those facts are final. ``override_required_field`` writes the copy of an
 inherited field, which heki cannot tell from the field it copies, and ``apply_discriminator_type`` the tag field it
-builds, which heki cannot tell from a field of the input.
+builds, which heki cannot tell from a field of the input. heki 0.9 counts the renames that
+``restore_inherited_field_names_for_unique_aliases`` makes through a helper it hands ``model.fields`` as a write of
+the field list.
 """
 
 
@@ -1542,22 +1559,24 @@ def generate() -> str:
     """Return the contents of scripts/heki.toml."""
     repo = Repo(ROOT, Page([], [], [], []))
     defaults, contracts = kind_defaults(
-        group_contracts([
-            *write_owner_contracts(repo),
-            *store_member_contracts(repo),
-            *store_operation_contracts(repo),
-            *decision_home_contracts(repo),
-            *decision_writer_contracts(repo),
-            *decision_contracts(repo),
-            *import_ledger_contracts(repo),
-            *builder_contracts(repo),
-            *host_contracts(repo),
-            *import_boundary_contracts(repo),
-            *pipeline_contracts(repo),
-            *shared_object_contracts(repo),
-            *environment_contracts(),
-            *finality_contracts(repo),
-        ])
+        failing(
+            group_contracts([
+                *write_owner_contracts(repo),
+                *store_member_contracts(repo),
+                *store_operation_contracts(repo),
+                *decision_home_contracts(repo),
+                *decision_writer_contracts(repo),
+                *decision_contracts(repo),
+                *import_ledger_contracts(repo),
+                *builder_contracts(repo),
+                *host_contracts(repo),
+                *import_boundary_contracts(repo),
+                *pipeline_contracts(repo),
+                *shared_object_contracts(repo),
+                *environment_contracts(),
+                *finality_contracts(repo),
+            ])
+        )
     )
     head = "\n".join([
         HEADER,
@@ -1565,7 +1584,7 @@ def generate() -> str:
         "",
         "[lint]",
         f"select = {_array(RULES)}",
-        f"fail-on = {_quote(FAIL_ON)}",
+        f"fail = {_array(FAIL)}",
         "",
         "[imports]",
         f"cycle-edges = {_array(IMPORT_EDGES)}",
