@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import ast
-from typing import TYPE_CHECKING
+from itertools import islice
+from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator.model._rendered_names import _class_bodies, _expression_names, _parsed
 from datamodel_code_generator.model.base import (
@@ -16,7 +17,7 @@ from datamodel_code_generator.reference import ModelType
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Collection, Mapping
+    from collections.abc import Callable, Collection, Mapping, Sequence
     from typing import Any
 
     from datamodel_code_generator._format_types import PythonVersion
@@ -135,6 +136,168 @@ def _model_field_name_collisions(model: DataModel, rendered: str | None, import_
             if node.value is not None:
                 collisions.update(candidates.intersection(previous_names, _expression_names(node.value, restore_name)))
                 previous_names.add(restore_name(node.target.id))
+    return collisions
+
+
+_Kind: TypeAlias = Literal["type", "none", "object", "raise", "stop"]
+"""What evaluating an annotation expression in a namespace gives.
+
+``type`` a class or typing form, ``none`` the value ``None``, ``object`` any other value a class body binds,
+``raise`` an error that is no ``NameError`` (``names``: the names whose value causes it), ``stop`` a ``NameError``,
+which the library tolerates.
+"""
+
+
+class _Value(NamedTuple):
+    kind: _Kind
+    names: tuple[str, ...] = ()
+
+
+class _Namespace(NamedTuple):
+    """The names an annotation loads in the namespace of a base: its class body, its module, the class itself."""
+
+    body: Mapping[str, Literal["none", "object"]]
+    module_names: Collection[str]
+    restore_name: Callable[[str], str]
+    aliased: Collection[str]
+    is_builtin: Callable[[str], bool]
+
+
+_TYPE = _Value("type")
+_NONE = _Value("none")
+_STOP = _Value("stop")
+
+
+def _is_none_default(value: ast.expr) -> bool:
+    """Return whether a class attribute assigned ``value`` holds ``None``: ``None`` or ``Field(None, ...)``."""
+    if isinstance(value, ast.Call):
+        return any(isinstance(argument, ast.Constant) and argument.value is None for argument in value.args[:1])
+    return isinstance(value, ast.Constant) and value.value is None
+
+
+def _base_body_bindings(base: DataModel) -> dict[str, Literal["none", "object"]]:
+    """Return what the class namespace of ``base`` holds under the name of each field that its body assigns.
+
+    A field a dataclass with slots declares is a ``member_descriptor`` attribute (``class_attribute_hides_named_type``
+    of a field its body does not assign), one that is required too.
+    """
+    tree, restore_name = _parsed(base.render())
+    bindings: dict[str, Literal["none", "object"]] = {
+        restore_name(node.target.id): "none" if _is_none_default(node.value) else "object"
+        for node in next(_class_bodies(tree, restore_name, base.class_name), [])
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None
+    }
+    bindings.update(
+        dict.fromkeys(
+            (
+                field.name
+                for field in _class_body_fields(base)
+                if field.name
+                and base.class_attribute_hides_named_type(field, assigned=False, resolved_late=True, as_string=False)
+            ),
+            "object",
+        )
+    )
+    return bindings
+
+
+def _evaluate_name(node: ast.Name, namespace: _Namespace) -> _Value:
+    """Return the value of a name an annotation loads: the class body first, then the module and the builtins."""
+    name = namespace.restore_name(node.id)
+    if name in namespace.aliased:
+        return _STOP
+    if (kind := namespace.body.get(name)) is not None:
+        return _Value(kind, (name,))
+    if name in namespace.module_names or namespace.is_builtin(name):
+        return _TYPE
+    return _STOP
+
+
+def _evaluate(node: ast.expr, namespace: _Namespace) -> _Value:
+    """Evaluate an annotation expression in ``namespace`` in Python's order, as far as its values go.
+
+    An attribute, a subscript or a call of ``None`` or of another value that a class body binds raises, and so does
+    ``|`` of one of them. The arguments of a subscript or a call load their names and raise on an attribute of
+    such a value; the check of their values (``typing`` of Python 3.10) is not modelled, so a miss keeps today's
+    failure and never changes a working module.
+    """
+    if isinstance(node, ast.Name):
+        return _evaluate_name(node, namespace)
+    if isinstance(node, ast.Constant):
+        return _NONE if node.value is None else _TYPE
+    head = (
+        node.value
+        if isinstance(node, (ast.Attribute, ast.Subscript))
+        else node.func
+        if isinstance(node, ast.Call)
+        else None
+    )
+    if head is not None and (value := _evaluate(head, namespace)).kind != "type":
+        return _Value("raise", value.names) if value.kind in {"none", "object"} else value
+    operands = (
+        [*node.args, *(keyword.value for keyword in node.keywords)]
+        if isinstance(node, ast.Call)
+        else [child for child in ast.iter_child_nodes(node) if isinstance(child, ast.expr) and child is not head]
+    )
+    values: list[_Value] = []
+    for operand in operands:
+        value = _evaluate(operand, namespace)
+        if value.kind in {"raise", "stop"}:
+            return value
+        values.append(value)
+    return _union_value(values) if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr) else _TYPE
+
+
+def _union_value(operands: Sequence[_Value]) -> _Value:
+    """Return the value of ``a | b``: it raises for any other value that a class body binds and for two ``None``."""
+    kinds = [operand.kind for operand in operands]
+    if "object" in kinds or kinds == ["none", "none"]:
+        return _Value("raise", tuple(name for operand in operands for name in operand.names))
+    return _TYPE
+
+
+class _ModuleScope(NamedTuple):
+    """What the module of a model binds, as the namespace of a base reads it."""
+
+    module_names_of: Callable[[DataModel], Collection[str]]
+    aliased: Collection[str]
+    is_builtin: Callable[[str], bool]
+
+
+def _inherited_field_name_collisions(
+    class_name: str,
+    namespaces: Mapping[str, Sequence[DataModel]],
+    rendered: str,
+    import_names: Collection[str],
+    scope: _ModuleScope,
+) -> set[str]:
+    """Find imported names that a base of the class binds in its class body to a value the annotations raise on.
+
+    The library evaluates the annotation of a field that ``namespaces`` names (``annotation_namespaces``) in the
+    namespace of each of its bases that declares it: the base's module and its class body. The first name an
+    annotation loads whose value there makes the evaluation raise is the collision, where the module imports it or it
+    is a builtin: its alias is a ``NameError`` in the base. The names the own fields alias (``aliased``) are loaded
+    under their aliases already.
+    """
+    tree, restore_name = _parsed(rendered)
+    scopes = {
+        id(base): _Namespace(
+            _base_body_bindings(base),
+            {*scope.module_names_of(base), class_name},
+            restore_name,
+            scope.aliased,
+            scope.is_builtin,
+        )
+        for bases in namespaces.values()
+        for base in bases
+    }
+    collisions: set[str] = set()
+    for node in next(_class_bodies(tree, restore_name, class_name), []):
+        if not (isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)):
+            continue
+        for base in namespaces.get(restore_name(node.target.id), ()):
+            if (value := _evaluate(node.annotation, scopes[id(base)])).kind == "raise":
+                collisions.update(islice((name for name in value.names if name in import_names), 1))
     return collisions
 
 

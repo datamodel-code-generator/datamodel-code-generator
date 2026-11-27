@@ -68,6 +68,18 @@ class FieldNameBindings(NamedTuple):
     loads: Mapping[str, str]
 
 
+def _composed_aliases(earlier: Mapping[str, str], later: Mapping[str, str]) -> dict[str, str]:
+    """Return the aliases of two passes as the rendered template meets them: each name to its last alias.
+
+    The later pass bound the names the earlier aliases give, as it read texts that write them, so an alias the later
+    pass renames is replaced in the earlier entry and the later entry that names it is dropped.
+    """
+    return {
+        **{name: later.get(alias, alias) for name, alias in earlier.items()},
+        **{name: alias for name, alias in later.items() if name not in earlier.values()},
+    }
+
+
 def _names_of(tree: ast.AST, *, loads_only: bool = False) -> Iterator[ast.Name]:
     """Yield the name nodes of ``tree`` in ``ast.walk`` order: every one, or only those it loads."""
     return (
@@ -142,19 +154,27 @@ def _local_names(scope: ast.AST) -> set[str]:
     }
 
 
-def _bare_loads(tree: ast.AST, bound: frozenset[str] = frozenset()) -> Iterator[ast.Name]:
-    """Yield the names a tree loads bare: loaded, not the module of an attribute (``name.X``), not bound locally."""
+def _bare_loads(
+    tree: ast.AST,
+    bound: frozenset[str] = frozenset(),
+    is_qualifier: Callable[[str], bool] = frozenset[str]().__contains__,
+) -> Iterator[ast.Name]:
+    """Yield the names a tree loads bare: loaded, not the module of an attribute (``name.X``), not bound locally.
+
+    The module of an attribute counts for the names ``is_qualifier`` accepts, the imports an alias replaces.
+    """
     match tree:
         case ast.Name(ctx=ast.Load()):
             if tree.id not in bound:
                 yield tree
         case ast.Attribute(value=ast.Name()):
-            return
+            if isinstance(base := tree.value, ast.Name) and is_qualifier(base.id) and base.id not in bound:
+                yield base
         case _:
             if isinstance(tree, _NAME_SCOPES):
                 bound |= _local_names(tree)
             for child in ast.iter_child_nodes(tree):
-                yield from _bare_loads(child, bound)
+                yield from _bare_loads(child, bound, is_qualifier)
 
 
 _BareLoadRule: TypeAlias = Literal["scoped", "legacy-flat-bare-loads"]
@@ -179,10 +199,17 @@ def _bare_loads_of(rendered: str, names: Collection[str], *, rule: _BareLoadRule
     return {name for node in nodes if (name := restore_name(node.id)) in names}
 
 
-def _bind_bare_loads(rendered: str, bindings: Mapping[str, str]) -> str:
-    """Write every bare load of a bound name in ``rendered`` through its alias, e.g. ``list_aliased[str]``."""
+def _bind_bare_loads(rendered: str, bindings: Mapping[str, str], qualifiers: Collection[str] = ()) -> str:
+    """Write every bare load of a bound name in ``rendered`` through its alias, e.g. ``list_aliased[str]``.
+
+    A name of ``qualifiers`` is written through its alias as the module of an attribute too (``user_aliased.Address``).
+    """
     tree, restore_name = _parsed(rendered)
     return _rewrite_names(
         rendered,
-        [(node, alias) for node in _bare_loads(tree) if (alias := bindings.get(restore_name(node.id))) is not None],
+        [
+            (node, alias)
+            for node in _bare_loads(tree, is_qualifier=lambda name: restore_name(name) in qualifiers)
+            if (alias := bindings.get(restore_name(node.id))) is not None
+        ],
     )
