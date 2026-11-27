@@ -12489,6 +12489,10 @@ The `--use-frozen-field` flag generates frozen field definitions:
 
 Generate a shared base class with model configuration to avoid repetition (DRY).
 
+**Option relationships:**
+
+- **Requires:** [`--output-model-type`](model-customization.md#output-model-type) = `pydantic_v2.BaseModel or msgspec.Struct` - `--use-generic-base-class` writes the run's model configuration (`--extra-fields`, `--allow-population-by-field-name`, ...) on a shared base class only for `pydantic_v2.BaseModel` and `msgspec.Struct`; `pydantic_v2.dataclass` leaves it out of every class and warns.
+
 !!! tip "Usage"
 
     ```bash

@@ -5631,6 +5631,40 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
     ),
     DecisionHome(
         decision=(
+            "which class carries the run-level model configuration (`--extra-fields`, "
+            "`--allow-population-by-field-name`, `--allow-extra-fields`, `--use-attribute-docstrings`, ...) under "
+            "`--use-generic-base-class`: it goes to the shared base class of an output type that builds one "
+            "(`pydantic_v2.BaseModel`, `msgspec.Struct`), and the output type that writes it on each class and builds "
+            "no base class (`pydantic_v2.dataclass`) leaves it out, which the run warns of with the items the type "
+            "would have written"
+        ),
+        homes=(
+            Home("model/output.py", "prepare_output_model_config"),
+            Home("model/base.py", "DataModel.create_base_class_model"),
+            Home("model/base.py", "DataModel.config_left_without_generic_base_class"),
+            Home("model/pydantic_v2/base_model.py", "BaseModel.create_base_class_model"),
+            Home("model/msgspec.py", "Struct.create_base_class_model"),
+            Home("model/pydantic_v2/dataclass.py", "DataClass.config_left_without_generic_base_class"),
+        ),
+        core=(
+            "`model/output.py:prepare_output_model_config`; `model/base.py:DataModel.create_base_class_model` and "
+            "`DataModel.config_left_without_generic_base_class`; the overrides of `model/pydantic_v2/base_model.py` "
+            "(`BaseModel.create_base_class_model`), `model/msgspec.py` (`Struct.create_base_class_model`) and "
+            "`model/pydantic_v2/dataclass.py` (`DataClass.config_left_without_generic_base_class`)"
+        ),
+        adapters=(
+            "`parser/base.py:Parser.__init__` (the base config of the run) and "
+            "`parser/_passes/cross_module.py:apply_generic_base_class` (builds the base class, or warns through "
+            "`_warn_config_left_without_generic_base_class` where the output type builds none)"
+        ),
+        sites=(
+            Home("parser/base.py", "Parser.__init__"),
+            Home("parser/_passes/cross_module.py", "apply_generic_base_class"),
+            Home("parser/_passes/cross_module.py", "_warn_config_left_without_generic_base_class"),
+        ),
+    ),
+    DecisionHome(
+        decision=(
             "which options a run refuses or warns of together (an option that requires another, or a value of it, and "
             "two options that conflict), with which text and action (the package's `Error`, a `ValueError` that "
             "pydantic reports as an invalid configuration, a printed refusal, a printed warning), at which stage, in "

@@ -1,0 +1,1 @@
+--use-generic-base-class writes no base class for this output model type, so its model configuration ConfigDict(extra='allow') is left out of every class. Run without --use-generic-base-class to write it on each class.
