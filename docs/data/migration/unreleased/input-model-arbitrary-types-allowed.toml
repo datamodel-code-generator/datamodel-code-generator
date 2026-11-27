@@ -71,5 +71,6 @@ covers = [
     "input_model/structured_runtime_annotations.txt",
     "input_model/transport_preserves_inheritance.txt",
     "input_model/transport_preserves_nested_runtime_identity.txt",
+    "main/cli_fast_paths/input_model_transport_skips_codec_and_preserves_metadata.txt",
     "main/jsonschema/main_jsonschema/main_root_model_config_leaves_out_arbitrary_types.py",
 ]
