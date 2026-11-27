@@ -3,7 +3,7 @@ id = "dataclass-allows-custom-types-of-a-later-base"
 category = "crash-fix"
 title = "A pydantic dataclass allows the customTypePath classes of a later base's fields"
 summary = "A pydantic_v2.dataclass with several bases applies the config of its first base (or its own) to the fields it inherits from every base, so a customTypePath class declared by a later base was built without arbitrary_types_allowed and the module failed to import with PydanticSchemaGenerationError, for example class Both(Base, Handle) with a closed Base and a Handle field customTypePath: threading.Lock. The dataclass now writes arbitrary_types_allowed=True in a config of its own that keeps every item it applied, as the class that declares the field already did. Class names, field names and order, bases, __init__ parameters, field types and parsed values are the same. Two modules that imported before gain the same key without any change in what they accept: one whose later base has a customTypePath that names a class Pydantic builds anyway, such as datetime.date, and one whose later base has a customTypePath field replaced by --type-overrides."
-refs = ["#1", "#7592"]
+refs = ["#7605", "#7592"]
 kind = "default-output"
 action = "none"
 source = "release-note"
