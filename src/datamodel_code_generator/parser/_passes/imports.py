@@ -38,7 +38,7 @@ from datamodel_code_generator._module_paths import (
 from datamodel_code_generator._python_syntax import holds_lone_surrogate
 from datamodel_code_generator._python_target_names import is_builtin_type_name
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
-from datamodel_code_generator._requirements import pydantic_floor
+from datamodel_code_generator._requirements import pydantic_floor, python_target_meets
 from datamodel_code_generator._shared_types import DefaultValueTypeWarning, Error
 from datamodel_code_generator._target_unicode import is_importable_part
 from datamodel_code_generator._url_redaction import redact_reference
@@ -64,9 +64,19 @@ from datamodel_code_generator.model._decisions.msgspec_str_like import (
 from datamodel_code_generator.model._decisions.tag_value import struct_union_refusal
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model._rendered_names import FieldNameBindings, _bare_loads_of
-from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _class_body_fields, _model_key_of_model
+from datamodel_code_generator.model.base import (
+    BaseClassDataType,
+    DataModel,
+    _class_body_fields,
+    _find_base_classes,
+    _model_key_of_model,
+)
 from datamodel_code_generator.model.enum import Enum, Member, get_raw_enum_member_value
-from datamodel_code_generator.model.output import _model_field_name_collisions
+from datamodel_code_generator.model.output import (
+    _inherited_field_name_collisions,
+    _model_field_name_collisions,
+    _ModuleScope,
+)
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._imports_plan import Added, Aliased, ImportProducer, Removed
 from datamodel_code_generator.parser._passes._import_binding import (
@@ -430,8 +440,9 @@ class RenderHost(
         require_update: Collection[ModelKey],
         future_imports_str: str,
         shared_imports_str: str,
+        texts: Sequence[str],
     ) -> ResultT | None:
-        """Return the result of one module, or None when it writes nothing."""
+        """Return the result of one module, or None when it writes nothing, from the rendered ``texts`` of it."""
 
     def _inspect_invalid_dotted_stdout(
         self,
@@ -500,6 +511,7 @@ def _bind_module_field_names(
     target: tuple[int, int],
     *,
     texts: Sequence[str] | None = None,
+    module_names_of: Callable[[DataModel], Collection[str]] | None = None,
 ) -> bool:
     """Alias the names a property hides from the text of its class; return whether it aliased any.
 
@@ -507,8 +519,22 @@ def _bind_module_field_names(
     which a builtin import binds under the alias. An alias avoids every name the module's and the shared imports
     bind. Type aliases sit at module scope, so an import they name keeps its name beside the alias. ``texts`` are the
     rendered models; without them a model renders where it holds a field of such a name.
+
+    Where ``module_names_of`` gives the names the module of a model binds, the annotations a library evaluates as
+    strings also count the namespaces of the bases it declares a redeclared field in
+    (``DataModel.annotation_namespaces``): a name that a base binds in its class body to a value the annotation
+    raises on is hidden as well, and the alias avoids every name of those bases. It needs ``texts``.
     """
-    field_names = {field.name for model in models for field in _class_body_fields(model) if field.name is not None}
+    namespaces = (
+        [model.annotation_namespaces() for model in models] if module_names_of is not None else [{} for _ in models]
+    )
+    declaring_bases = [base for by_field in namespaces for bases in by_field.values() for base in bases]
+    inherited_names = {
+        field.name for base in declaring_bases for field in _class_body_fields(base) if field.name is not None
+    }
+    field_names = {
+        field.name for model in models for field in _class_body_fields(model) if field.name is not None
+    } | inherited_names
     shadowable_imports = {binding: key for key, binding in _import_bindings(imports) if binding in field_names}
     shadowable_imports.update(
         (name, ("builtins", name))
@@ -522,9 +548,32 @@ def _bind_module_field_names(
         collisions.update(
             _model_field_name_collisions(model, None if texts is None else texts[index], shadowable_imports)
         )
+    if module_names_of is not None and texts is not None:
+        aliased = frozenset(collisions)
+        for text, model, by_field in zip(texts, models, namespaces, strict=True):
+            if by_field:
+                collisions.update(
+                    _inherited_field_name_collisions(
+                        model.class_name,
+                        by_field,
+                        text,
+                        shadowable_imports,
+                        _ModuleScope(module_names_of, aliased, partial(is_builtin_type_name, target_version=target)),
+                    )
+                )
     if not collisions:
         return False
-    reserved_names = _alias_reserved_names(models, imports, shared_imports)
+    reserved_names = _alias_reserved_names(
+        models,
+        imports,
+        shared_imports,
+        also=inherited_names
+        | (
+            {name for base in declaring_bases for name in module_names_of(base)}
+            if module_names_of is not None
+            else set()
+        ),
+    )
     type_alias_imports = {
         _import_key(import_) for model in models if isinstance(model, TypeAliasBase) for import_ in model.imports
     }
@@ -556,14 +605,18 @@ def render_module_models(  # noqa: PLR0917
     ledger: ModuleImportLedger,
     target: tuple[int, int],
     overrides: Mapping[str, str] | None,
+    module_names_of: Callable[[DataModel], Collection[str]] | None = None,
 ) -> list[str]:
     """Render the models of a module, alias the names a property hides in the texts and render the aliased again.
 
     Where ``bind_module_field_names`` bound the names before, the texts already write the aliases. The imports the
     aliases add go through ``--import-overrides`` (``overrides``), as ``remap_import_overrides`` routes the others.
+    ``module_names_of`` (``_bind_module_field_names``) is given where the annotations are evaluated as strings.
     """
     texts = [model.render() for model in models]
-    if not _bind_module_field_names(models, imports, shared_imports, ledger, target, texts=texts):
+    if not _bind_module_field_names(
+        models, imports, shared_imports, ledger, target, texts=texts, module_names_of=module_names_of
+    ):
         return texts
     if overrides is not None:
         _remap_imports(ledger, imports, overrides)
@@ -2852,6 +2905,84 @@ def reject_unimportable_imports(
             raise Error(msg)
 
 
+def _bases_first(contexts: Sequence[ContextT]) -> Iterator[ContextT]:
+    """Yield the modules, each after the modules of the generated models its models inherit from.
+
+    Otherwise in the order of ``contexts``. Inheritance between the modules of an output that imports is acyclic: a
+    base is imported where the class is defined, and import cycles are merged. A module met again while its bases are
+    yielded keeps the state it has.
+    """
+    owner = {id(model): ctx for ctx in contexts for model in ctx.models}
+
+    def bases_of(ctx: ContextT) -> Iterator[ContextT]:
+        return (
+            base_ctx
+            for model in ctx.models
+            for base in _find_base_classes(model)
+            if (base_ctx := owner.get(id(base))) is not None
+        )
+
+    seen: set[int] = set()
+    for root in contexts:
+        if id(root) in seen:
+            continue
+        seen.add(id(root))
+        stack = [(root, bases_of(root))]
+        while stack:
+            ctx, pending = stack[-1]
+            if (base := next(pending, None)) is None:
+                stack.pop()
+                yield ctx
+            elif id(base) not in seen:
+                seen.add(id(base))
+                stack.append((base, bases_of(base)))
+
+
+def _decide_module_texts(
+    parser: RenderHost[ConfigT, ContextT, ResultT],
+    contexts: Sequence[ContextT],
+    config: ConfigT,
+    ledger: ModuleImportLedger,
+    overrides: Mapping[str, str] | None,
+) -> dict[int, list[str]]:
+    """Render the models of every module and alias the names their properties hide, the modules of bases first.
+
+    The annotations that a library evaluates as strings are evaluated in the namespace of the module of a base as well
+    (``_bind_module_field_names``), so the base's imports are final before a module that redeclares its fields
+    decides. The texts by ``id`` of the module.
+    """
+    owner = {id(model): (ctx,) for ctx in contexts for model in ctx.models}
+    version_key = parser.target_python_version.version_key
+    writes_strings = config.use_deferred_annotations and not python_target_meets(
+        "python.deferred_annotations", version_key
+    )
+
+    def module_names_of(model: DataModel) -> set[str]:
+        return {
+            name
+            for ctx in owner.get(id(model), ())
+            for name in (
+                *(model.class_name for model in ctx.models),
+                *_iter_import_bindings(ctx.imports),
+                *_iter_import_bindings(parser.imports),
+            )
+        }
+
+    texts: dict[int, list[str]] = {id(ctx): [] for ctx in contexts}
+    for ctx in _bases_first(contexts):
+        if ctx.models:
+            texts[id(ctx)] = render_module_models(
+                ctx.models,
+                ctx.imports,
+                parser.imports,
+                ledger,
+                version_key,
+                overrides,
+                module_names_of if writes_strings else None,
+            )
+    return texts
+
+
 def render_modules(
     parser: RenderHost[ConfigT, ContextT, ResultT],
     results: dict[ModulePath, ResultT],
@@ -2868,9 +2999,10 @@ def render_modules(
     Every relative import block that a module writes is kept (``_record_written_imports``) for the import check of a
     modular output (``check_import_reads``).
     """
-    future_imports = parser._import_ledger.extract_future(parser.imports, _FUTURE_IMPORTS)
+    ledger = parser._import_ledger
+    future_imports = ledger.extract_future(parser.imports, _FUTURE_IMPORTS)
     future_imports_str = str(future_imports)
-    shared_imports_str = str(parser._import_ledger.rendered(parser.imports))
+    shared_imports_str = str(ledger.rendered(parser.imports))
     merges = forwarder_map
     if forwarder_map:
         forwarder_map = _forward_defined_models(contexts, _released_name_imports(parser, contexts, forwarder_map))
@@ -2891,9 +3023,10 @@ def render_modules(
         all_exports_scope=config.all_exports_scope,
         use_deferred_annotations=config.use_deferred_annotations,
     )
+    texts = _decide_module_texts(parser, contexts, config, ledger, parser._import_overrides)
     for ctx in contexts:
         result = parser._generate_module_output(
-            ctx, config, contexts, forwarder_map, require_update, future_imports_str, shared_imports_str
+            ctx, config, contexts, forwarder_map, require_update, future_imports_str, shared_imports_str, texts[id(ctx)]
         )
         if result is not None:
             results[ctx.module] = result

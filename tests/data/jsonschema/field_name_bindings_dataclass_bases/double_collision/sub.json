@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Child",
+  "allOf": [
+    {
+      "$ref": "base.json#/$defs/Base"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "pair": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    }
+  ]
+}

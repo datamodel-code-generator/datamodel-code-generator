@@ -10070,8 +10070,8 @@ path = "src/datamodel_code_generator/parser/base.py"
 qualname = "Parser._generate_module_output"
 rule_code = "MUT201"
 target = "ModuleContext.models"
-count = 2
-heuristic = 2
+count = 1
+heuristic = 1
 
 [[entries]]
 path = "src/datamodel_code_generator/parser/base.py"

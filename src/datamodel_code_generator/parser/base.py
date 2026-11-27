@@ -232,7 +232,6 @@ from datamodel_code_generator.parser._passes.imports import (
     _FUTURE_IMPORTS,
     builtin_name_bindings,
     reject_unimportable_imports,
-    render_module_models,
 )
 from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, parse_caller
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
@@ -2615,12 +2614,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         require_update: Collection[ModelKey],
         future_imports_str: str,
         shared_imports_str: str,
+        texts: Sequence[str],
     ) -> Result | None:
         """Generate output for a single module.
 
         Its header names the input file of its first model, which a module that --rename-submodules-hidden-by-classes
         renamed keeps (``_renamed_module_inputs``). ``shared_imports_str`` is what every module writes of the imports
-        all modules share (``ModuleImportLedger.rendered``).
+        all modules share (``ModuleImportLedger.rendered``). ``texts`` are the rendered models of the module
+        (``_decide_module_texts``).
         """
         result: list[str] = []
         export_imports: Imports | None = None
@@ -2632,14 +2633,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
 
         if ctx.models:
-            texts = render_module_models(
-                ctx.models,
-                ctx.imports,
-                self.imports,
-                self._import_ledger,
-                self.target_python_version.version_key,
-                self._import_overrides,
-            )
             if config.with_import:
                 module_imports = self._import_ledger.rendered(ctx.imports)
                 self._reject_unimportable_imports(ctx.module, module_imports, is_init=ctx.is_init)
