@@ -1,0 +1,12 @@
+{"detail": {"message": "m"}, "warn": {"count": 1}, "details": [{"message": "a"}], "either": "s", "by_code": {"x": {"message": "b"}}, "kind": "high", "trace": {"line": 3}}: accepted {'detail': {'message': 'm'}, 'warn': {'count': 1}, 'details': [{'message': 'a'}], 'either': 's', 'by_code': {'x': {'message': 'b'}}, 'kind': 'high', 'trace': {'line': 3}}
+{"details": [{"message": 1}]}: rejected ValidationError
+{"detail": {"message": "m"}}: accepted {'detail': {'message': 'm'}}
+{"detail": {"message": 1}}: rejected ValidationError
+{"detail": {"message": "m"}}: accepted {'detail': {'message': 'm'}}
+{"detail": {"message": 1}}: rejected ValidationError
+{"message": "m", "code": "c"}: accepted {'message': 'm', 'code': 'c'}
+{"message": 1}: rejected ValidationError
+{"detail": {"message": "m"}, "kind": "low", "trace": {"line": 1}, "shipment": {"weight": 2}}: accepted {'detail': {'message': 'm'}, 'kind': 'low', 'trace': {'line': 1}, 'shipment': {'weight': 2}}
+{"kind": "mid"}: rejected ValidationError
+{"count": 1, "order": {"detail": {"message": "m"}}}: accepted {'count': 1, 'order': {'detail': {'message': 'm'}}}
+{"count": "x"}: rejected ValidationError

@@ -4362,6 +4362,28 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "builtin",
         ),
     ),
+    LegacyRow(
+        "legacy-forwarder-export-loads",
+        (
+            "the refusal of a class beside a module of its name in its package reads the `__init__.py` that an import "
+            "cycle merge leaves as a forwarder of the class with the `--all-exports-scope` re-exports it does not "
+            "write, as a load of the module, and writes the output that 0.90.0 and later write there "
+            "(`parser/_passes/_import_edges.py:init_load_edges`, "
+            "`parser/_passes/imports.py:_class_named_like_submodule`)"
+        ),
+        fix=7573,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/submodule_named_like_forwarded_class.json",
+            "--input-file-type",
+            "jsonschema",
+            "--disable-timestamp",
+            "--all-exports-scope",
+            "children",
+            "--formatters",
+            "builtin",
+        ),
+    ),
 )
 """Every ``legacy-*`` row of ``src/``, in the order of the page table."""
 

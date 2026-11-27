@@ -7102,6 +7102,39 @@ msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_sub
 msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[msgspec.Struct]/
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass].payloads.txt
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[pydantic_v2.BaseModel]/
+[test_main_jsonschema_forwarded_class_read_outside_cycle]
+all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt
+all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children]/
+all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-recursive].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt
+all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-recursive]/
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[dataclasses.dataclass].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[dataclasses.dataclass]/
+directory	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory].payloads.txt
+directory	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory]/
+directory-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory-all-exports-children].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory].payloads.txt
+directory-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory-all-exports-children]/	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory]/
+directory-treat-dot-as-module	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory-treat-dot-as-module].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory].payloads.txt
+directory-treat-dot-as-module	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory-treat-dot-as-module]/	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[directory]/
+enum-default	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[enum-default].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt
+enum-default	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[enum-default]/
+exact-imports	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[exact-imports].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt
+exact-imports	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[exact-imports]/
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[msgspec.Struct].payloads.txt
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[msgspec.Struct]/
+nested	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[nested].payloads.txt
+nested	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[nested]/
+preset	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[preset].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt
+preset	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[preset]/
+py314	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[py314].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt
+py314	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[py314]/
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[pydantic_v2.BaseModel]/
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[pydantic_v2.dataclass].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[pydantic_v2.dataclass]/
+root	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[root].payloads.txt
+root	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[root]/
+typing.TypedDict	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[typing.TypedDict].payloads.txt
+typing.TypedDict	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[typing.TypedDict]/
 [test_main_jsonschema_forwarding_reference_collapse_root]
 	main/jsonschema/main_jsonschema/forwarding_reference_collapse_root/
 [test_main_jsonschema_generate_schema_validators]

@@ -1,0 +1,2 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Warn", "type": "object",
+ "properties": {"count": {"type": "integer"}, "order": {"$ref": "pkg/api.json"}}}

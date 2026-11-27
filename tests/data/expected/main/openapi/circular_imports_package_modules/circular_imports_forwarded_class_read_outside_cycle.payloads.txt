@@ -1,0 +1,9 @@
+pkg.report.Report {}: schema accepts, model accepts
+pkg.report.Report {"detail": {"message": "m"}, "details": [{"message": "a"}]}: schema accepts, model accepts
+pkg.report.Report {"details": [{"message": 1}]}: schema rejects, model rejects
+other.Other {"detail": {"message": "m"}}: schema accepts, model accepts
+other.Other {"detail": {"message": 1}}: schema rejects, model rejects
+pkg.api.Order {"detail": {"message": "m"}, "warn": {"count": 1}}: schema accepts, model accepts
+pkg.api.Order {"warn": {"count": "x"}}: schema rejects, model rejects
+pkg.Warn {"count": 1, "order": {"detail": {"message": "m"}}}: schema accepts, model accepts
+pkg.Warn {"count": "x"}: schema rejects, model rejects

@@ -49,12 +49,13 @@ from datamodel_code_generator.parser._pipeline import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Sequence
+    from collections.abc import Iterable, Sequence
     from pathlib import Path
 
     from datamodel_code_generator.imports import Import, Imports
     from datamodel_code_generator.parser._passes._state import (
         FinishRun,
+        ForwarderMap,
         ModulePath,
         ProcessingRun,
         SettleRun,
@@ -126,7 +127,7 @@ class PipelineHost(
         unused_models: list[DataModel],
         model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]],
         module_to_import: dict[ModulePath, Imports],
-        forwarder_modules: Collection[ModulePath],
+        forwarder_map: ForwarderMap,
         *,
         with_import: bool,
         config: Any,
