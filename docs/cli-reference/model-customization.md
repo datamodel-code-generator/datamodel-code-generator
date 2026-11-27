@@ -4801,7 +4801,9 @@ itself wins.
 
 The kept items can also select the base's `python-re` regex engine for the patterns of the dataclass: there `$`
 also accepts a trailing newline, and a pattern Python's `re` rejects, such as `\p{L}`, is left out with a warning,
-as for a dataclass that takes the config of its base. A configured base class from `--base-class` that the
+as for a dataclass that takes the config of its base. A base the dataclass builds with that engine can change too: a
+second base leaves out a pattern Python's `re` rejects, and a base with a lone surrogate in a pattern keeps the default
+engine. A configured base class from `--base-class` that the
 generator does not read gives no items. Pydantic model output is the same either way.
 
 **Related:** [`--allow-population-by-field-name`](#allow-population-by-field-name), [`--extra-template-data`](template-customization.md#extra-template-data), [`--output-model-type`](#output-model-type)
