@@ -21192,6 +21192,7 @@ def test_main_use_generic_base_class_msgspec_forbid(output_file: Path) -> None:
 
 _GENERIC_BASE_CLASS_DATACLASS = ("--output-model-type", "pydantic_v2.dataclass", "--use-generic-base-class")
 _GENERIC_BASE_CLASS_LEFT_OUT = "--use-generic-base-class writes no base class"
+_GENERIC_BASE_CLASS_ONE_GENERATION = ("--formatters", "builtin")
 
 
 def _left_out_warnings(recwarn: pytest.WarningsRecorder) -> str:
@@ -21311,13 +21312,14 @@ def test_main_use_generic_base_class_pydantic_dataclass(
     The dataclass has no base class to carry the run's configuration, so the module is the one written before; the
     warning names the items the run without the flag writes. A type that writes none of the run's configuration
     (TypedDict, frozen, a bare target version), one with a base class, and an output without a target model stay
-    silent.
+    silent. The run names the built-in formatter, so the test harness does not generate a second time to compare
+    formatters: that run would record the warning again.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=options,
+        extra_args=(*_GENERIC_BASE_CLASS_ONE_GENERATION, *options),
     )
     assert_output(_left_out_warnings(recwarn), name="warnings")
 
@@ -21333,6 +21335,7 @@ def test_main_use_generic_base_class_pydantic_dataclass_extra_template_data(
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=[
+            *_GENERIC_BASE_CLASS_ONE_GENERATION,
             "--extra-template-data",
             str(extra_template_data),
             "--extra-fields",
@@ -21351,7 +21354,14 @@ def test_main_use_generic_base_class_pydantic_dataclass_package(
         input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_with_inheritance.json",
         output_path=output_dir,
         input_file_type="jsonschema",
-        extra_args=["--extra-fields", "forbid", *_GENERIC_BASE_CLASS_DATACLASS, "--module-split-mode", "single"],
+        extra_args=[
+            *_GENERIC_BASE_CLASS_ONE_GENERATION,
+            "--extra-fields",
+            "forbid",
+            *_GENERIC_BASE_CLASS_DATACLASS,
+            "--module-split-mode",
+            "single",
+        ],
     )
     assert_output(_left_out_warnings(recwarn), name="warnings")
 
