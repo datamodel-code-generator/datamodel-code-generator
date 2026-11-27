@@ -198,7 +198,21 @@ IMPORTS = f"{PACKAGE}.imports.Imports"
 IMPORT_LEDGER = "parser/_imports_plan.py"
 """The module of the import ledger (``ModuleImportLedger``), the one writer of the imports of a module."""
 WRITE_KINDS = (FactKind.FACT, FactKind.PRESENTATION, FactKind.CACHE)
-RULES = ("EFF201", "IMP101", "IMP201", "IMP202", "MUT201", "MUT202", "MUT203", "MUT204", "MUT205", "MUT206", "MUT207")
+RULES = (
+    "EFF109",
+    "EFF116",
+    "EFF201",
+    "IMP101",
+    "IMP201",
+    "IMP202",
+    "MUT201",
+    "MUT202",
+    "MUT203",
+    "MUT204",
+    "MUT205",
+    "MUT206",
+    "MUT207",
+)
 FAIL = ("IMP101",)
 """The rules whose reports fail the check whatever their tier (``[lint] fail``): ``IMP101`` reports a cycle as a
 warning, and the contracts fail through their own ``fail = true`` (`failing`)."""
