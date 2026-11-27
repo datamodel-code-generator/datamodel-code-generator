@@ -34,6 +34,11 @@ refs = ["#42"]
 covers = [
     "models/d.json",
 ]
+
+[[change.cells]]
+input = ["a.json"]
+backends = "*"
+options = "*"
 --- fix-the-thing.toml ---
 [[change]]
 id = "fix-the-thing"
@@ -49,3 +54,8 @@ covers = [
     "models/b.py",
     "models/c.py",
 ]
+
+[[change.cells]]
+input = ["a.json"]
+backends = "*"
+options = "*"
