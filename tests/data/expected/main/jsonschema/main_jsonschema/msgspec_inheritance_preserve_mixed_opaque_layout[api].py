@@ -27,5 +27,8 @@ class RightOuter(RightInner, Opaque):
     right2: int | UnsetType = UNSET
 
 
-class Payload(LeftOuter, RightOuter):
-    pass
+class Payload(Struct):
+    left1: int | UnsetType = UNSET
+    left2: int | UnsetType = UNSET
+    right1: int | UnsetType = UNSET
+    right2: int | UnsetType = UNSET

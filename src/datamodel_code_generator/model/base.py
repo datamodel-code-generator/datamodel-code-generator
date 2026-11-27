@@ -2298,7 +2298,8 @@ class BaseLayoutView(NamedTuple):
     """How the layouts of generated bases look before the processing of each module changes them.
 
     ``is_slot`` accepts the fields that keep a slot whatever that processing does, ``layout_model`` gives the model
-    whose layout a model may take from it, and ``is_opaque`` tells the models whose layout the generator does not know.
+    whose layout a model may take from it, and ``is_opaque`` tells the models that are, or hold beside their generated
+    bases, a class whose layout the generator does not read.
     """
 
     is_slot: Callable[[DataModelFieldBase], bool]

@@ -2016,13 +2016,15 @@ right one.
   merge, [#6998](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6998), or a discriminator
   field that stayed a slot), is flattened once every module is processed
   (`parser/_passes/cross_module.py:flatten_conflicting_final_layouts`, with the layouts as the output has them, bases
-  with fewer ancestors first). A model whose layout the generator does not know (a configured base, or a model that a
-  type override replaces) stops the L4 walk of the bases where it meets it, so L4 keeps the model whole unless it
-  found the conflict first; L4 reads an `x-python-import` or `--external-ref-mapping` base as the generated stand-in
-  it still is then. L6 reads it over the whole ancestry: a configured base, or a base that the output imports in
-  place of a generated model (a type override, `x-python-import` or `--external-ref-mapping`, recorded with its
-  stand-in), leaves a model that has or inherits it as it is, whichever of its bases conflict. A conflict there is rejected when the module is
-  rendered (`model/msgspec.py:Struct._validate_base_layouts` through `render_module_code`). Making those facts final
+  with fewer ancestors first). A class whose layout the generator does not read may hold any slot: a configured base,
+  a model that a type override replaces (at L4, whose fields then take no slot), or a base that the output imports in
+  place of a generated model (at L6: a type override, `x-python-import` or `--external-ref-mapping`, recorded with
+  its stand-in; L4 reads an `x-python-import` or `--external-ref-mapping` base as the generated stand-in it still is
+  then). Both passes flatten only a conflict that is certain whatever such classes hold: one of its two slot owners
+  inherits from no such class (`model/msgspec.py:Struct._find_layout_conflict`); two owners that both do may share
+  the slots of those classes, and the model keeps its bases. A conflict that remains is rejected when the module is
+  rendered (`model/msgspec.py:Struct._validate_base_layouts` through `render_module_code`), which reads only the
+  configured bases as classes it does not read, and an imported base as a class without slots. Making those facts final
   earlier, as a discriminator tag plan and reuse groups computed before L5, lets the L4 flattening read plans instead
   of predictions.
 - **`--strip-default-none` constructor order** (Pydantic dataclasses, msgspec Structs): two readers answered "does the

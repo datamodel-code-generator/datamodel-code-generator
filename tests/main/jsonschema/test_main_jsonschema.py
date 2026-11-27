@@ -36230,7 +36230,11 @@ def test_msgspec_inheritance_preserve_other_backends(
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_msgspec_inheritance_preserve_mixed_opaque_layout(output_file: Path, entrypoint: str) -> None:
-    """Keep opaque ancestry conservative even after a known compact conflict."""
+    """Flatten the join whose bases conflict whatever a configured class holds, and leave a base below one as it is.
+
+    ``Payload`` flattens, as ``LeftOuter`` and ``RightInner`` conflict; ``RightOuter`` still fails to import, as only
+    the slots of its configured class, which the generator does not read, conflict with those of ``RightInner``.
+    """
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=MSGSPEC_INHERITANCE_DATA / "dry_opaque.json",
@@ -36249,6 +36253,46 @@ def test_msgspec_inheritance_preserve_mixed_opaque_layout(output_file: Path, ent
     with pytest.raises(TypeError) as error:
         _assert_python_module_importable(output_file, "generated_mixed_opaque", "Payload")
     assert_output(f"{error.value}\n", name="dry_opaque")
+
+
+def test_msgspec_inheritance_configured_base_modular(output_dir: Path) -> None:
+    """Flatten a join of another module's bases that conflict below a configured class, changing only its module."""
+    import msgspec
+
+    run_main_and_assert(
+        input_path=MSGSPEC_INHERITANCE_DATA / "configured_base_modular",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--disable-timestamp",
+            "--base-class-map",
+            '{"J": "msgspec.inspect.Type"}',
+        ],
+    )
+    with _generated_package_module(output_dir, "payload") as module:
+        assert_output(json.dumps(msgspec.to_builtins(msgspec.convert({"j": 1, "k": 2}, type=module.Payload))) + "\n")
+        with pytest.raises(msgspec.ValidationError):
+            msgspec.convert({"j": "s"}, type=module.Payload)
+
+
+def test_msgspec_inheritance_configured_base_preset() -> None:
+    """Flatten a join whose bases conflict below a configured class under a dated preset."""
+    run_main_and_assert(
+        input_path=MSGSPEC_INHERITANCE_DATA / "jsonschema_configured_parent_defaults.json",
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--disable-timestamp",
+            "--preset",
+            "standard-py310-20261125",
+            "--base-class-map",
+            '{"J": "msgspec.inspect.Type"}',
+        ],
+        force_exec_validation=True,
+    )
 
 
 _EXPORT_CASES = [

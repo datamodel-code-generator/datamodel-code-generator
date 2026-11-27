@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "J": {
+      "type": "object",
+      "properties": {
+        "j": {
+          "type": "integer"
+        }
+      }
+    },
+    "K": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
