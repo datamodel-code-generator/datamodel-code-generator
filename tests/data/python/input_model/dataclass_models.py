@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import FrozenSet, Set
+from typing import Callable, FrozenSet, Set, Union
 
 
 @dataclass
@@ -23,6 +23,14 @@ class DataclassWithPythonTypes:
     frozen_tags: FrozenSet[int]
     metadata: Mapping[str, int]
     items: Sequence[str]
+
+
+@dataclass
+class Settings:
+    """Dataclass with a union branch and a ``type[X]`` field that JSON Schema cannot express."""
+
+    retries: Union[int, Callable]
+    kind: type[int]
 
 
 default_user = User(name="Alice", age=30)

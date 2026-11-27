@@ -24,7 +24,9 @@ What other options should I use?
 - `--input-file-type`: Specify the input file type for code generation.
 - `--input-model`: Import a Python type or dict schema from a module or Python file.
 - `--input-model-ref-strategy`: Strategy for referenced types when using --input-model.
+- `--keep-typed-input-model-root-python-types`: Write a dataclass or TypedDict root with the Python types of a P...
 - `--no-ignore-ref-siblings-by-schema-version`
+- `--no-keep-typed-input-model-root-python-types`
 - `--no-read-dynamic-anchors-in-document-order`
 - `--no-read-escaped-ref-pointers`
 - `--no-read-ids-with-empty-fragment`
@@ -260,6 +262,7 @@ What other options should I use?
 - `--keep-enum-literal-aliases`: Keep a named enum written as a Literal type alias named under collapse.
 - `--keep-false-dataclass-arguments`: Write every dataclass decorator argument set to false.
 - `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
+- `--keep-inherited-dataclass-config`: Keep the config items of the first base in a Pydantic dataclass with a co...
 - `--keep-model-order`: Keep generated model order deterministic while respecting dependency constraints.
 - `--keep-null-of-nullable-items`: Write the null that `nullable: true` declares on an array item, a tuple item ...
 - `--keep-reference-null-on-collapsed-root-models`: Keep the null of a root model that admits null where `--coll...
@@ -288,6 +291,7 @@ What other options should I use?
 - `--no-keep-enum-literal-aliases`
 - `--no-keep-false-dataclass-arguments`
 - `--no-keep-field-defaults-off-branch-roots`
+- `--no-keep-inherited-dataclass-config`
 - `--no-keep-null-of-nullable-items`
 - `--no-keep-reference-null-on-collapsed-root-models`
 - `--no-keep-reference-null-on-merged-models`
@@ -606,6 +610,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         etc.), regenerate same-family. 'reuse-all': Reuse all
                         referenced types via import. If not specified,
                         defaults to regenerate-all behavior.
+  --keep-typed-input-model-root-python-types, --no-keep-typed-input-model-root-python-types
+                        With --input-model, give a dataclass or TypedDict root
+                        the Python types of a Pydantic model root: a union
+                        keeps the branches Pydantic's standard JSON Schema
+                        drops, such as `Callable` in `int | Callable`, and a
+                        `type[X]` field keeps its Python type; without it such
+                        a root keeps the forms that standard JSON Schema
+                        spells (`int`, `Any`)
   --locked              Require an existing remote lock and validate each
                         fetched resource against it (experimental).
   --lockfile LOCKFILE   Select the remote reference integrity lock file
@@ -621,7 +633,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --output OUTPUT       Output file (default: stdout)
   --output-model-type {pydantic_v2.BaseModel,pydantic_v2.dataclass,dataclasses.dataclass,typing.TypedDict,msgspec.Struct}
                         Output model type (default: pydantic_v2.BaseModel)
-  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017,standard-py310-20261027,standard-py311-20261027,standard-py312-20261027,standard-py313-20261027,standard-py314-20261027,standard-py315-20261027,practical-py310-20261027,practical-py311-20261027,practical-py312-20261027,practical-py313-20261027,practical-py314-20261027,practical-py315-20261027,standard-py310-20261104,standard-py311-20261104,standard-py312-20261104,standard-py313-20261104,standard-py314-20261104,standard-py315-20261104,practical-py310-20261104,practical-py311-20261104,practical-py312-20261104,practical-py313-20261104,practical-py314-20261104,practical-py315-20261104,standard-py310-20261106,standard-py311-20261106,standard-py312-20261106,standard-py313-20261106,standard-py314-20261106,standard-py315-20261106,practical-py310-20261106,practical-py311-20261106,practical-py312-20261106,practical-py313-20261106,practical-py314-20261106,practical-py315-20261106,standard-py310-20261111,standard-py311-20261111,standard-py312-20261111,standard-py313-20261111,standard-py314-20261111,standard-py315-20261111,practical-py310-20261111,practical-py311-20261111,practical-py312-20261111,practical-py313-20261111,practical-py314-20261111,practical-py315-20261111,standard-py310-20261112,standard-py311-20261112,standard-py312-20261112,standard-py313-20261112,standard-py314-20261112,standard-py315-20261112,practical-py310-20261112,practical-py311-20261112,practical-py312-20261112,practical-py313-20261112,practical-py314-20261112,practical-py315-20261112,standard-py310-20261113,standard-py311-20261113,standard-py312-20261113,standard-py313-20261113,standard-py314-20261113,standard-py315-20261113,practical-py310-20261113,practical-py311-20261113,practical-py312-20261113,practical-py313-20261113,practical-py314-20261113,practical-py315-20261113,standard-py310-20261118,standard-py311-20261118,standard-py312-20261118,standard-py313-20261118,standard-py314-20261118,standard-py315-20261118,practical-py310-20261118,practical-py311-20261118,practical-py312-20261118,practical-py313-20261118,practical-py314-20261118,practical-py315-20261118,standard-py310-20261120,standard-py311-20261120,standard-py312-20261120,standard-py313-20261120,standard-py314-20261120,standard-py315-20261120,practical-py310-20261120,practical-py311-20261120,practical-py312-20261120,practical-py313-20261120,practical-py314-20261120,practical-py315-20261120,standard-py310-20261123,standard-py311-20261123,standard-py312-20261123,standard-py313-20261123,standard-py314-20261123,standard-py315-20261123,practical-py310-20261123,practical-py311-20261123,practical-py312-20261123,practical-py313-20261123,practical-py314-20261123,practical-py315-20261123,standard-py310-20261124,standard-py311-20261124,standard-py312-20261124,standard-py313-20261124,standard-py314-20261124,standard-py315-20261124,practical-py310-20261124,practical-py311-20261124,practical-py312-20261124,practical-py313-20261124,practical-py314-20261124,practical-py315-20261124,standard-py310-20261125,standard-py311-20261125,standard-py312-20261125,standard-py313-20261125,standard-py314-20261125,standard-py315-20261125,practical-py310-20261125,practical-py311-20261125,practical-py312-20261125,practical-py313-20261125,practical-py314-20261125,practical-py315-20261125}
+  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017,standard-py310-20261027,standard-py311-20261027,standard-py312-20261027,standard-py313-20261027,standard-py314-20261027,standard-py315-20261027,practical-py310-20261027,practical-py311-20261027,practical-py312-20261027,practical-py313-20261027,practical-py314-20261027,practical-py315-20261027,standard-py310-20261104,standard-py311-20261104,standard-py312-20261104,standard-py313-20261104,standard-py314-20261104,standard-py315-20261104,practical-py310-20261104,practical-py311-20261104,practical-py312-20261104,practical-py313-20261104,practical-py314-20261104,practical-py315-20261104,standard-py310-20261106,standard-py311-20261106,standard-py312-20261106,standard-py313-20261106,standard-py314-20261106,standard-py315-20261106,practical-py310-20261106,practical-py311-20261106,practical-py312-20261106,practical-py313-20261106,practical-py314-20261106,practical-py315-20261106,standard-py310-20261111,standard-py311-20261111,standard-py312-20261111,standard-py313-20261111,standard-py314-20261111,standard-py315-20261111,practical-py310-20261111,practical-py311-20261111,practical-py312-20261111,practical-py313-20261111,practical-py314-20261111,practical-py315-20261111,standard-py310-20261112,standard-py311-20261112,standard-py312-20261112,standard-py313-20261112,standard-py314-20261112,standard-py315-20261112,practical-py310-20261112,practical-py311-20261112,practical-py312-20261112,practical-py313-20261112,practical-py314-20261112,practical-py315-20261112,standard-py310-20261113,standard-py311-20261113,standard-py312-20261113,standard-py313-20261113,standard-py314-20261113,standard-py315-20261113,practical-py310-20261113,practical-py311-20261113,practical-py312-20261113,practical-py313-20261113,practical-py314-20261113,practical-py315-20261113,standard-py310-20261118,standard-py311-20261118,standard-py312-20261118,standard-py313-20261118,standard-py314-20261118,standard-py315-20261118,practical-py310-20261118,practical-py311-20261118,practical-py312-20261118,practical-py313-20261118,practical-py314-20261118,practical-py315-20261118,standard-py310-20261120,standard-py311-20261120,standard-py312-20261120,standard-py313-20261120,standard-py314-20261120,standard-py315-20261120,practical-py310-20261120,practical-py311-20261120,practical-py312-20261120,practical-py313-20261120,practical-py314-20261120,practical-py315-20261120,standard-py310-20261123,standard-py311-20261123,standard-py312-20261123,standard-py313-20261123,standard-py314-20261123,standard-py315-20261123,practical-py310-20261123,practical-py311-20261123,practical-py312-20261123,practical-py313-20261123,practical-py314-20261123,practical-py315-20261123,standard-py310-20261124,standard-py311-20261124,standard-py312-20261124,standard-py313-20261124,standard-py314-20261124,standard-py315-20261124,practical-py310-20261124,practical-py311-20261124,practical-py312-20261124,practical-py313-20261124,practical-py314-20261124,practical-py315-20261124,standard-py310-20261125,standard-py311-20261125,standard-py312-20261125,standard-py313-20261125,standard-py314-20261125,standard-py315-20261125,practical-py310-20261125,practical-py311-20261125,practical-py312-20261125,practical-py313-20261125,practical-py314-20261125,practical-py315-20261125,standard-py310-20261127,standard-py311-20261127,standard-py312-20261127,standard-py313-20261127,standard-py314-20261127,standard-py315-20261127,practical-py310-20261127,practical-py311-20261127,practical-py312-20261127,practical-py313-20261127,practical-py314-20261127,practical-py315-20261127}
                         Apply an immutable built-in option preset. Preset
                         names include the target Python version so generated
                         syntax is pinned.
@@ -1730,6 +1742,26 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         false}', so the dataclass compares by identity as
                         asked; without it an argument set to false is left out
                         and takes its default (eq=True), as in 0.89.0
+  --keep-inherited-dataclass-config, --no-keep-inherited-dataclass-config
+                        pydantic_v2.dataclass output only: a dataclass that
+                        writes a config of its own also writes the items of
+                        the config its first dataclass base applies that it
+                        does not set itself, such as extra='forbid'
+                        (`ConfigDict(extra='forbid', populate_by_name=True)`),
+                        as a Pydantic model merges the config of every base.
+                        Pydantic applies only the config a dataclass names, so
+                        without it such a dataclass stops applying the config
+                        of its base, as in 0.103.0, and accepts the extra keys
+                        the base rejects. The kept items can select the
+                        python-re regex engine of the base for the dataclass's
+                        own patterns too: a `$` then also accepts a trailing
+                        newline, and a pattern Python's re rejects is left out
+                        with a warning. A base the dataclass builds with that
+                        engine can change too: a second base leaves out a
+                        pattern Python's re rejects, and a base with a lone
+                        surrogate in a pattern keeps the default engine. A
+                        configured base class that the generator does not read
+                        (--base-class) gives no items.
   --keep-model-order    Keep generated models' order
   --keep-reference-null-on-collapsed-root-models, --no-keep-reference-null-on-collapsed-root-models
                         Under --collapse-root-models, keep the null of a root

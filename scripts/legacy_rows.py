@@ -3593,23 +3593,27 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
-        "legacy-dataclass-own-engine-drops-taken-config",
+        "legacy-dataclass-own-config-drops-taken-config",
         (
-            "a `pydantic_v2.dataclass` without a config of its own that selects Python's `re` for its own patterns, "
-            "the type aliases it reaches or a lone surrogate writes a config with only `regex_engine`, so it stops "
-            "applying the config it took from its first dataclass base (`extra`, `--extra-template-data` items); the "
-            "engine the patterns of its bases select keeps those items (#7452)"
+            "a `pydantic_v2.dataclass` that writes a config of its own (an option such as "
+            "`--allow-population-by-field-name`, `--extra-template-data`, or `regex_engine` that its own patterns, "
+            "the type aliases it reaches or a lone surrogate select) writes only its own items, so it stops applying "
+            "the config of its first dataclass base (`extra`, `--extra-template-data` items); the engine the patterns "
+            "of its bases select keeps those items of a dataclass without a config of its own (#7452)"
         ),
         fix=7497,
         witness=(
             "--input",
-            "tests/data/jsonschema/root_alias_constraints/lookaround.json",
+            "tests/data/openapi/inherited_dataclass_config/schema.yaml",
             "--input-file-type",
-            "jsonschema",
+            "openapi",
+            "--output-model-type",
+            "pydantic_v2.dataclass",
             "--disable-timestamp",
             "--formatters",
             "builtin",
         ),
+        option="--keep-inherited-dataclass-config",
     ),
     LegacyRow(
         "legacy-custom-type-config-at-init",
@@ -4262,6 +4266,25 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         ),
     ),
     LegacyRow(
+        "legacy-typed-root-standard-schema",
+        (
+            "without `--keep-typed-input-model-root-python-types`, a dataclass or TypedDict root of an input model is "
+            "written as the JSON Schema of Pydantic's standard generator spells it, which drops the `Callable` branch "
+            "of a union (`int \\| Callable` is `int`, and `int \\| str` on the reuse path) and writes "
+            "`type[X]` as `Any`, where a Pydantic model root keeps "
+            "both (`input_model.py:_model_schema_with_python_types`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input-model",
+            "tests.data.python.input_model.dataclass_models:Settings",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--keep-typed-input-model-root-python-types",
+    ),
+    LegacyRow(
         "legacy-str-subclass-host-repr",
         (
             "`represent_python_value` writes a `str` subclass that keeps the `repr()` of `str` (a `$ref` value that "
@@ -4434,7 +4457,7 @@ UNTESTED: Final[frozenset[str]] = frozenset({
     "legacy-cycle-walk-reads-values-whole",
     "legacy-dataclass-follows-every-reference",
     "legacy-dataclass-overwrites-engine",
-    "legacy-dataclass-own-engine-drops-taken-config",
+    "legacy-dataclass-own-config-drops-taken-config",
     "legacy-decide-in-union-module",
     "legacy-dedup-before-strip",
     "legacy-dedup-keys-without-unique-items",
@@ -4513,6 +4536,7 @@ UNTESTED: Final[frozenset[str]] = frozenset({
     "legacy-struct-hash-last-base-first",
     "legacy-tag-from-earlier-union",
     "legacy-tree-scope",
+    "legacy-typed-root-standard-schema",
     "legacy-undeclared-keywords-off-literal",
     "legacy-unique-items-decided-before-collapse",
     "legacy-unique-sets-level-order",

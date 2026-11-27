@@ -1,0 +1,40 @@
+[[change]]
+id = "generic-base-class-leaves-out-dataclass-config-warning"
+category = "notice"
+kind = "warning"
+action = "warn"
+title = "A pydantic dataclass run with --use-generic-base-class warns about the model configuration it leaves out"
+summary = "--use-generic-base-class writes the run's model configuration (--extra-fields, --allow-extra-fields, --allow-population-by-field-name, --use-attribute-docstrings, a preset that sets one of them) on a shared base class. pydantic_v2.dataclass has no such base class and writes the configuration on each class, so with the flag it wrote none of it. The run now warns, naming the ConfigDict items left out; the generated modules are unchanged. Run without --use-generic-base-class to write the items on each class, or turn warnings into errors with -W error to find such runs."
+refs = ["#7588", "#7549"]
+source = "release-note"
+covers = [
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[attr-docstrings].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[base-model-extra-forbid].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[enum-only-extra-forbid].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-allow].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-forbid].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-ignore].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[forbid-and-populate].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[forbid-msgspec-forbid-unknown-fields].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[frozen].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[inheritance-extra-forbid].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[own-config-extra-forbid].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[populate-by-name].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[preset].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[target-pydantic-version-only].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[typed-dict-extra-forbid].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[validate-by-name-2.11].warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass_extra_template_data.warnings.txt",
+    "main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass_package.warnings.txt",
+]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/extra_fields.json",
+    "tests/data/jsonschema/use_generic_base_class_simple.json",
+    "tests/data/jsonschema/use_generic_base_class_with_inheritance.json",
+]
+backends = ["pydantic_v2.dataclass"]
+options = [["--use-generic-base-class", "--extra-fields", "forbid"]]
+match = "--use-generic-base-class writes no base class"

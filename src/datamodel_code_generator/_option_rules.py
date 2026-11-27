@@ -255,6 +255,13 @@ OPTION_RELATIONS: Final[tuple[OptionRelation, ...]] = (
         ),
         text="union_mode is only supported for pydantic_v2.BaseModel",
     ),
+    OptionRelation(
+        ("--use-generic-base-class", "requires", "--output-model-type"),
+        "`--use-generic-base-class` writes the run's model configuration (`--extra-fields`, "
+        "`--allow-population-by-field-name`, ...) on a shared base class only for `pydantic_v2.BaseModel` and "
+        "`msgspec.Struct`; `pydantic_v2.dataclass` leaves it out of every class and warns.",
+        "pydantic_v2.BaseModel or msgspec.Struct",
+    ),
 )
 """The relations between options, each stated once for the CLI reference and for the run that checks it."""
 

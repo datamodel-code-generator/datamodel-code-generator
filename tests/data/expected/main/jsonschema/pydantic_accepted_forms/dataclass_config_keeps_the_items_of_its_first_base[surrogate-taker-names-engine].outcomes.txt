@@ -1,0 +1,10 @@
+default
+Marked
+replacements: string_pattern_mismatch
+Tailed
+newline: valid
+option
+Marked
+replacements: string_pattern_mismatch
+Tailed
+newline: valid

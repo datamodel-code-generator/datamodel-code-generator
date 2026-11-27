@@ -1,0 +1,9 @@
+[[change]]
+id = "fix-7549-where"
+category = "internal"
+title = "scripts.where names the new decision row of the generic base class configuration"
+summary = "The where tool's answer for a pass lists the decision row this change adds; no package output changes."
+refs = ["#7549"]
+covers = [
+    "where_script/where_answers[pass].txt",
+]

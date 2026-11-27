@@ -140,6 +140,7 @@ from datamodel_code_generator.model.base import (
     _build_for_target,
     _class_body_fields,
     _has_root_field_constraints,
+    _keep_inherited_dataclass_config,
     _model_of_reference,
     _model_package_class,
     _set_nested_model_default_factory_order,
@@ -1301,6 +1302,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.data_model_type.configure_dataclass_arguments(
             self.extra_template_data, keep_false_dataclass_arguments=config.keep_false_dataclass_arguments
         )
+        if config.keep_inherited_dataclass_config:
+            _keep_inherited_dataclass_config(self.extra_template_data)
 
         self.use_generic_base_class: bool = config.use_generic_base_class
         self.keep_bases_beside_generic_base_class: bool = config.keep_bases_beside_generic_base_class

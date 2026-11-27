@@ -3102,6 +3102,17 @@ CELLS_CASES: dict[str, CellsCase] = {
         }
         | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/note.py",)),
     ),
+    "pass: output-text with an added stored package": CellsCase(
+        "pass",
+        "output-text, added package",
+        COMMENT_PLAIN
+        | {
+            "tests/main/test_models.refs": _cells_refs(CELLS_REFS | {"test_note": ["\tmain/jsonschema/note/"]}),
+            f"{CELLS_EXPECTED}/main/jsonschema/note/__init__.py": "",
+            f"{CELLS_EXPECTED}/main/jsonschema/note/model.py": CELLS_MODULE.format("int  # note"),
+        }
+        | _record("plain-note", "output-text", _cells("plain.json"), covers=("main/jsonschema/note/",)),
+    ),
     "pass: options * covers the preset cells": CellsCase(
         "pass",
         "options * covers the preset cells",
@@ -4803,7 +4814,7 @@ def test_judge(case: str) -> None:
 
 def test_write_tree_writes_back_the_bytes_an_output_was_read_with(tmp_path: Path) -> None:
     """Write a byte that an output tree holds as a lone surrogate back as that byte (the nightly tier crashed on it)."""
-    raw = b'PATTERN = "\x8f"\n'
+    raw = b'PATTERN = "\x8f"'  # no newline: text mode writes the platform's newline
     text = raw.decode("utf-8", errors="surrogateescape")
     behaviour_diff._write_tree({"model.py": text}, tmp_path)
     assert_output(repr((tmp_path / "model.py").read_bytes()), name="written")

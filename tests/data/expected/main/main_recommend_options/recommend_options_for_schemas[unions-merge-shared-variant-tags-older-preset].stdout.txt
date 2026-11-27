@@ -30,7 +30,7 @@ Add (1 option)
       decodes its own tag
 
 Your configuration
-  --preset standard-py314-20261027: a newer preset is available, standard-py314-20261125
+  --preset standard-py314-20261027: a newer preset is available, standard-py314-20261127
 
 Notes
   - The rules were calibrated on the 20261017 presets.

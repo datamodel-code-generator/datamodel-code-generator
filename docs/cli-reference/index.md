@@ -8,10 +8,10 @@ This documentation is auto-generated from test cases.
 
 | Category | Options | Description |
 |----------|---------|-------------|
-| 📁 [Base Options](base-options.md) | 24 | Input/output configuration |
+| 📁 [Base Options](base-options.md) | 25 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 68 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 47 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 78 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 79 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -25,7 +25,7 @@ Use these pages when you know the workflow area but not the exact option name.
 
 | Topic | Options | Groups |
 |-------|---------|--------|
-| [Model Customization](topics/model-customization.md) | 37 | Model Naming, Model Reuse, Model Shape, Root Model |
+| [Model Customization](topics/model-customization.md) | 38 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 44 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
@@ -51,6 +51,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming) | Implies | Always | [`--naming-strategy`](model-customization.md#naming-strategy) = `parent-prefixed` | - |
 | [`--reuse-scope`](model-customization.md#reuse-scope) | Requires | `--reuse-scope` = `tree` | [`--reuse-model`](model-customization.md#reuse-model) enabled | `--reuse-scope=tree` has no effect without `--reuse-model`. |
 | [`--union-mode`](model-customization.md#union-mode) | Requires | Always | [`--output-model-type`](model-customization.md#output-model-type) = `pydantic_v2.BaseModel` | `--union-mode` is only supported for `--output-model-type pydantic_v2.BaseModel`. |
+| [`--use-generic-base-class`](model-customization.md#use-generic-base-class) | Requires | Always | [`--output-model-type`](model-customization.md#output-model-type) = `pydantic_v2.BaseModel or msgspec.Struct` | `--use-generic-base-class` writes the run's model configuration (`--extra-fields`, `--allow-population-by-field-name`, ...) on a shared base class only for `pydantic_v2.BaseModel` and `msgspec.Struct`; `pydantic_v2.dataclass` leaves it out of every class and warns. |
 | [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) | Implies | Always | [`--target-pydantic-version`](model-customization.md#target-pydantic-version) = `2.12` | - |
 | [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) | Requires | Always | [`--output-model-type`](model-customization.md#output-model-type) | `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`. |
 | [`--custom-file-header`](template-customization.md#custom-file-header) | Conflicts | Always | [`--custom-file-header-path`](template-customization.md#custom-file-header-path) | `--custom-file-header` can not be used with `--custom-file-header-path`. |
@@ -270,6 +271,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--keep-false-dataclass-arguments`](model-customization.md#keep-false-dataclass-arguments)
 - [`--keep-field-defaults-off-branch-roots`](model-customization.md#keep-field-defaults-off-branch-roots)
 - [`--keep-first-character-of-path-keys`](openapi-only-options.md#keep-first-character-of-path-keys)
+- [`--keep-inherited-dataclass-config`](model-customization.md#keep-inherited-dataclass-config)
 - [`--keep-model-order`](model-customization.md#keep-model-order)
 - [`--keep-null-of-nullable-items`](model-customization.md#keep-null-of-nullable-items)
 - [`--keep-reference-null-on-collapsed-root-models`](model-customization.md#keep-reference-null-on-collapsed-root-models)
@@ -277,6 +279,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--keep-self-referencing-array-items`](model-customization.md#keep-self-referencing-array-items)
 - [`--keep-shared-members-on-collapsed-root-models`](model-customization.md#keep-shared-members-on-collapsed-root-models)
 - [`--keep-string-keywords-beside-formats`](field-customization.md#keep-string-keywords-beside-formats)
+- [`--keep-typed-input-model-root-python-types`](base-options.md#keep-typed-input-model-root-python-types)
 - [`--keyword-only`](model-customization.md#keyword-only)
 
 ### L {#l}

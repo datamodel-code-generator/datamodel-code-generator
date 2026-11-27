@@ -537,6 +537,24 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "of a field already imports instead of writing an unused copy of it; without it reuse descends through "
         "Pydantic models only and such a copy is written (ItemModel beside Mapping[str, Item]), as in 0.89.0",
     ),
+    toggle(
+        Section.BASE,
+        "--keep-typed-input-model-root-python-types",
+        help="With --input-model, give a dataclass or TypedDict root the Python types of a Pydantic model root: a "
+        "union keeps the branches Pydantic's standard JSON Schema drops, such as `Callable` in `int | Callable`, and "
+        "a `type[X]` field keeps its Python type; without it such a root keeps the forms that standard JSON Schema "
+        "spells (`int`, `Any`)",
+        preset=PresetJoin(
+            "20261127",
+            {"keep_typed_input_model_root_python_types": True},
+            title="Python types of typed input model roots",
+            description=(
+                "With --input-model, give a dataclass or TypedDict root the Python types of a Pydantic model root: a "
+                "union keeps the branches Pydantic's standard JSON Schema drops, such as Callable in int | Callable, "
+                "and a type[X] field keeps its Python type instead of Any."
+            ),
+        ),
+    ),
     # Customization options for generated models
     deprecated(Exclusive.EXTRA_FIELDS, "--allow-extra-fields", implies=_relations("--extra-fields", value="allow")),
     toggle(Section.MODEL, "--allow-population-by-field-name", help="Allow population by field name"),
@@ -924,6 +942,29 @@ OPTIONS: Final[tuple[Option, ...]] = (
                 "declare it, also where the TypedDict is listed before its parent in a module written first, so the "
                 "TypedDict keeps its generated bases as when the parent is listed first, and no such key is typed "
                 "None."
+            ),
+        ),
+    ),
+    toggle(
+        (Section.MODEL, _G.MODEL_SHAPE),
+        "--keep-inherited-dataclass-config",
+        help="pydantic_v2.dataclass output only: a dataclass that writes a config of its own also writes the items of "
+        "the config its first dataclass base applies that it does not set itself, such as extra='forbid' "
+        "(`ConfigDict(extra='forbid', populate_by_name=True)`), as a Pydantic model merges the config of every base. "
+        "Pydantic applies only the config a dataclass names, so without it such a dataclass stops applying the config "
+        "of its base, as in 0.103.0, and accepts the extra keys the base rejects. The kept items can select the "
+        "python-re regex engine of the base for the dataclass's own patterns too: a `$` then also accepts a trailing "
+        "newline, and a pattern Python's re rejects is left out with a warning. A base the dataclass builds with that "
+        "engine can change too: a second base leaves out a pattern Python's re rejects, and a base with a lone "
+        "surrogate in a pattern keeps the default engine. A configured base class that the generator does not read "
+        "(--base-class) gives no items.",
+        preset=PresetJoin(
+            "20261127",
+            {"keep_inherited_dataclass_config": True},
+            title="Inherited dataclass config",
+            description=(
+                "A Pydantic dataclass that writes a config of its own keeps the config items of its first dataclass "
+                "base that it does not set itself, such as extra='forbid'."
             ),
         ),
     ),

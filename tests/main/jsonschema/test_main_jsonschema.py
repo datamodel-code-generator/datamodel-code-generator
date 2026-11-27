@@ -21190,6 +21190,182 @@ def test_main_use_generic_base_class_msgspec_forbid(output_file: Path) -> None:
     )
 
 
+_GENERIC_BASE_CLASS_DATACLASS = ("--output-model-type", "pydantic_v2.dataclass", "--use-generic-base-class")
+_GENERIC_BASE_CLASS_LEFT_OUT = "--use-generic-base-class writes no base class"
+_GENERIC_BASE_CLASS_ONE_GENERATION = ("--formatters", "builtin")
+
+
+def _left_out_warnings(recwarn: pytest.WarningsRecorder) -> str:
+    """Return the warnings that name the configuration a generic base class run leaves out, one per line."""
+    return "".join(
+        f"{warning.message}\n"
+        for warning in recwarn
+        if warning.category is UserWarning and _GENERIC_BASE_CLASS_LEFT_OUT in str(warning.message)
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "options"),
+    [
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--extra-fields", "forbid", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="extra-forbid",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--extra-fields", "allow", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="extra-allow",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--extra-fields", "ignore", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="extra-ignore",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--allow-extra-fields", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="allow-extra",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--allow-population-by-field-name", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="populate-by-name",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            (
+                "--allow-population-by-field-name",
+                "--target-pydantic-version",
+                "2.11",
+                *_GENERIC_BASE_CLASS_DATACLASS,
+            ),
+            id="validate-by-name-2.11",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--use-attribute-docstrings", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="attr-docstrings",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--extra-fields", "forbid", "--allow-population-by-field-name", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="forbid-and-populate",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            (
+                "--extra-fields",
+                "forbid",
+                "--use-msgspec-forbid-unknown-fields",
+                *_GENERIC_BASE_CLASS_DATACLASS,
+            ),
+            id="forbid-msgspec-forbid-unknown-fields",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--enable-faux-immutability", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="frozen",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--target-pydantic-version", "2.11", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="target-pydantic-version-only",
+        ),
+        pytest.param(
+            "extra_fields.json",
+            ("--extra-fields", "forbid", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="own-config-extra-forbid",
+        ),
+        pytest.param(
+            "use_generic_base_class_with_inheritance.json",
+            ("--extra-fields", "forbid", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="inheritance-extra-forbid",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--preset", "practical-py314-20261027", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="preset",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--extra-fields", "forbid", "--output-model-type", "typing.TypedDict", "--use-generic-base-class"),
+            id="typed-dict-extra-forbid",
+        ),
+        pytest.param(
+            "use_generic_base_class_simple.json",
+            ("--extra-fields", "forbid", "--output-model-type", "pydantic_v2.BaseModel", "--use-generic-base-class"),
+            id="base-model-extra-forbid",
+        ),
+        pytest.param(
+            "use_generic_base_class_enum_only.json",
+            ("--extra-fields", "forbid", *_GENERIC_BASE_CLASS_DATACLASS),
+            id="enum-only-extra-forbid",
+        ),
+    ],
+)
+def test_main_use_generic_base_class_pydantic_dataclass(
+    output_file: Path, recwarn: pytest.WarningsRecorder, input_name: str, options: tuple[str, ...]
+) -> None:
+    """Warn that --use-generic-base-class leaves out the configuration a pydantic dataclass writes on each class.
+
+    The dataclass has no base class to carry the run's configuration, so the module is the one written before; the
+    warning names the items the run without the flag writes. A type that writes none of the run's configuration
+    (TypedDict, frozen, a bare target version), one with a base class, and an output without a target model stay
+    silent. The run names the built-in formatter, so the test harness does not generate a second time to compare
+    formatters: that run would record the warning again.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=(*_GENERIC_BASE_CLASS_ONE_GENERATION, *options),
+    )
+    assert_output(_left_out_warnings(recwarn), name="warnings")
+
+
+def test_main_use_generic_base_class_pydantic_dataclass_extra_template_data(
+    output_file: Path, recwarn: pytest.WarningsRecorder
+) -> None:
+    """Name only the run-level item in the warning: the config of --extra-template-data stays on the dataclass."""
+    extra_template_data = output_file.with_name("extra_template_data.json")
+    extra_template_data.write_text(json.dumps({"#all#": {"config": {"str_strip_whitespace": True}}}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_simple.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *_GENERIC_BASE_CLASS_ONE_GENERATION,
+            "--extra-template-data",
+            str(extra_template_data),
+            "--extra-fields",
+            "forbid",
+            *_GENERIC_BASE_CLASS_DATACLASS,
+        ],
+    )
+    assert_output(_left_out_warnings(recwarn), name="warnings")
+
+
+def test_main_use_generic_base_class_pydantic_dataclass_package(
+    output_dir: Path, recwarn: pytest.WarningsRecorder
+) -> None:
+    """Warn once for a package output: no module gets the configuration and every module is the one written before."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_with_inheritance.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            *_GENERIC_BASE_CLASS_ONE_GENERATION,
+            "--extra-fields",
+            "forbid",
+            *_GENERIC_BASE_CLASS_DATACLASS,
+            "--module-split-mode",
+            "single",
+        ],
+    )
+    assert_output(_left_out_warnings(recwarn), name="warnings")
+
+
 def test_main_jsonschema_same_name_objects(output_file: Path) -> None:
     """Test objects with same name (see issue #2460)."""
     run_main_and_assert(

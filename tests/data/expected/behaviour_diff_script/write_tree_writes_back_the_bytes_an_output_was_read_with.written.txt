@@ -1,1 +1,1 @@
-b'PATTERN = "\x8f"\n'
+b'PATTERN = "\x8f"'

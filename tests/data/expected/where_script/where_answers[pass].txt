@@ -9,8 +9,9 @@ pass apply_generic_base_class
     src/datamodel_code_generator/parser/_passes/cross_module.py:<line> function apply_generic_base_class - Add the configured generic base class to the first ro...
   users (1):
     src/datamodel_code_generator/parser/_passes/_tables.py: <module>
-  decision rows that cite it (1):
+  decision rows that cite it (2):
     row: which modules import each other before the imports are planned, and which of their import cycles ... [Placement Guide]
+    row: which class carries the run-level model configuration (`--extra-fields`, `--allow-population-by-f... [Placement Guide]
   case notes (2):
     #4834 (set and list models merged): L3 deduplication (`delete_duplicate_models` with `--collapse-reuse-models`, `reuse_model_tr...
     #4828 (`default: {}` that leaves out required fields): today `set_validate_default_on_fields` decides per module in L5 that suc...

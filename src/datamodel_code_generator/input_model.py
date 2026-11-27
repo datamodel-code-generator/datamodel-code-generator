@@ -165,6 +165,8 @@ def _cwd_import_scope(cwd_entry: str) -> Generator[None]:
 
 _READ_DATACLASS_FIELDS_BY_ALIAS: ContextVar[bool] = ContextVar("_READ_DATACLASS_FIELDS_BY_ALIAS", default=False)
 """Whether a load reads the fields of a Pydantic dataclass, as a model's, by the names of their properties."""
+_KEEP_TYPED_ROOT_PYTHON_TYPES: ContextVar[bool] = ContextVar("_KEEP_TYPED_ROOT_PYTHON_TYPES", default=False)
+"""Whether a load writes a dataclass or TypedDict root as a Pydantic model root, with its Python types kept."""
 _IMPORTED_TYPES: ContextVar[set[type] | None] = ContextVar("_IMPORTED_TYPES", default=None)
 """The classes the Python types of fields name by their import, collected under --reuse-every-reached-input-model-type.
 
@@ -181,12 +183,14 @@ def _load_model_schema_isolated(
     *,
     read_dataclass_fields_by_alias: bool = False,
     reuse_every_reached_type: bool = False,
+    keep_typed_root_python_types: bool = False,
 ) -> dict[str, object]:
     """Load a schema while restoring cwd-local import state afterwards."""
     with (
         PROCESS_STATE_LOCK,
         context_values({
             _READ_DATACLASS_FIELDS_BY_ALIAS: read_dataclass_fields_by_alias,
+            _KEEP_TYPED_ROOT_PYTHON_TYPES: keep_typed_root_python_types,
             _IMPORTED_TYPES: set() if reuse_every_reached_type else None,
         }),
     ):
@@ -1568,8 +1572,10 @@ def _model_schema_with_python_types(
     on the reuse path (``generic_definitions``), which keeps the forms it was released with
     (``_add_python_type_for_unserializable``). Any other dataclass or TypedDict takes Pydantic's standard generator, as
     released, and only a root that generator cannot write, which never generated, takes ``schema_generator``: the
-    generation of a Pydantic model. The result names the definitions Pydantic merged from distinct types in the
-    generation that wrote the schema.
+    generation of a Pydantic model (row legacy-typed-root-standard-schema). Under
+    ``--keep-typed-input-model-root-python-types`` (``_KEEP_TYPED_ROOT_PYTHON_TYPES``) every dataclass or TypedDict
+    root takes ``schema_generator`` and keeps the Python types of a Pydantic model root on either path. The result
+    names the definitions Pydantic merged from distinct types in the generation that wrote the schema.
     """
     if _model_class(model):
         write_schema = model.model_json_schema
@@ -1578,7 +1584,8 @@ def _model_schema_with_python_types(
 
         write_schema = TypeAdapter(model).json_schema
     generator, schema = schema_generator, None
-    if generic_definitions is None and not _model_class(model):
+    released_typed_root = not _model_class(model) and not _KEEP_TYPED_ROOT_PYTHON_TYPES.get()
+    if generic_definitions is None and released_typed_root:
         standard = _get_input_model_json_schema_class(schema_types, [model], use_standard_schema=True)
         try:
             schema = write_schema(schema_generator=standard)
@@ -1592,7 +1599,7 @@ def _model_schema_with_python_types(
             model,
             schema_types,
             expression_collector,
-            released_typed_root_forms=generic_definitions is not None and not _model_class(model),
+            released_typed_root_forms=generic_definitions is not None and released_typed_root,
         )
     return _PythonTypedSchema(
         _add_python_type_info(
@@ -1863,6 +1870,7 @@ def _load_model_schema_with_python_type_expressions(
     *,
     read_dataclass_fields_by_alias: bool = False,
     reuse_every_reached_type: bool = False,
+    keep_typed_root_python_types: bool = False,
 ) -> LoadedInputModelSchema:
     """Load the CLI-only schema transport without rendering runtime expressions."""
     expression_collector = PythonTypeExpressionCollector()
@@ -1874,6 +1882,7 @@ def _load_model_schema_with_python_type_expressions(
         expression_collector,
         read_dataclass_fields_by_alias=read_dataclass_fields_by_alias,
         reuse_every_reached_type=reuse_every_reached_type,
+        keep_typed_root_python_types=keep_typed_root_python_types,
     )
     return expression_collector.loaded_schema(schema)
 
@@ -1891,6 +1900,7 @@ def _load_config_input_model(config: Any) -> LoadedInputModelSchema:
             config.output_model_type,
             read_dataclass_fields_by_alias=config.read_input_model_dataclass_fields_by_alias,
             reuse_every_reached_type=config.reuse_every_reached_input_model_type,
+            keep_typed_root_python_types=config.keep_typed_input_model_root_python_types,
         )
     except Error as e:
         raise GenerationError(str(e)) from e

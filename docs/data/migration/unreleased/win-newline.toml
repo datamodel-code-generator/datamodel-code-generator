@@ -1,0 +1,8 @@
+[[change]]
+id = "win-newline"
+category = "harness"
+title = "The behaviour gate's write-back test stores bytes without a newline"
+summary = "The test input no longer ends in a newline, so the stored bytes are the same on Windows, where text mode writes a carriage return; the package and the gate write the same output."
+covers = [
+    "behaviour_diff_script/write_tree_writes_back_the_bytes_an_output_was_read_with.written.txt",
+]

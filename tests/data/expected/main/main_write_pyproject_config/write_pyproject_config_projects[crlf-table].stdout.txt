@@ -3,7 +3,7 @@ Updated pyproject.toml:
   collapse-reuse-models = true
   enum-field-as-literal = "all"
   naming-strategy = "enclosing-model"
-  preset = "standard-py312-20261125"
+  preset = "standard-py312-20261127"
   reuse-model = true
   target-python-version = "3.12"
   treat-dot-as-module = false

@@ -20,6 +20,8 @@ keep-null-of-nullable-items-command-line	main/preset_opt_in_options/preset_optio
 keep-null-of-nullable-items-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
 keep-string-keywords-beside-formats-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-command-line].model.py
 keep-string-keywords-beside-formats-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-command-line].model.py
+keep-typed-input-model-root-python-types-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-typed-input-model-root-python-types-command-line].model.py
+keep-typed-input-model-root-python-types-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-typed-input-model-root-python-types-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-typed-input-model-root-python-types-command-line].model.py
 read-allof-parents-as-their-models-command-line	main/preset_opt_in_options/preset_option_turned_off[read-allof-parents-as-their-models-command-line].model.py
 read-allof-parents-as-their-models-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-allof-parents-as-their-models-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[read-allof-parents-as-their-models-command-line].model.py
 read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].model.py
@@ -115,6 +117,8 @@ keep-field-defaults-off-branch-roots-practical	main/preset_opt_in_options/preset
 keep-field-defaults-off-branch-roots-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].model.py
 keep-first-character-of-path-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].model.py
 keep-first-character-of-path-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].model.py
+keep-inherited-dataclass-config-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-inherited-dataclass-config-practical].tree/
+keep-inherited-dataclass-config-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-inherited-dataclass-config-standard].tree/	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-inherited-dataclass-config-practical].tree/
 keep-null-of-nullable-items-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-null-of-nullable-items-practical].model.py
 keep-null-of-nullable-items-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-null-of-nullable-items-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-null-of-nullable-items-practical].model.py
 keep-reference-null-on-collapsed-root-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-collapsed-root-models-practical].model.py
@@ -127,6 +131,8 @@ keep-shared-members-on-collapsed-root-models-practical	main/preset_opt_in_option
 keep-shared-members-on-collapsed-root-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-shared-members-on-collapsed-root-models-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-shared-members-on-collapsed-root-models-practical].model.py
 keep-string-keywords-beside-formats-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-string-keywords-beside-formats-practical].model.py
 keep-string-keywords-beside-formats-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-string-keywords-beside-formats-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-string-keywords-beside-formats-practical].model.py
+keep-typed-input-model-root-python-types-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-typed-input-model-root-python-types-practical].model.py
+keep-typed-input-model-root-python-types-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-typed-input-model-root-python-types-standard].model.py
 merge-message-trait-headers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-practical].model.py
 merge-message-trait-headers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-practical].model.py
 merge-shared-variant-tags-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].model.py

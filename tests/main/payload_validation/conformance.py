@@ -526,6 +526,13 @@ BACKEND_REJECTION_EXCLUDED_CASES: Final[dict[PayloadBackend, dict[str, str]]] = 
             "its data_too_large health check (9 of 29 inputs fit), which the msgspec rejection test does not suppress"
         ),
     },
+    PayloadBackend.PYDANTIC_V2_DATACLASS: {
+        **BACKEND_FULL_MATRIX_EXCLUDED_CASES[PayloadBackend.PYDANTIC_V2_DATACLASS],
+        "openapi/inherited_dataclass_config/schema.yaml::components.schemas.a.Two": (
+            "a class with two bases takes the extra of its first base, so the allOf of an open and a closed object "
+            "takes an unknown key (#7589)"
+        ),
+    },
 }
 DATACLASSES_FULL_MATRIX_EXCLUSION_REASON: Final[str] = (
     "plain dataclasses remain representative because native construction has no JSON Schema runtime validation"

@@ -1,0 +1,11 @@
+default
+Marked
+replacements: string_pattern_mismatch
+Tailed
+newline: string_pattern_mismatch
+option
+Pydantic's default regex engine reads the lone surrogate in the pattern '^a\ud800b$' as U+FFFD, so Marked accepts text the schema rejects: its config keeps that engine for the pattern r'^[a-z]+$', which Python's engine reads otherwise.
+Marked
+replacements: valid
+Tailed
+newline: string_pattern_mismatch

@@ -9813,6 +9813,47 @@ pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/main_use_frozen_field[pyda
 	main/jsonschema/main_jsonschema/main_use_generic_base_class_multi_root/
 [test_main_use_generic_base_class_populate_by_name]
 	main/jsonschema/main_jsonschema/main_use_generic_base_class_populate_by_name.py
+[test_main_use_generic_base_class_pydantic_dataclass]
+allow-extra	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+allow-extra	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].warnings.txt
+attr-docstrings	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[attr-docstrings].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+attr-docstrings	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[attr-docstrings].warnings.txt
+base-model-extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[base-model-extra-forbid].py
+base-model-extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[base-model-extra-forbid].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+enum-only-extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[enum-only-extra-forbid].py
+enum-only-extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[enum-only-extra-forbid].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+extra-allow	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-allow].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+extra-allow	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-allow].warnings.txt	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].warnings.txt
+extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-forbid].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-forbid].warnings.txt
+extra-ignore	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-ignore].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+extra-ignore	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-ignore].warnings.txt
+forbid-and-populate	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[forbid-and-populate].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+forbid-and-populate	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[forbid-and-populate].warnings.txt
+forbid-msgspec-forbid-unknown-fields	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[forbid-msgspec-forbid-unknown-fields].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+forbid-msgspec-forbid-unknown-fields	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[forbid-msgspec-forbid-unknown-fields].warnings.txt	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-forbid].warnings.txt
+frozen	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[frozen].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+frozen	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[frozen].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+inheritance-extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[inheritance-extra-forbid].py
+inheritance-extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[inheritance-extra-forbid].warnings.txt	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-forbid].warnings.txt
+own-config-extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[own-config-extra-forbid].py
+own-config-extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[own-config-extra-forbid].warnings.txt	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-forbid].warnings.txt
+populate-by-name	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[populate-by-name].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+populate-by-name	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[populate-by-name].warnings.txt
+preset	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[preset].py
+preset	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[preset].warnings.txt	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[populate-by-name].warnings.txt
+target-pydantic-version-only	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[target-pydantic-version-only].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+target-pydantic-version-only	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[target-pydantic-version-only].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+typed-dict-extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[typed-dict-extra-forbid].py
+typed-dict-extra-forbid	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[typed-dict-extra-forbid].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+validate-by-name-2.11	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[validate-by-name-2.11].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[allow-extra].py
+validate-by-name-2.11	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[validate-by-name-2.11].warnings.txt
+[test_main_use_generic_base_class_pydantic_dataclass_extra_template_data]
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass_extra_template_data.py
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass_extra_template_data.warnings.txt	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-forbid].warnings.txt
+[test_main_use_generic_base_class_pydantic_dataclass_package]
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass_package.warnings.txt	= main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass[extra-forbid].warnings.txt
+	main/jsonschema/main_jsonschema/main_use_generic_base_class_pydantic_dataclass_package/
 [test_main_use_generic_base_class_target_pydantic_v2_11_or_later]
 2.11	main/jsonschema/main_jsonschema/main_use_generic_base_class_target_pydantic_v2_11_or_later[2.11].py
 2.12	main/jsonschema/main_jsonschema/main_use_generic_base_class_target_pydantic_v2_11_or_later[2.12].py	= main/jsonschema/main_jsonschema/main_use_generic_base_class_target_pydantic_v2_11_or_later[2.11].py

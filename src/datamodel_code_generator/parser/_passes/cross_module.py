@@ -508,6 +508,20 @@ def _unbound_generic_name(name: str, bound_names: set[str]) -> str:
     return name
 
 
+def _warn_config_left_without_generic_base_class(parser: CrossModuleHost) -> None:
+    """Warn that the output type has no generic base class to carry the run-level configuration its models write."""
+    if not (left := parser.data_model_type.config_left_without_generic_base_class(parser.generic_base_class_config)):
+        return
+    items = ", ".join(f"{name}={value}" for name, value in left.items())
+    warn_as_parser_base(
+        "--use-generic-base-class writes no base class for this output model type, so its model configuration "
+        f"ConfigDict({items}) is left out of every class. "
+        "Run without --use-generic-base-class to write it on each class.",
+        UserWarning,
+        stacklevel=2,
+    )
+
+
 def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> None:
     """Add the configured generic base class to the first root module and make top-level target models inherit it.
 
@@ -547,6 +561,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     )
 
     if base_class_model is None:
+        _warn_config_left_without_generic_base_class(parser)
         return
 
     original_base_class = parser.data_model_type.BASE_CLASS

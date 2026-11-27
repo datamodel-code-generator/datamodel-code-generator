@@ -938,6 +938,11 @@ cli-TypeChild	input_model/inherited_overrides[cli-TypeChild].txt
 cli-UniqueChild	input_model/inherited_overrides[cli-UniqueChild].runtime.txt	= input_model/inherited_overrides[api-UniqueChild].runtime.txt
 cli-UniqueChild	input_model/inherited_overrides[cli-UniqueChild].schema.txt	= input_model/inherited_overrides[api-UniqueChild].schema.txt
 cli-UniqueChild	input_model/inherited_overrides[cli-UniqueChild].txt
+[test_input_model_keep_typed_input_model_root_python_types]
+no-option	input_model/keep_typed_input_model_root_python_types[no-option].txt
+option	input_model/keep_typed_input_model_root_python_types[option].txt
+preset	input_model/keep_typed_input_model_root_python_types[preset].txt
+released	input_model/keep_typed_input_model_root_python_types[released].txt	= input_model/keep_typed_input_model_root_python_types[no-option].txt
 [test_input_model_multiple_file_path_format]
 	input_model/multiple_file_path_format.txt
 [test_input_model_multiple_file_path_format_restores_sys_modules]
@@ -1153,6 +1158,29 @@ two-models-reuse-all	input_model/reuse_same_named_classes[two-models-reuse-all].
 	input_model/transport_preserves_nested_runtime_identity.txt
 [test_input_model_typed_root_callable_defaults]
 	input_model/typed_root_callable_defaults.txt
+[test_input_model_typed_root_python_types_option]
+failing-root	input_model/typed_root_python_types_option[failing-root].option.txt	= input_model/unserializable_fields_of_typed_roots[dataclass-root-pydantic_v2.BaseModel].txt
+failing-root	input_model/typed_root_python_types_option[failing-root].released.txt	= input_model/unserializable_fields_of_typed_roots[dataclass-root-pydantic_v2.BaseModel].txt
+nested-union	input_model/typed_root_python_types_option[nested-union].option.txt
+nested-union	input_model/typed_root_python_types_option[nested-union].released.txt
+reuse-all-type	input_model/typed_root_python_types_option[reuse-all-type].option.txt
+reuse-all-type	input_model/typed_root_python_types_option[reuse-all-type].released.txt	= input_model/unserializable_fields_of_typed_roots[reuse-all-type-kept].txt
+reuse-all-union	input_model/typed_root_python_types_option[reuse-all-union].option.txt
+reuse-all-union	input_model/typed_root_python_types_option[reuse-all-union].released.txt	= input_model/unserializable_fields_of_typed_roots[reuse-all-union].txt
+reuse-foreign-generic	input_model/typed_root_python_types_option[reuse-foreign-generic].option.txt
+reuse-foreign-generic	input_model/typed_root_python_types_option[reuse-foreign-generic].released.txt	= input_model/unserializable_fields_of_typed_roots[reuse-foreign-generic].txt
+type	input_model/typed_root_python_types_option[type].option.txt
+type	input_model/typed_root_python_types_option[type].released.txt
+type-and-nested-union	input_model/typed_root_python_types_option[type-and-nested-union].option.txt
+type-and-nested-union	input_model/typed_root_python_types_option[type-and-nested-union].released.txt	= input_model/unserializable_fields_of_typed_roots[working-type].txt
+union	input_model/typed_root_python_types_option[union].option.txt
+union	input_model/typed_root_python_types_option[union].released.txt	= input_model/unserializable_fields_of_typed_roots[working-union].txt
+union-dataclass	input_model/typed_root_python_types_option[union-dataclass].option.txt
+union-dataclass	input_model/typed_root_python_types_option[union-dataclass].released.txt
+union-msgspec	input_model/typed_root_python_types_option[union-msgspec].option.txt
+union-msgspec	input_model/typed_root_python_types_option[union-msgspec].released.txt
+union-typeddict	input_model/typed_root_python_types_option[union-typeddict].option.txt
+union-typeddict	input_model/typed_root_python_types_option[union-typeddict].released.txt	= input_model/unserializable_fields_of_typed_roots[working-union-typeddict].txt
 [test_input_model_typeddict]
 	input_model/typeddict.txt	= input_model/path_format.txt
 [test_input_model_union_branch_provenance]
