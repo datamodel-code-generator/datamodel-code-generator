@@ -94,8 +94,7 @@ covers = [
 [[change.cells]]
 input = [
     "tests/data/jsonschema/field_name_bindings_dataclass_bases",
-    "tests/data/jsonschema/field_name_bindings_dataclass_bases/builtin_other_module/venue.json",
-    "tests/data/jsonschema/field_name_bindings_dataclass_bases/same_module.json",
+    "tests/data/jsonschema/field_name_bindings_dataclass_bases/**",
 ]
 backends = ["pydantic_v2.dataclass"]
 options = "*"
