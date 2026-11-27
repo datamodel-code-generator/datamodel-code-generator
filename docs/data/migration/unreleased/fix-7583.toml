@@ -118,9 +118,3 @@ input = [
 ]
 backends = ["pydantic_v2.dataclass"]
 options = "*"
-
-[[change.cells]]
-input = ["payload:jsonschema/field_name_bindings_dataclass_bases/**"]
-backends = ["pydantic_v2.dataclass"]
-options = "*"
-input_file_type = "jsonschema"

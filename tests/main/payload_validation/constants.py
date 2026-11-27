@@ -1148,16 +1148,23 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadB
                 "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
                 "('at most N items after validation, not N')",
             ),
-            PayloadBackend.PYDANTIC_V2_DATACLASS: dict.fromkeys(
-                (
-                    "jsonschema/allof_map_member_counts_no_merge.json",
-                    "jsonschema/type_overrides_replace_whole_type.json",
-                    "openapi/false_all_of_values.yaml::components.schemas.Holder",
-                    "openapi/false_values.yaml::components.schemas.Holder",
+            PayloadBackend.PYDANTIC_V2_DATACLASS: {
+                **dict.fromkeys(
+                    (
+                        "jsonschema/allof_map_member_counts_no_merge.json",
+                        "jsonschema/type_overrides_replace_whole_type.json",
+                        "openapi/false_all_of_values.yaml::components.schemas.Holder",
+                        "openapi/false_values.yaml::components.schemas.Holder",
+                    ),
+                    "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
+                    "('at most N items after validation, not N')",
                 ),
-                "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
-                "('at most N items after validation, not N')",
-            ),
+                "jsonschema/field_name_bindings_dataclass_bases/class_no_redeclare.json": (
+                    "Pydantic 2.0.x evaluates the annotations of a dataclass subclass with the inherited field "
+                    "defaults in the class dict, so a class named like an inherited field is None there and the "
+                    "module fails to import without any redeclared field (#7584)"
+                ),
+            },
         },
     ),
     (
