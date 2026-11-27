@@ -1,0 +1,14 @@
+exit: 1
+src/datamodel_code_generator/naming.py:5: MUT204 rename datamodel_code_generator.model.Ref
+src/datamodel_code_generator/naming.py:9: MUT204 construct datamodel_code_generator.model.Ref
+src/datamodel_code_generator/parser/kinds.py:17: MUT204 Parser._build_array datamodel_code_generator.parser.kinds.Parser._build_default
+src/datamodel_code_generator/parser/kinds.py:17: MUT204 Parser._build_array datamodel_code_generator.parser.kinds.Parser._build_enum
+src/datamodel_code_generator/parser/kinds.py:23: MUT204 Parser._build_default datamodel_code_generator.parser.kinds.Parser._build_array
+src/datamodel_code_generator/parser/kinds.py:26: MUT204 Parser.parse_object datamodel_code_generator.parser.kinds._shared
+src/datamodel_code_generator/parser/kinds.py:38: MUT203 Parser.shortcut datamodel_code_generator.parser.kinds.Parser._TABLE
+src/datamodel_code_generator/parser/kinds.py:44: MUT203 Parser.alias datamodel_code_generator.parser.kinds.Parser._TABLE
+src/datamodel_code_generator/parser/kinds.py:56: MUT203 via_host datamodel_code_generator.parser.kinds.KindsHost._TABLE
+src/datamodel_code_generator/parser/kinds.py:56: MUT204 via_host datamodel_code_generator.parser.kinds.KindsHost._build_enum
+src/datamodel_code_generator/parser/maps.py:33: MUT204 flags datamodel_code_generator.types.DataType(is_dict=True)
+src/datamodel_code_generator/parser/maps.py:49: MUT204 subclass_map datamodel_code_generator.types.DataType(is_dict=True)
+src/datamodel_code_generator/parser/maps.py:53: MUT204 seeded_slot datamodel_code_generator.parser.maps.MapsHost._container_flags(slot="dict")

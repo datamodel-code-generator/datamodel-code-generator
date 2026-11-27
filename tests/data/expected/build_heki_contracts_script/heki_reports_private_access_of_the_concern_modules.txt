@@ -1,0 +1,9 @@
+exit: 1
+src/datamodel_code_generator/parser/_concern.py:39: MUT204 through_the_class datamodel_code_generator.parser.base.Parser._[!_]*
+src/datamodel_code_generator/parser/_concern.py:40: MUT201 through_the_class datamodel_code_generator.parser.base.Parser._[!_]*
+src/datamodel_code_generator/parser/_concern.py:41: MUT203 through_the_class datamodel_code_generator.parser.base.Parser._[!_]*
+src/datamodel_code_generator/parser/_concern.py:45: MUT201 through_a_key datamodel_code_generator.parser.base.Parser._[!_]*
+src/datamodel_code_generator/parser/_concern.py:46: MUT203 through_a_key datamodel_code_generator.parser.base.Parser._[!_]*
+src/datamodel_code_generator/parser/_concern.py:50: MUT203 through_other_protocols datamodel_code_generator.parser._concern.Counter._[!_]*
+src/datamodel_code_generator/parser/_concern.py:50: MUT203 through_other_protocols datamodel_code_generator.parser._concern.NarrowCount._[!_]*
+src/datamodel_code_generator/parser/_concern.py:54: MUT206 untyped _count

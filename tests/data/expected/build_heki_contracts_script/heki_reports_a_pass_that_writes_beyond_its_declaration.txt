@@ -1,0 +1,7 @@
+exit: 1
+src/datamodel_code_generator/parser/_passes/steps.py:12: EFF201 declared pass:after_final:DataModelFieldBase.read_only
+src/datamodel_code_generator/parser/_passes/steps.py:21: EFF201 undeclared pass:undeclared:DataModelFieldBase.read_only
+src/datamodel_code_generator/parser/_passes/steps.py:26: EFF201 keyed pass:frozen_key:DataModelFieldBase.extras["init"]
+src/datamodel_code_generator/parser/_passes/steps.py:27: EFF201 keyed pass:frozen_key:DataModelFieldBase.extras["kw_only"]
+src/datamodel_code_generator/parser/_passes/steps.py:31: EFF201 enters_phase pass:enters_phase:GenerationStore.phase
+src/datamodel_code_generator/parser/base.py:12: EFF201 Parser._process_single_module pass-glue:DataModelFieldBase.read_only
