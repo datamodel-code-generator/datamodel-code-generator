@@ -984,10 +984,11 @@ def place(
 
 
 def _write_tree(tree: dict[str, str], directory: Path) -> Path:
+    """Write an output tree back as it was read (`compare_release` reads it with ``surrogateescape``)."""
     for name, text in tree.items():
         path = directory / name
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8")
+        path.write_text(text, encoding="utf-8", errors="surrogateescape")
     return directory / "model.py" if "model.py" in tree else directory / "pkg"
 
 
