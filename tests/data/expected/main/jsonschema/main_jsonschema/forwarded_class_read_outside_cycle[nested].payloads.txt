@@ -1,0 +1,8 @@
+{"detail": {"message": "m"}}: accepted Report(detail=Detail(message='m'))
+{"detail": {"message": 1}}: rejected ValidationError
+{"detail": {"message": "m"}}: accepted Other(detail=Detail(message='m'))
+{"detail": {"message": 1}}: rejected ValidationError
+{"detail": {"message": "m"}}: accepted Leaf(detail=Detail(message='m'))
+{"detail": {"message": 1}}: rejected ValidationError
+{"count": 1, "order": {"detail": {"message": "m"}}}: accepted Warn(count=1, order=Order(detail=Detail(message='m'), warn=None))
+{"count": "x"}: rejected ValidationError

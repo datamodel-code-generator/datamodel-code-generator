@@ -3674,12 +3674,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         homes=(
             Home("parser/_passes/_import_edges.py", "relative_import_targets"),
             Home("parser/_passes/_import_edges.py", "module_import_edges"),
+            Home("parser/_passes/_import_edges.py", "init_load_edges"),
             Home("parser/_passes/_import_edges.py", "init_loads"),
             Home("parser/_passes/_import_edges.py", "_written_package"),
         ),
         core=(
-            "`parser/_passes/_import_edges.py`: `relative_import_targets`, `module_import_edges`, `init_loads`, "
-            "`_written_package`"
+            "`parser/_passes/_import_edges.py`: `relative_import_targets`, `module_import_edges`, `init_load_edges`, "
+            "`init_loads`, `_written_package`"
         ),
         adapters=(
             "every caller calls the core: the modules the written modules load "
@@ -3687,12 +3688,13 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "submodule hides), the refusal of a block written with a part Python cannot import by "
             "(`parser/_passes/imports.py:reject_unimportable_imports`), the refusal of a class named like a module "
             "below its package, unless the package loads the module first "
-            "(`parser/_passes/imports.py:reject_class_named_like_submodule`, which adds the imports of the forwarders, "
-            "and `_class_named_like_submodule`, which keeps the reading of 0.90.0 to 0.100.0 of an ancestor "
+            "(`parser/_passes/imports.py:reject_class_named_like_submodule`, and `_class_named_like_submodule`, which "
+            "reads a forwarder with the `--all-exports-scope` re-exports it does not write, row "
+            "`legacy-forwarder-export-loads`, and keeps the reading of 0.90.0 to 0.100.0 of an ancestor "
             "package's imports where the classes do not evaluate their annotations as they are defined, row "
             "`legacy-running-packages-load`), "
-            "the import of the models of a submodule from the submodule where its package loads it before its class "
-            "(`parser/_passes/imports.py:submodules_hidden_by_packages`) "
+            "the import of the models of a submodule from the submodule where its package, defining the class or "
+            "forwarding it, loads it before its class (`parser/_passes/imports.py:submodules_hidden_by_packages`) "
             "and the packages whose `__init__.py` a module writes (the aliases of `parser/_passes/imports.py` for the "
             "names a package's submodules hide)"
         ),

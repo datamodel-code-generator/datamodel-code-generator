@@ -244,7 +244,9 @@ def test_the_record_is_published_by_a_replace(monkeypatch: pytest.MonkeyPatch, t
     record = tmp_path / "record.json"
     monkeypatch.setattr(os, "replace", lambda *_: (_ for _ in ()).throw(KeyboardInterrupt))
     with contextlib.suppress(KeyboardInterrupt):
-        compare_release._generate_recorded({"record": str(record), "out": str(tmp_path), "args": []}, lambda _: 0)
+        compare_release._generate_recorded(
+            {"record": str(record), "out": str(tmp_path), "args": [], "listing": "path"}, lambda _: 0
+        )
     assert_output(repr(record.read_text(encoding="utf-8")))
 
 
@@ -286,7 +288,7 @@ def _fake_runner(tmp_path: Path, memory_mb: int, *, import_check: bool) -> compa
     (package / "__main__.py").write_text(FAKE_RECORDED_MAIN, encoding="utf-8")
     for kind in ("plain", "broken", "memory"):
         (tmp_path / f"{kind}.txt").write_text(kind, encoding="utf-8")
-    side = compare_release.Side("fake", Path(sys.executable), package.parent)
+    side = compare_release.Side("fake", Path(sys.executable), package.parent, "path")
     env = compare_release.run_environment(package.parent)
     return compare_release.Runner(side, env, import_check=import_check, timeout=60, memory_mb=memory_mb)
 
@@ -361,7 +363,7 @@ def _stand_in_outcome(tmp_path: Path, version: str, *args: str, elsewhere: str =
     (package / "_config_fields.py").write_text('OUTPUT_PATH_FIELDS = ("elsewhere",)\n', encoding="utf-8")
     (package / "arguments.py").write_text(STAND_IN_ARGUMENTS, encoding="utf-8")
     (package / "__main__.py").write_text(STAND_IN_MAIN, encoding="utf-8")
-    side = compare_release.Side(version, Path(sys.executable), package.parent)
+    side = compare_release.Side(version, Path(sys.executable), package.parent, "path")
     env = compare_release.run_environment(package.parent)
     runner = compare_release.Runner(side, env, import_check=False, timeout=60)
     (tmp := tmp_path / f"run-{version}").mkdir()
@@ -1654,7 +1656,7 @@ def _catalog_pick(
     cache = tmp_path / "cache"
     catalog_side = compare_release.resolve_base(catalog_commit, python, cache, repo)
     runner = compare_release.Runner(
-        compare_release.Side("catalog", python, catalog_side.package),
+        compare_release.Side("catalog", python, catalog_side.package, "system"),
         catalog_side.env(),
         import_check=False,
         timeout=60,
@@ -2216,8 +2218,55 @@ def test_file_maps_refuse_a_revision_the_checkout_lacks(tmp_path: Path) -> None:
     assert_output(f"{str(refused.value)[:20]}\n")
 
 
-def test_compare_release_keys_base_outputs_by_listing_order(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A directory input listed in another order does not reuse a cached base output; the same order does."""
+LISTING_MAIN = """import os
+from pathlib import Path
+
+walk = Path.rglob
+backwards = os.environ["FILE_SYSTEM_LISTS"] == "backwards"
+
+
+def listed(self, *args, **kwargs):
+    yield from sorted(walk(self, *args, **kwargs), reverse=backwards)
+
+
+Path.rglob = listed
+
+
+def main(argv):
+    root = Path(argv[argv.index("--input") + 1])
+    names = [path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()]
+    Path(argv[argv.index("--output") + 1]).write_text(" ".join(names), encoding="utf-8")
+    return 0
+"""
+"""A stand-in generator on a file system that lists directories forwards or backwards: it writes the files it lists."""
+
+
+def test_compare_release_base_lists_directory_inputs_in_path_order(tmp_path: Path) -> None:
+    """A base lists a directory input in path order on any file system; a head side keeps the file system's order."""
+    package = tmp_path / "fake" / "datamodel_code_generator"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "__main__.py").write_text(LISTING_MAIN, encoding="utf-8")
+    schemas = tmp_path / "schemas"
+    for name in ("first", "second", "third"):
+        (schemas / name).mkdir(parents=True)
+        (schemas / name / "root.json").write_text("{}", encoding="utf-8")
+    for listing, direction in (("path", "forwards"), ("path", "backwards"), ("system", "backwards")):
+        env = {**compare_release.run_environment(package.parent), "FILE_SYSTEM_LISTS": direction}
+        side = compare_release.Side("fake", Path(sys.executable), package.parent, listing)
+        runner = compare_release.Runner(side, env, import_check=False, timeout=60)
+        (run := tmp_path / f"{listing}-{direction}").mkdir()
+        try:
+            outcome = runner.generate(["--input", str(schemas)], run)
+        finally:
+            runner.close()
+        assert_output(outcome.tree.get("model.py", outcome.error) + "\n", name=listing)
+
+
+def test_compare_release_reuses_base_outputs_in_another_listing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A directory input listed in another order reuses a cached base output: the base lists it in path order."""
     schemas = tmp_path / "inputs" / "schemas"
     for name in ("first", "second"):
         (schemas / name).mkdir(parents=True)
@@ -2249,5 +2298,6 @@ def test_compare_release_keys_base_outputs_by_listing_order(tmp_path: Path, monk
                 str(schemas),
             ])
         cached = re.search(r"cached base outputs: .*", stdout.getvalue())
-        outputs.append(f"reversed={reverse}: exit={code} {cached and cached.group()}")
+        entries = len(list((tmp_path / "cache" / "outputs").rglob("*.json")))
+        outputs.append(f"reversed={reverse}: exit={code} {cached and cached.group()}, {entries} stored")
     assert_output("\n".join(outputs))

@@ -1767,7 +1767,8 @@ IMPORT_MODELS_OF_HIDDEN_SUBMODULES = PassDecl(
     ),
     summary=(
         "Imports a model of a submodule from the submodule where its package's ``__init__`` binds the submodule's name "
-        "itself, by its ``__future__`` import or a class, e.g. ``from .annotations import Item``, or where another "
+        "itself, by its ``__future__`` import or a class it defines or forwards from an import cycle merge, e.g. "
+        "``from .annotations import Item``, or where another "
         "import of the module binds the name of its module import, e.g. ``from .BaseModel import Thing`` beside "
         "``pydantic.BaseModel``, names the enum of an "
         "enum member literal through that import, e.g. ``Literal[Kind.book]``, and imports under an alias what the "
