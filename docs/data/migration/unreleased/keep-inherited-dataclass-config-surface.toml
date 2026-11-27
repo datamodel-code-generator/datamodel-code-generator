@@ -1,0 +1,6 @@
+[[change]]
+id = "keep-inherited-dataclass-config-surface"
+extends = "keep-inherited-dataclass-config"
+covers = [
+    "parser/builtin_formatter_contract/generated_formatter_parser_config_contract.txt",
+]

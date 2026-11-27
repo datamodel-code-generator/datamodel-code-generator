@@ -49,6 +49,7 @@ from datamodel_code_generator.model.pydantic_v2.base_model import (
     _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
     _built_bases,
     _config_dict_items,
+    _ConfigValueT,
     _merged_config_items,
     _PydanticV2Model,
     has_lookaround_pattern,
@@ -471,7 +472,7 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         """
         return None if (owner := self._config_owner()) is self else DataClass._inherited_config(owner)
 
-    def _inherited_config(self) -> dict[str, Any]:
+    def _inherited_config(self) -> dict[str, object]:
         """Return the config the dataclass writes once it keeps the items of its bases (``_chain_config``)."""
         return _chain_config(
             self._config_chain(), lambda member: _config_dict_items(member.extra_template_data.get("config"))
@@ -534,13 +535,13 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
 
 
 def _chain_config(
-    chain: Sequence[DataClass], items_of: Callable[[DataClass], Iterable[tuple[str, Any]]]
-) -> dict[str, Any]:
+    chain: Sequence[DataClass], items_of: Callable[[DataClass], Iterable[tuple[str, _ConfigValueT]]]
+) -> dict[str, _ConfigValueT]:
     """Return the config items a chain of ``DataClass._config_chain`` applies, each member's own over the deeper ones.
 
     Without ``--keep-inherited-dataclass-config`` only the last member has items of its own.
     """
-    merged: dict[str, Any] = {}
+    merged: dict[str, _ConfigValueT] = {}
     for member in reversed(chain):
         merged = _merged_config_items(merged.items(), items_of(member))
     return merged

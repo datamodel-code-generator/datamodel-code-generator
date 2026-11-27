@@ -14,7 +14,7 @@ from dataclasses import replace
 from itertools import chain
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, TypeVar, cast
 from warnings import warn
 
 from pydantic import Field, ValidationError, field_validator, model_validator
@@ -466,7 +466,12 @@ def _config_dict_items(config: Any) -> list[tuple[str, Any]]:
     return list(as_mapping(values).items())
 
 
-def _merged_config_items(taken: Iterable[tuple[str, Any]], own: Iterable[tuple[str, Any]]) -> dict[str, Any]:
+_ConfigValueT = TypeVar("_ConfigValueT")
+
+
+def _merged_config_items(
+    taken: Iterable[tuple[str, _ConfigValueT]], own: Iterable[tuple[str, _ConfigValueT]]
+) -> dict[str, _ConfigValueT]:
     """Return the items of ``taken`` that ``own`` does not set, then those of ``own`` in their order: own wins.
 
     A config a model takes from a base gives its items first, as Pydantic merges the config of a base before the
