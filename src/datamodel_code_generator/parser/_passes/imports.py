@@ -2134,7 +2134,10 @@ def submodules_hidden_by_packages(
     name, and no later import of it replaces the class. A class that an import cycle merge moved into ``_internal``
     and the ``__init__.py`` re-exports binds the name alike (``_package_bindings``, of the models the internal module
     still defines), where the forwarder loads the submodule through the modules it re-exports from
-    (``init_load_edges``). A module that the ``__init__.py`` loads as it runs reads the submodule under its name before
+    (``init_load_edges``), or where the refusal of such a class lets the output through because it reads the forwarder
+    with the ``--all-exports-scope`` re-exports it does not write (``_class_named_like_submodule``, row
+    ``legacy-forwarder-export-loads``): no module runs before the class then, so the submodule is hidden from every
+    module. A module that the ``__init__.py`` loads as it runs reads the submodule under its name before
     the class exists, so a load of that kind hides it only from the other modules. A module names the hidden modules
     by their module names, as ``reference_import_target`` reads them. The forwarders are read before render adds to
     the forwarder of a module that a grown merge moved the names it imported before (``_released_name_imports``):
@@ -2164,6 +2167,16 @@ def submodules_hidden_by_packages(
             contexts, forwarder_map, treat_dot_as_module=treat_dot_as_module, all_exports_scope=config.all_exports_scope
         )
 
+    @cache
+    def kept_edges() -> dict[str, set[str]]:
+        return init_load_edges(
+            contexts,
+            forwarder_map,
+            treat_dot_as_module=treat_dot_as_module,
+            all_exports_scope=config.all_exports_scope,
+            row="legacy-forwarder-export-loads",
+        )
+
     hidden: dict[ModulePath, tuple[set[tuple[str, ...]], set[tuple[str, ...]]]] = {}
     unloaded: dict[ModulePath, tuple[set[tuple[str, ...]], set[str]]] = {}
     for ctx in contexts:
@@ -2188,7 +2201,7 @@ def submodules_hidden_by_packages(
                 for module in modules
             ):
                 hidden.setdefault(package, (set(), set()))[1].update(modules)
-            elif loaded := init_loads(import_edges(), package, modules):
+            elif (loaded := init_loads(import_edges(), package, modules)) or init_loads(kept_edges(), package, modules):
                 late = unloaded.setdefault(package, (set(), set()))
                 late[0].update(modules)
                 late[1].update(loaded)

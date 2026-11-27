@@ -1,0 +1,6 @@
+{"detail": {"message": "m"}}: accepted Order(detail=Detail(message='m'))
+{"detail": {"message": 1}}: rejected ValidationError
+{"detail": {"message": "m"}}: accepted C(detail=Detail(message='m'))
+{"detail": {"message": 1}}: rejected ValidationError
+{"detail": {"message": "m"}}: accepted Deep(detail=Detail(message='m'))
+{"detail": {"message": 1}}: rejected ValidationError

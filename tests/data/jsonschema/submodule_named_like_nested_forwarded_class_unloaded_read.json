@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "a.b.Warn": {
+      "type": "object",
+      "properties": {"count": {"type": "integer"}, "x": {"$ref": "#/$defs/a.b.other.X"}}
+    },
+    "a.b.other.X": {"type": "object", "properties": {"warn": {"$ref": "#/$defs/a.b.Warn"}}},
+    "a.b.Warn.Detail": {"type": "object", "properties": {"message": {"type": "string"}}},
+    "a.b.api.Order": {"type": "object", "properties": {"detail": {"$ref": "#/$defs/a.b.Warn.Detail"}}},
+    "a.c.C": {"type": "object", "properties": {"detail": {"$ref": "#/$defs/a.b.Warn.Detail"}}},
+    "a.b.sub.deep.Deep": {"type": "object", "properties": {"detail": {"$ref": "#/$defs/a.b.Warn.Detail"}}}
+  }
+}

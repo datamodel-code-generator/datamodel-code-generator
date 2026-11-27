@@ -7102,6 +7102,61 @@ msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_sub
 msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[msgspec.Struct]/
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass].payloads.txt
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[pydantic_v2.BaseModel]/
+[test_main_jsonschema_forwarded_class_beside_unloaded_submodule]
+all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive]/
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[dataclasses.dataclass].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[dataclasses.dataclass].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[dataclasses.dataclass]/
+exact-imports	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[exact-imports].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+exact-imports	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[exact-imports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+exact-imports	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[exact-imports]/
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[msgspec.Struct].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[msgspec.Struct].payloads.txt
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[msgspec.Struct]/
+nested-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-children].bindings.txt
+nested-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-children].payloads.txt
+nested-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-children]/
+nested-all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-recursive].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-children].bindings.txt
+nested-all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-recursive].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-children].payloads.txt
+nested-all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[nested-all-exports-recursive]/
+preset	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[preset].bindings.txt
+preset	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[preset].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+preset	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[preset]/
+py314	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[py314].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+py314	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[py314].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+py314	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[py314]/
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.BaseModel].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.BaseModel]/	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[exact-imports]/
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.dataclass].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.dataclass].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[pydantic_v2.dataclass]/
+readers-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-children].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+readers-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-children].payloads.txt
+readers-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-children]/
+readers-all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-recursive].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+readers-all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-recursive].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-children].payloads.txt
+readers-all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-recursive]/
+readers-enum-default	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-enum-default].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+readers-enum-default	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-enum-default].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-all-exports-children].payloads.txt
+readers-enum-default	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-enum-default]/
+readers-msgspec	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-msgspec].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+readers-msgspec	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-msgspec].payloads.txt
+readers-msgspec	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[readers-msgspec]/
+rename	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[rename].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[preset].bindings.txt
+rename	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[rename].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+rename	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[rename]/	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded]/
+typing.TypedDict	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[typing.TypedDict].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+typing.TypedDict	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[typing.TypedDict].payloads.txt
+typing.TypedDict	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[typing.TypedDict]/
+unread-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-children].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+unread-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-children].payloads.txt
+unread-all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-children]/
+unread-all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-recursive].bindings.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[all-exports-recursive].bindings.txt
+unread-all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-recursive].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-children].payloads.txt
+unread-all-exports-recursive	main/jsonschema/main_jsonschema/forwarded_class_beside_unloaded_submodule[unread-all-exports-recursive]/
 [test_main_jsonschema_forwarded_class_read_outside_cycle]
 all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children].payloads.txt
 all-exports-children	main/jsonschema/main_jsonschema/forwarded_class_read_outside_cycle[all-exports-children]/
