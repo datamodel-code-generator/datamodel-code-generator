@@ -13,3 +13,5 @@ def wrong_tables(client: Client, aclient: AsyncClient) -> None:
     Toolset(client).call(3, {})  # error
     Toolset(client).call("pets_get_pet", [3])  # error
     Toolset(client).search(limit="3")  # error
+    Toolset(client, max_result_bytes="64")  # error
+    Toolset(client).catalog("pets")  # error

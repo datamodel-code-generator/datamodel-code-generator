@@ -117,6 +117,7 @@ READER_SITES = {
     ("_target_binding.py", "<module>"): "the keys of the DataclassArguments TypedDict",
     ("model/base.py", "<module>"): "the keys of the DataclassArguments TypedDict",
     ("_runtime/server/application.py", "_signature"): "the signatures of a generated server's handlers",
+    ("_runtime/client/tools.py", "callable_arguments"): "the signatures of a generated client's meta tools",
     ("_python_type_annotation.py", "render_python_type_expr"): "the text of generated code",
     ("_records.py", "_plain"): "a record class's namespace",
     ("_records.py", "_build"): "a record class's namespace",

@@ -1505,8 +1505,9 @@ JSON pointer of the path item method, such as `/paths/~1pets/get`, optionally af
 `pets.yaml#/paths/~1pets/get`. A relative document resolves against the JSON file that holds the reference, or
 without a file against the working directory, and against the pyproject.toml directory for a table. The settings are
 `resource`, `name`, `parameter_names` (keyed by location and name,
-such as `{"query:limit": "page_size"}`), `request_media_type`, `response_media_type`, `description`,
-`body_arguments`, which overrides `--client-body-arguments`, `body_field_names` (keyed by media type, then property,
+such as `{"query:limit": "page_size"}`), `request_media_type`, `response_media_type`, `description`, `tool`
+(`false` leaves the operation out of the tools of `--client-tools`), `body_arguments`, which overrides
+`--client-body-arguments`, `body_field_names` (keyed by media type, then property,
 such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `request_id_header`, `success_statuses`,
 `retry_safety`, `idempotency` (`{"header_name": "Idempotency-Key"}`), `retry_after_ms_header`,
 `should_retry_header`, `auth_challenge_less_401`, and `accepted_content_encodings`. In pyproject.toml,
@@ -1663,7 +1664,8 @@ credentials stay in the client. `read_only=True` leaves out the tools of methods
 operation whose arguments or success results are no JSON value, such as a binary upload or an event stream, keeps its
 method and has no tool; generation warns why. Under `--untrusted-input` a tool's description leaves out the operation's
 summary and description, and `schema(name)` leaves out the `description`, `title`, and `examples` of every JSON
-schema, while the models keep theirs. The models must be Pydantic v2 ones, and AsyncAPI input refuses the option.
+schema, while the models keep theirs; a search or the catalog lists no tags. The models must be Pydantic v2 ones, and
+AsyncAPI input refuses the option.
 
 `--client-tools mcp` also adds `mcp_server.py`, which serves the same tools of the asyncio client over MCP through
 the low-level server of the `mcp` SDK, whose release the printed requirements name. `server(client)` returns the

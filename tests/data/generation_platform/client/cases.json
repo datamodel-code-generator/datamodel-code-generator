@@ -6895,6 +6895,19 @@
     },
     "modules": [["client", "_generated", "tools.py"]]
   },
+  "tools-not-tools": {
+    "input": "tools.yaml",
+    "config": {
+      "tools": "functions",
+      "operations": [
+        {"ref": "/paths/~1pets~1{petId}/delete", "tool": false},
+        {"ref": "/paths/~1pets~1{petId}/head", "tool": false},
+        {"ref": "/paths/~1pets~1{petId}~1photo/put", "tool": false},
+        {"ref": "/paths/~1pets/get", "tool": true}
+      ]
+    },
+    "modules": [["client", "_generated", "tools.py"]]
+  },
   "tools-descriptions": {
     "input": "tools.yaml",
     "model": {"use_schema_description": true},

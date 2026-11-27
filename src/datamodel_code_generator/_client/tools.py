@@ -4,7 +4,7 @@ A tool is a view of an operation of the final client plan. Its name is the clien
 `pets_get_pet`; its arguments are the operation's parameters by their Python names, without those at a credential's
 position, which the client fills, and the body of its JSON media as `body`. An operation whose arguments or success
 results are no JSON value, a HEAD operation, and one whose tool name is not a valid tool name or is taken keeps its
-method and is left out of the table, with the reasons.
+method and is left out of the table, with the reasons; one whose `tool` setting is False is left out without one.
 """
 
 from __future__ import annotations
@@ -80,7 +80,8 @@ def plan_tools(
     """Return the tools of a client plan's operations, and each operation left out with why, in operation order.
 
     `coded` holds the uses that have a codec, through which a tool validates an argument, and `schema` puts the
-    operation's summary and description in its tool's, as `--use-schema-description` does in docstrings.
+    operation's summary and description in its tool's, as `--use-schema-description` does in docstrings. An operation
+    whose `tool` setting is False has no tool and takes no tool name, without a reason.
     """
     headers, queries = secret_names(plan.security_schemes)
     cookies = protected_positions(plan.security_schemes)[2]
@@ -89,6 +90,8 @@ def plan_tools(
     left_out: list[tuple[str, str]] = []
     named: dict[str, OperationSpec] = {}
     for spec in plan.operations:
+        if not spec.tool:
+            continue
         name = "_".join((*spec.resource.split("."), spec.name))
         arguments = [
             item

@@ -12,3 +12,5 @@ def wrong_servers(client: Client, aclient: AsyncClient) -> None:
     serve(aclient)  # error
     serve(Client)  # error
     server(aclient, read_only="yes")  # error
+    server(aclient, max_result_bytes="64")  # error
+    serve(lambda: aclient, meta_tools="yes")  # error

@@ -7,28 +7,31 @@ the result as its codec writes it. A read-only table leaves out every tool whose
 the client returns its class, reason, status, operation, request ID, and bounded body, never its headers, URL, or
 cause; every credential the client placed on the call's requests is replaced in the result, and in the request ID and
 the body of a failure, so an API that echoes one does not hand it to the caller, and a result its model refuses once
-they are replaced returns an error value that holds it; arguments a tool refuses return each problem.
+they are replaced returns an error value that holds it; arguments a tool refuses return each problem. A result whose
+JSON text is longer than the byte budget a table is given returns an error value with its size instead, never a cut
+result; a table has no budget unless it is given one.
 """
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Collection, Iterator, Mapping
 from dataclasses import dataclass
 from operator import itemgetter
-from typing import TYPE_CHECKING, ClassVar, Final, Generic, Protocol
+from typing import TYPE_CHECKING, Annotated, ClassVar, Final, Generic, Protocol, get_type_hints
 
-from pydantic import TypeAdapter, ValidationError
+from pydantic import Field, TypeAdapter, ValidationError
 from pydantic.json_schema import GenerateJsonSchema
 from typing_extensions import TypeIs, TypeVar, override
 
+from ..model_codecs import pydantic_adapters
 from ..model_codecs.media import JSONValue, json_bytes, json_value
-from ..model_codecs.pydantic_adapters import adapter
 from .errors import APIStatusError, SDKError
 from .positions import placed_credentials
 from .tool_search import score, words
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     from pydantic.json_schema import DefsRef, JsonSchemaKeyT, JsonSchemaMode, JsonSchemaValue
     from pydantic_core import CoreSchema
@@ -38,6 +41,8 @@ ClientT = TypeVar("ClientT")
 _NAME: Final = 3
 _SITE: Final = 2
 _REDACTED: Final = "[redacted]"
+SearchLimit = Annotated[int, Field(ge=1)]
+"""The type of the `limit` of `search`, which its signature, its check, and the schema of a tool that searches share."""
 _NAMING: Final = frozenset({"$defs", "definitions", "dependentSchemas", "patternProperties", "properties"})
 """The JSON Schema keywords whose value maps names to schemas."""
 _HOLDING: Final = frozenset({
@@ -89,6 +94,23 @@ def invalid(argument: str, error: ValidationError) -> list[JSONValue]:
 def refused(problems: list[JSONValue]) -> JSONValue:
     """Return the error value of a call whose arguments the tool refuses."""
     return {"error": {"type": "invalid_arguments", "problems": problems}}
+
+
+def unknown_tool(name: str) -> JSONValue:
+    """Return the error value of a call that names a tool the table holds none of, for a caller that asks by name."""
+    return {"error": {"type": "unknown_tool", "name": name}}
+
+
+def too_large(size: int, budget: int) -> JSONValue:
+    """Return the error value of a result whose JSON text of `size` bytes is over the table's budget."""
+    return {
+        "error": {
+            "type": "result_too_large",
+            "size": size,
+            "max_result_bytes": budget,
+            "hint": "Call the tool with arguments that select less, such as a filter or a smaller page",
+        }
+    }
 
 
 def redacted_result(value: JSONValue) -> JSONValue:
@@ -239,21 +261,25 @@ def _held_schemas(keyword: str, value: JSONValue) -> list[dict[str, JSONValue]]:
     return [item for item in held if isinstance(item, dict)]
 
 
-class ToolCodec(Protocol):
-    """The codec of a model type, as a Pydantic backend's: its type, its validation, and its JSON encoding.
-
-    `encode` takes a value of the codec's own type, which a table of several tools does not name: what the client's
-    method returned.
-    """
+class ArgumentCodec(Protocol):
+    """The codec of an argument's type, as a Pydantic backend's: its type and its validation of JSON."""
 
     @property
     def type(self) -> TypeForm[object]:
-        """Return the model type the codec validates and encodes."""
+        """Return the model type the codec validates."""
         raise NotImplementedError
 
     def decode(self, content: bytes) -> object:
         """Construct a value of the type from JSON, validating it in JSON mode."""
         raise NotImplementedError
+
+
+class ToolCodec(ArgumentCodec, Protocol):
+    """The codec of a model type as an argument's, with its JSON encoding.
+
+    `encode` takes a value of the codec's own type, which a table of several tools does not name: what the client's
+    method returned.
+    """
 
     def encode(self, value: Never) -> bytes:
         """Return the JSON bytes of a value of the type."""
@@ -265,8 +291,15 @@ class ToolArgument:
     """One argument of a tool: its name, the keyword of its method, the codec of its model type, and requiredness."""
 
     name: str
-    codec: ToolCodec
+    codec: ArgumentCodec
     required: bool = False
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DefaultedArgument(ToolArgument):
+    """An argument of a method that has a default, which the JSON schema of the argument states."""
+
+    default: JSONValue = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -295,8 +328,8 @@ class ToolPlan:
 class ToolOutcome:
     """What a call of a tool returned: its JSON value, and whether that is an error value.
 
-    An error value is that of a refusal, of a failure, or of a result its model refuses with the placed credentials
-    replaced.
+    An error value is that of a refusal, of a failure, of a result over the budget, or of a result its model refuses
+    with the placed credentials replaced.
     """
 
     value: JSONValue
@@ -316,14 +349,21 @@ class _Table(Generic[ClientT]):
 
     plans: ClassVar[tuple[ToolPlan, ...]] = ()
     prose: ClassVar[bool] = True
-    """Whether the JSON schemas keep the descriptions, titles, and examples of the models; False for untrusted input."""
+    """Whether the tools show the document's prose, the descriptions, titles, and examples of the schemas and the tags.
+
+    False for untrusted input.
+    """
     rejected_patterns: ClassVar[frozenset[str]] = frozenset()
     """The patterns of the models that Python's `re` rejects, as generation decided, which MCP clients cannot check."""
 
-    def __init__(self, client: ClientT, *, read_only: bool = False) -> None:
-        """Keep the client the tools call, and the tools, without those of unsafe methods when read-only."""
+    def __init__(self, client: ClientT, *, read_only: bool = False, max_result_bytes: int | None = None) -> None:
+        """Keep the client the tools call, and the tools, without those of unsafe methods when read-only.
+
+        `max_result_bytes` is the budget of a result's JSON text in UTF-8 bytes; None, the default, sets none.
+        """
         self.client = client
         self.read_only = read_only
+        self.max_result_bytes = checked_budget(max_result_bytes)
         self._tools = {plan.name: plan for plan in self.plans if plan.safe or not read_only}
 
     @property
@@ -331,14 +371,17 @@ class _Table(Generic[ClientT]):
         """Return the tools the table holds, in table order, without those a read-only table leaves out."""
         return tuple(self._tools.values())
 
-    def search(self, query: str = "", *, tag: str | None = None, limit: int = 10) -> list[dict[str, JSONValue]]:
+    def search(self, query: str = "", *, tag: str | None = None, limit: SearchLimit = 10) -> list[dict[str, JSONValue]]:
         """Return the tools that match a query best, at most `limit`, each by its name, route, tags, and text.
 
-        An empty query matches every tool in table order, and `tag` keeps only the tools that carry it.
+        An empty query matches every tool in table order, and `tag` keeps only the tools that carry it. A table without
+        `prose` ranks and filters by the tags, but its entries leave them out.
         """
-        if type(limit) is not int or limit < 1:
+        try:
+            pydantic_adapters.adapter(SearchLimit).validate_python(limit, strict=True)
+        except ValidationError:
             msg = "limit must be a positive integer"
-            raise ValueError(msg)
+            raise ValueError(msg) from None
         asked = words(query)
         ranked: list[tuple[int, int, ToolPlan]] = []
         for index, plan in enumerate(self._tools.values()):
@@ -354,7 +397,18 @@ class _Table(Generic[ClientT]):
             if found := (score(asked, texts) if asked else 1):
                 ranked.append((-found, index, plan))
         ranked.sort(key=itemgetter(0, 1))
-        return [_entry(plan) for _, _, plan in ranked[:limit]]
+        return [_entry(plan, tags=self.prose) for _, _, plan in ranked[:limit]]
+
+    def catalog(self) -> list[dict[str, JSONValue]]:
+        """Return every tool the table holds, in table order, as a search lists it, with what its HTTP method promises.
+
+        Each entry is JSON-ready data: its name, route, tags, description, signature, and whether it is safe and
+        idempotent; a table without `prose` leaves the tags out.
+        """
+        return [
+            {**_entry(plan, tags=self.prose), "safe": plan.safe, "idempotent": plan.idempotent}
+            for plan in self._tools.values()
+        ]
 
     def schema(self, name: str) -> dict[str, JSONValue]:
         """Return a tool's name, description, and the JSON schemas of its arguments object and of its result."""
@@ -368,20 +422,30 @@ class _Table(Generic[ClientT]):
         A table without `prose` leaves the `description`, `title`, and `examples` of every schema out of both.
         """
         plan = self._plan(name)
-        generator = GenerateJsonSchema if self.prose else _Proseless
-        inputs: list[tuple[str, JsonSchemaMode, TypeAdapter[object]]] = [
-            (argument.name, "validation", _adapter(argument.codec)) for argument in plan.arguments
-        ]
-        schemas, definitions = TypeAdapter.json_schemas(inputs, schema_generator=generator)
-        properties: dict[str, JSONValue] = {
-            argument.name: schemas[argument.name, "validation"] for argument in plan.arguments
-        }
-        arguments: dict[str, JSONValue] = {"type": "object", "properties": properties, "additionalProperties": False}
-        if required := [argument.name for argument in plan.arguments if argument.required]:
-            arguments["required"] = [*required]
-        return {**arguments, **definitions}, _adapter(plan.result).json_schema(
-            mode="serialization", schema_generator=generator
+        return self.arguments_schema(plan.arguments), _adapter(plan.result).json_schema(
+            mode="serialization", schema_generator=self._generator
         )
+
+    def arguments_schema(self, arguments: Sequence[ToolArgument]) -> dict[str, JSONValue]:
+        """Return the JSON schema of an arguments object, from the library's schema of each argument's type."""
+        inputs: list[tuple[str, JsonSchemaMode, TypeAdapter[object]]] = [
+            (argument.name, "validation", _adapter(argument.codec)) for argument in arguments
+        ]
+        schemas, definitions = TypeAdapter.json_schemas(inputs, schema_generator=self._generator)
+        properties: dict[str, JSONValue] = {
+            argument.name: {**schemas[argument.name, "validation"], "default": argument.default}
+            if isinstance(argument, DefaultedArgument)
+            else schemas[argument.name, "validation"]
+            for argument in arguments
+        }
+        schema: dict[str, JSONValue] = {"type": "object", "properties": properties, "additionalProperties": False}
+        if required := [argument.name for argument in arguments if argument.required]:
+            schema["required"] = [*required]
+        return {**schema, **definitions}
+
+    @property
+    def _generator(self) -> type[GenerateJsonSchema]:
+        return GenerateJsonSchema if self.prose else _Proseless
 
     def _plan(self, name: str) -> ToolPlan:
         if (plan := self._tools.get(name)) is None:
@@ -399,26 +463,7 @@ class _Table(Generic[ClientT]):
         given: object = arguments
         if not _is_mapping(given):
             raise _RefusalError(refused([problem(None, "Arguments must be a JSON object", "dict_type")]))
-        known = {argument.name: argument for argument in plan.arguments}
-        problems = [problem(str(key), "Unknown argument", "extra_forbidden") for key in given if key not in known]
-        problems.extend(
-            problem(argument.name, "Field required", "missing")
-            for argument in plan.arguments
-            if argument.required and argument.name not in given
-        )
-        values: dict[str, object] = {}
-        for key, argument in known.items():
-            if key not in given:
-                continue
-            try:
-                content = json_bytes(given[key])
-            except (TypeError, ValueError) as error:
-                problems.append(problem(key, str(error), "json_invalid"))
-                continue
-            try:
-                values[key] = argument.codec.decode(content)
-            except ValidationError as error:
-                problems.extend(invalid(key, error))
+        values, problems = checked_arguments(given, plan.arguments)
         if problems:
             raise _RefusalError(refused(problems))
         if plan.media_type is not None and "body" in values:
@@ -450,7 +495,7 @@ class ToolTable(_Table[ClientT]):
                 result = getattr(resource, plan.method)(**values)
             except SDKError as error:
                 return ToolOutcome(failed(error, placed), error=True)
-            return _answered(plan, result, placed)
+            return _answered(plan, result, placed, self.max_result_bytes)
 
 
 class AsyncToolTable(_Table[ClientT]):
@@ -474,15 +519,78 @@ class AsyncToolTable(_Table[ClientT]):
                 result = await getattr(resource, plan.method)(**values)
             except SDKError as error:
                 return ToolOutcome(failed(error, placed), error=True)
-            return _answered(plan, result, placed)
+            return _answered(plan, result, placed, self.max_result_bytes)
 
 
-def _adapter(codec: ToolCodec) -> TypeAdapter[object]:
+def checked_budget(budget: int | None) -> int | None:
+    """Return a result budget in bytes, None for no budget, or raise ValueError when it is no positive integer."""
+    if budget is not None and (type(budget) is not int or budget < 1):
+        msg = "max_result_bytes must be a positive integer or None"
+        raise ValueError(msg)
+    return budget
+
+
+def checked_arguments(
+    given: Mapping[str, object], arguments: Sequence[ToolArgument]
+) -> tuple[dict[str, object], list[JSONValue]]:
+    """Return the values a call's arguments give and the problems with them, validating each as JSON through its codec.
+
+    Each value is written as JSON and validated in JSON mode, as the schemas describe its type. An argument that
+    `arguments` has not, one it requires that is missing, a value that is no JSON value, and each value its type
+    refuses is a problem, all reported together; an argument that is not given has no value.
+    """
+    known = {argument.name: argument for argument in arguments}
+    problems = [problem(str(key), "Unknown argument", "extra_forbidden") for key in given if key not in known]
+    problems.extend(
+        problem(argument.name, "Field required", "missing")
+        for argument in arguments
+        if argument.required and argument.name not in given
+    )
+    values: dict[str, object] = {}
+    for key, argument in known.items():
+        if key not in given:
+            continue
+        try:
+            content = json_bytes(given[key])
+        except (TypeError, ValueError) as error:
+            problems.append(problem(key, str(error), "json_invalid"))
+            continue
+        try:
+            values[key] = argument.codec.decode(content)
+        except ValidationError as error:
+            problems.extend(invalid(key, error))
+    return values, problems
+
+
+def callable_arguments(function: Callable[..., object], **defaults: JSONValue) -> tuple[ToolArgument, ...]:
+    """Return the arguments of a method as tool arguments, from its signature: each name, type, and default.
+
+    `self` is left out. A parameter with a default, or one that `defaults` gives a default, is not required, and its
+    schema states the default. A call validates the arguments through the types as it does a tool's.
+    """
+    hints = get_type_hints(function, include_extras=True)
+    parameters = [parameter for name, parameter in inspect.signature(function).parameters.items() if name != "self"]
+    given = {parameter.name: parameter.default for parameter in parameters if parameter.default is not parameter.empty}
+    given.update(defaults)
+    return tuple(
+        DefaultedArgument(name=parameter.name, codec=_codec(hints[parameter.name]), default=given[parameter.name])
+        if parameter.name in given
+        else ToolArgument(name=parameter.name, codec=_codec(hints[parameter.name]), required=True)
+        for parameter in parameters
+    )
+
+
+def _codec(hint: TypeForm[object]) -> ArgumentCodec:
+    """Return the codec that validates a type annotation, as the models' library does."""
+    return pydantic_adapters.AdapterCodec[object](hint)
+
+
+def _adapter(codec: ArgumentCodec) -> TypeAdapter[object]:
     """Return the shared type adapter of a codec's type, which describes the type as the codec validates it."""
-    return adapter(codec.type)
+    return pydantic_adapters.adapter(codec.type)
 
 
-def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
+def _is_mapping(value: object) -> TypeIs[Mapping[str, object]]:
     return isinstance(value, Mapping)
 
 
@@ -491,15 +599,20 @@ def _dumped(plan: ToolPlan, result: Never) -> JSONValue:
     return json_value(plan.result.encode(result))
 
 
-def _answered(plan: ToolPlan, result: Never, placed: Collection[str]) -> ToolOutcome:
+def _answered(plan: ToolPlan, result: Never, placed: Collection[str], budget: int | None) -> ToolOutcome:
     """Return the outcome of a call the client answered: its result without the credentials placed on its requests.
 
-    A result they were replaced in is validated again as JSON through its model, since the text that replaces one may
-    no longer match the result's schema, such as an integer that became text: one the model refuses is the error value
-    of `redacted_result`. A result that held none is returned as the codec wrote it, without a second validation.
+    A result whose compact JSON text is longer than `budget` bytes, with the credentials replaced, is the error value of
+    `result_too_large`. A result they were replaced in is validated again as JSON through its model, since the text
+    that replaces one may no longer match the result's schema, such as an integer that became text: one the model
+    refuses is the error value of `redacted_result`. A result that held none is returned as the codec wrote it, without
+    a second validation.
     """
     value = _dumped(plan, result)
-    if (cleared := _cleared(value, placed)) == value:
+    cleared = _cleared(value, placed)
+    if budget is not None and (size := len(json_bytes(cleared))) > budget:
+        return ToolOutcome(too_large(size, budget), error=True)
+    if cleared == value:
         return ToolOutcome(value)
     try:
         plan.result.decode(json_bytes(cleared))
@@ -508,12 +621,12 @@ def _answered(plan: ToolPlan, result: Never, placed: Collection[str]) -> ToolOut
     return ToolOutcome(cleared)
 
 
-def _entry(plan: ToolPlan) -> dict[str, JSONValue]:
-    """Return how a search lists a tool: its name, route, tags, description, and signature."""
+def _entry(plan: ToolPlan, *, tags: bool) -> dict[str, JSONValue]:
+    """Return how a search lists a tool: its name, route, tags if `tags`, description, and signature."""
     return {
         "name": plan.name,
         "route": plan.route,
-        "tags": list(plan.tags),
+        **({"tags": list(plan.tags)} if tags else {}),
         "description": plan.description,
         "signature": plan.signature,
     }
