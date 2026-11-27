@@ -1733,18 +1733,22 @@ class Runner:
             worker.close()
 
 
-def _hashed_files(path: Path) -> list[Path]:
-    """Return the files a hash covers: the file itself, or every file of a directory outside cache dirs.
+def _hashed_files(path: Path, *, hidden: bool = False) -> list[Path]:
+    """Return a file itself, or a directory's files outside cache dirs and, unless `hidden`, outside hidden dirs.
 
-    Files under hidden directories count too: a directory input reads their text files (`is_hidden_binary`), so adding,
-    removing or changing one must change the key of a cached base output.
+    An input's cache key reads the files under hidden directories too (`hidden`): a directory input reads their text
+    files (`is_hidden_binary`), so adding, removing or changing one must change the key. A run's output tree does not:
+    a formatter leaves its cache there (`.ruff_cache`), which differs on every run.
     """
     if not path.is_dir():
         return [path]
     return [
         file
         for file in sorted(path.rglob("*"))
-        if file.is_file() and "__pycache__" not in file.relative_to(path).parts[:-1]
+        if file.is_file()
+        and not any(
+            part == "__pycache__" or (not hidden and part.startswith(".")) for part in file.relative_to(path).parts[:-1]
+        )
     ]
 
 
@@ -1753,7 +1757,7 @@ def _content_hash(path: Path) -> str | None:
     """Hash a file, or every file under a directory with its relative path; None when something is unreadable."""
     digest = hashlib.sha256()
     try:
-        for file in _hashed_files(path):
+        for file in _hashed_files(path, hidden=True):
             digest.update(file.relative_to(path).as_posix().encode() + b"\0" if file != path else b"")
             digest.update(hashlib.sha256(file.read_bytes()).digest())
     except OSError:

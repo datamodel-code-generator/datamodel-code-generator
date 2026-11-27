@@ -2291,6 +2291,16 @@ class BaseClassDataType(DataType):
         return False
 
 
+def _library_base_class(library_base: Import, alias: str) -> tuple[BaseClassDataType, Import]:
+    """Return the base of the generated base class and its import: ``library_base``, which it stands for, as ``alias``.
+
+    The base carries the import it names, as a configured base does, so the aliases of a module's imports keep one
+    binding for the base, the fields that name the same class and the import line.
+    """
+    base_import = Import(from_=library_base.from_, import_=library_base.import_, alias=alias)
+    return BaseClassDataType(type=alias, import_=base_import), base_import
+
+
 UNDEFINED: Any = Sentinel("UNDEFINED")
 """The default of a field that declares none; a copy, a deep copy and a pickle of it are itself."""
 

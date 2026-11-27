@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Item",
+  "type": "object",
+  "properties": {
+    "x": {
+      "type": "object",
+      "x-python-type": "pydantic.BaseModel"
+    },
+    "y": {
+      "type": "object",
+      "x-python-type": "pydantic.RootModel"
+    }
+  }
+}

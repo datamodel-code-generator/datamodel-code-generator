@@ -1,0 +1,3 @@
+Item(Struct)
+    x: builtins.str, msgspec.UnsetType
+Struct(zpkg.base._Struct)
