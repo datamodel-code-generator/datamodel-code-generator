@@ -1,0 +1,14 @@
+[[change]]
+id = "msgspec-layout-view-replaced-models"
+category = "api"
+title = "Layout view field that marks the models a type override replaces"
+summary = "BaseLayoutView takes an optional is_replaced callable: a model it accepts is read as replaced whole, so the layout walk does not follow its generated bases. It defaults to None, so existing views keep their meaning. Nothing is removed or changed."
+refs = ["#7569", "#7456"]
+decision = ["#7569"]
+source = "release-note"
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.model.base.BaseLayoutView"] }
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

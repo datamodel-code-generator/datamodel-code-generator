@@ -1752,6 +1752,7 @@ class BaseLayoutView(NamedTuple)
     is_slot: Callable[[DataModelFieldBase], bool]
     layout_model: Callable[[DataModel], DataModel]
     is_opaque: Callable[[DataModel], bool]
+    is_replaced: Callable[[DataModel], bool] | None = None
 class ConstraintsBase(_BaseModel)
     unique_items: Optional[bool] = Field(None, alias='uniqueItems')
     model_config = ConfigDict(arbitrary_types_allowed=True, ignored_types=(cached_property,), defer_build=True)
