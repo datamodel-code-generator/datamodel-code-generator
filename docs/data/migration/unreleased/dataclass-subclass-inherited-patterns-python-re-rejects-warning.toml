@@ -5,7 +5,7 @@ kind = "warning"
 action = "warn"
 title = "A pydantic dataclass that redeclares an inherited field of another module or a type alias without a pattern Python's re rejects warns"
 summary = "Where a pydantic_v2.dataclass selects python-re for a look-around pattern of a base, it now also redeclares the fields of bases in other modules, and the fields whose type alias holds a pattern Python's re rejects, such as \\p{L}, without that pattern, and warns that the field is generated without the constraint, as it does for the fields of the bases of its module. Such a module failed at import before."
-refs = ["#1", "#7487"]
+refs = ["#7563", "#7487"]
 source = "release-note"
 
 [[change.cells]]

@@ -296,7 +296,7 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         for base in self._config_chain()[1:]:
             DataClass._decide_engine_for_bases(base, decided)
         if self._inherited_patterns_select_python():
-            self._select_python_regex_engine(for_bases=True)
+            self._select_python_regex_engine(taken_config=self._taken_config())
             decided[id(self)] = True
 
     def _inherited_patterns_select_python(self) -> bool:
@@ -411,10 +411,13 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
             return dict(own), None
         return {}, frozenset() if _has_opaque_custom_base(owner, owner.BASE_CLASS) else None
 
-    @override
     def _config_owner(self) -> DataModel:
         """Return the dataclass whose config the dataclass applies: the last of ``_config_chain``."""
         return self._config_chain()[-1]
+
+    def _taken_config(self) -> object:
+        """Return the config of the base whose config the dataclass applies, as it has none of its own, else None."""
+        return None if (owner := self._config_owner()) is self else owner.extra_template_data.get("config")
 
     def _config_chain(self) -> list[DataClass]:
         """Return the dataclass, then each first dataclass base whose config the one before takes, as it has none.

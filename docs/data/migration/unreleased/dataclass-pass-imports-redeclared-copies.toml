@@ -3,7 +3,7 @@ id = "dataclass-pass-imports-redeclared-copies"
 category = "internal"
 title = "The pipeline listing names the imports the engine pass writes"
 summary = "finalize_type_alias_users now imports the models that the copies of inherited fields a Pydantic dataclass redeclares name, so it reads the module imports before finalize_structured_imports writes them."
-refs = ["#1"]
+refs = ["#7563"]
 covers = [
     "parser/pipeline/tables_follow_the_rules.provisional_reads.txt",
     "where_script/where_answers[fact].txt",
