@@ -1,0 +1,90 @@
+[[change]]
+id = "dataclass-allows-custom-types-of-a-later-base"
+category = "crash-fix"
+title = "A pydantic dataclass allows the customTypePath classes of a later base's fields"
+summary = "A pydantic_v2.dataclass with several bases applies the config of its first base (or its own) to the fields it inherits from every base, so a customTypePath class declared by a later base was built without arbitrary_types_allowed and the module failed to import with PydanticSchemaGenerationError, for example class Both(Base, Handle) with a closed Base and a Handle field customTypePath: threading.Lock. The dataclass now writes arbitrary_types_allowed=True in a config of its own that keeps every item it applied, as the class that declares the field already did. Class names, field names and order, bases, __init__ parameters, field types and parsed values are the same. Two modules that imported before gain the same key without any change in what they accept: one whose later base has a customTypePath that names a class Pydantic builds anyway, such as datetime.date, and one whose later base has a customTypePath field replaced by --type-overrides."
+refs = ["#7605", "#7592"]
+kind = "default-output"
+action = "none"
+source = "release-note"
+covers = [
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[alias-generator].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[alias-generator].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[base-model].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[base-model].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[custom-with-pattern].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[custom-with-pattern].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[engine].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[engine].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[extra-fields].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[extra-fields].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[frozen].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[frozen].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[generic-base].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[generic-base].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[handle-first].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[handle-first].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[issue].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[issue].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[keep-alias-generator].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[keep-alias-generator].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[keep-issue].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[keep-issue].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[keep-own-config].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[keep-own-config].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[keep-subclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[keep-subclass].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[later-subclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[later-subclass].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[list].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[list].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[map].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[map].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[modules].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[modules]/",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[nested].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[nested].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[openapi].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[openapi].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[own-config-first-base-keep].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[own-config-first-base-keep].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[own-config-first-base].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[own-config-first-base].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[own-config].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[own-config].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[own-custom-field].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[own-custom-field].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[own-open-config].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[own-open-config].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[plain-first].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[plain-first].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[redeclared].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[redeclared].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[required].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[required].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[subclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[subclass].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[third-base].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[third-base].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[through-a-base].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[through-a-base].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[union].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[union].py",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_custom_ty~ec6dc43b.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_custom_type_~3f10e3b7.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_custom_type_p~c4e72ac9.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_custom_type_path~00e25414.errors.txt",
+]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/custom_type_path_later_base",
+    "tests/data/jsonschema/custom_type_path_later_base/**",
+]
+backends = ["pydantic_v2.dataclass"]
+options = "*"
+
+[[change.cells]]
+input = ["tests/data/openapi/custom_type_path_later_base.json"]
+backends = ["pydantic_v2.dataclass"]
+options = "*"

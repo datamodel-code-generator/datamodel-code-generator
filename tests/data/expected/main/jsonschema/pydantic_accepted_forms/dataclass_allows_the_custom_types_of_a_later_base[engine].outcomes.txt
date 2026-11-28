@@ -1,0 +1,4 @@
+Both
+valid: valid
+lookahead: string_pattern_mismatch
+extra: unexpected_keyword_argument

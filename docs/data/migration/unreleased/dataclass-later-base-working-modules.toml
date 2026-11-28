@@ -1,0 +1,22 @@
+[[change]]
+id = "dataclass-later-base-working-modules"
+category = "default-fix"
+title = "A pydantic dataclass that builds a later base's buildable customTypePath class writes arbitrary_types_allowed"
+summary = "A pydantic_v2.dataclass whose later base has a customTypePath that names a class Pydantic builds anyway, such as datetime.date, or a customTypePath field that --type-overrides replaces, gains arbitrary_types_allowed=True in a config of its own that keeps every item it applied. The module accepts and rejects the same values."
+refs = ["#7605", "#7592"]
+decision = ["#7605"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[buildable-class].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[buildable-class].py",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[type-override].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/dataclass_allows_the_custom_types_of_a_later_base[type-override].py",
+]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/custom_type_path_buildable_later_base.json"]
+backends = ["pydantic_v2.dataclass"]
+aspects = ["type"]
+options = "*"

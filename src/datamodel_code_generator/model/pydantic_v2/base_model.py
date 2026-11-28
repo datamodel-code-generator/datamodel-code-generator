@@ -106,6 +106,7 @@ from datamodel_code_generator.model.pydantic_v2._config import (
     ConfigAttribute,
     build_base_config_parameters,
     config_attributes,
+    names_class_by_text,
     with_arbitrary_types_allowed,
 )
 from datamodel_code_generator.model.pydantic_v2._output_context import (
@@ -1780,6 +1781,11 @@ def _holds_arbitrary_type(fields: Iterable[DataModelFieldBase]) -> bool:
     return any(data_type.needs_arbitrary_types for field in fields for data_type in field.data_type.all_data_types)
 
 
+def _holds_class_named_by_text(fields: Iterable[DataModelFieldBase]) -> bool:
+    """Return whether a type of the fields is a class named by text, which its declaring model gave the key at init."""
+    return any(names_class_by_text(data_type) for field in fields for data_type in field.data_type.all_data_types)
+
+
 def _builds_arbitrary_type(fields: Iterable[DataModelFieldBase], aliases: Collection[int]) -> bool:
     """Return whether the fields hold an arbitrary type, or name a type alias of ``aliases`` that does."""
     fields = list(fields)
@@ -2055,7 +2061,9 @@ class _PydanticV2Model(DataModel):
         reached = _models_reaching_arbitrary_type_aliases(models)
 
         def builds_arbitrary_type(model: _PydanticV2Model) -> bool:
-            return _builds_arbitrary_type(model._fields_built_with_config(), reached)
+            return _builds_arbitrary_type(model._fields_built_with_config(), reached) or _holds_class_named_by_text(
+                model._declarations_built_again()
+            )
 
         needing = {
             id(model): model for model in models if isinstance(model, _PydanticV2Model) and builds_arbitrary_type(model)
@@ -2152,6 +2160,13 @@ class _PydanticV2Model(DataModel):
     def _fields_built_with_config(self) -> Sequence[DataModelFieldBase]:
         """Return the fields Pydantic builds with the config the model applies: its own, a model merges the configs."""
         return self.fields
+
+    def _declarations_built_again(self) -> list[DataModelFieldBase]:
+        """Return the declarations of a base that the model builds again with the config it applies.
+
+        None for a BaseModel, which merges the config of every base into its own fields; a dataclass's inherited ones.
+        """
+        return [field for field in self._fields_built_with_config() if field.parent is not self]
 
     def _takes_engine_of(self, base: DataModel) -> bool:
         """Return whether the engine a base selects reaches the model: it applies the config of the base."""

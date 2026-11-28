@@ -3620,8 +3620,9 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         (
             "a Pydantic v2 model whose fields hold a `customTypePath` type when it is created writes "
             "`arbitrary_types_allowed` (`build_base_config_parameters`), whatever the class the path names, and "
-            "keeps it where `--type-overrides` later replaces the type; the classes of an input model decide once "
-            "the field types are final (`_PydanticV2Model._allow_arbitrary_types`)"
+            "keeps it where `--type-overrides` later replaces the type, and a dataclass that builds the declaration "
+            "again from a base reads the same flag once the field types are final, so it gets the key in its own "
+            "config too (`_PydanticV2Model._allow_arbitrary_types`); the classes of an input model decide there too"
         ),
         fix=KEEP,
         witness=(

@@ -106,6 +106,15 @@ _LEADING_CONFIG_KEYS: frozenset[str] = frozenset({
 """The items that ``build_base_config_parameters`` writes before ``arbitrary_types_allowed``."""
 
 
+def names_class_by_text(data_type: DataType) -> bool:
+    """Return whether the data type is a class named by text (``customTypePath``).
+
+    Its class is unknown without importing it, so the model that declares it assumes the class needs
+    ``arbitrary_types_allowed``; a model that builds the declaration again from a base answers the same.
+    """
+    return data_type.is_custom_type
+
+
 def with_arbitrary_types_allowed(config_parameters: Mapping[str, object]) -> dict[str, object]:
     """Return the config items with ``arbitrary_types_allowed`` where ``build_base_config_parameters`` puts it.
 
@@ -127,10 +136,12 @@ def build_base_config_parameters(
 ) -> dict[str, ConfigParameterValue]:
     """Build shared ConfigDict parameters for Pydantic v2 models.
 
-    A ``customTypePath`` type in the fields at ``__init__`` writes ``arbitrary_types_allowed``, and the config keeps it
-    where ``--type-overrides`` later replaces the type (row ``legacy-custom-type-config-at-init``): a class named by
-    text is unknown, so no later step reads it. The classes of an input model, which the model's own config allows,
-    decide once the field types are final (``_PydanticV2Model.finalize_type_alias_users``).
+    A class named by text (``names_class_by_text``, a ``customTypePath`` type) in the fields at ``__init__`` writes
+    ``arbitrary_types_allowed``, and the config keeps it where ``--type-overrides`` later replaces the type (row
+    ``legacy-custom-type-config-at-init``): the class is unknown, so the model assumes it needs the key. A dataclass
+    that builds such a declaration again from a base, with the config it applies, gets the key once the field types
+    are final, from the same reading; so do the classes of an input model, which the model's own config allows
+    (``_PydanticV2Model.finalize_type_alias_users``).
     """
     config_attributes = get_config_attributes(
         extra_template_data,
@@ -154,9 +165,7 @@ def build_base_config_parameters(
             value: bool = extra_template_data[from_]
             config_parameters[to] = not value if invert else value
 
-    for data_type in all_data_types:
-        if data_type.is_custom_type:
-            config_parameters[ARBITRARY_TYPES_ALLOWED_KEY] = True
-            break
+    if any(names_class_by_text(data_type) for data_type in all_data_types):
+        config_parameters[ARBITRARY_TYPES_ALLOWED_KEY] = True
 
     return config_parameters

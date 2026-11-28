@@ -1,0 +1,4 @@
+Both
+valid: valid
+own queue: needs_python_object
+queue: needs_python_object

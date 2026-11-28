@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Handle": {
+      "type": "object",
+      "properties": {
+        "queue": {
+          "type": "string",
+          "customTypePath": "queue.Queue"
+        }
+      }
+    },
+    "Both": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "$ref": "#/$defs/Handle"
+        },
+        {
+          "properties": {
+            "q": {
+              "type": "string",
+              "customTypePath": "queue.LifoQueue"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

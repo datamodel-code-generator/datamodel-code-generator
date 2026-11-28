@@ -353,12 +353,11 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     def _inherited_patterns_select_python(self) -> bool:
         """Return whether a string pattern of a base needs ``python-re`` that the config the dataclass applies lacks.
 
-        Only the declarations the dataclass inherits count (``get_effective_fields``), not those it redeclares. A
+        Only the declarations the dataclass inherits count (``_declarations_built_again``), not those it redeclares. A
         configured base class the generator does not read may set the engine, so a config it may set is kept. A
         pattern ``re.compile`` wraps runs on Python's ``re`` whatever the config, so it does not count.
         """
-        inherited = [field for field in get_effective_fields(self) if field.parent is not self]
-        if not has_lookaround_pattern(inherited, include_compiled=False, surrogates=False):
+        if not has_lookaround_pattern(self._declarations_built_again(), include_compiled=False, surrogates=False):
             return False
         for base in [base for base in _built_bases(self) if isinstance(base, DataClass) and base is not self]:
             DataClass._apply_lookaround_regex_engine(base)
