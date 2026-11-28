@@ -963,14 +963,33 @@ class _UnionWalk(NamedTuple):
     """The schemas the walk has read the unions of so far, the site's first (``_union_chain``)."""
 
 
+class _HeldBase(NamedTuple):
+    """The one base a class holds, whose root it becomes when that base becomes one."""
+
+    reference: Reference
+    ref: str
+    """The text of the one ``$ref`` member that names the base."""
+
+
+class _HeldType(NamedTuple):
+    """The x-python-type a class holds."""
+
+    python_type: PythonTypeExpr
+    named_by: JsonSchemaObject
+    """The schema whose x-python-type it is."""
+
+
 class _PythonTypeRootCandidate(NamedTuple):
-    """A fieldless class ``parse_object`` built for a schema whose x-python-type types it, and what its root reads."""
+    """A fieldless class that holds one class, an x-python-type or its one base, and what its root reads."""
 
     model: DataModel
     name: str
     obj: JsonSchemaObject
     path: list[str]
-    python_type: PythonTypeExpr
+    held: _HeldBase | _HeldType
+    """The one base or x-python-type the class holds."""
+    document: str
+    """The document of the class's schema (its ``SchemaLocation``), where its root is built; inline paths name none."""
 
 
 class _UnionBranch(NamedTuple):
@@ -3064,11 +3083,51 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
         return None if self._x_python_type_fits(obj, python_type) else python_type
 
-    def _python_type_of_default_based_object(self, model: DataModel, obj: JsonSchemaObject) -> PythonTypeExpr | None:
-        """Return the overriding x-python-type of an object model with the default base and no schema validators."""
+    def _record_python_type_root_candidate(
+        self,
+        model: DataModel | None,
+        name: str,
+        obj: JsonSchemaObject,
+        path: list[str],
+        *,
+        base_classes: Sequence[Reference] = (),
+    ) -> None:
+        """Record a class just built that holds one class, for ``_settle_python_type_roots`` to write as a root.
+
+        Both class builders call it (``parse_object`` and ``_parse_object_common_part``). Such a class has no field, is
+        the one model of its Reference, is built from a schema of a loaded document (its ``SchemaLocation`` names the
+        document the root is built in), takes the default base and no schema validators, and holds exactly one class:
+        the overriding x-python-type of the schema or of its inline allOf members where they are typed ``object``, or
+        its one base, named by its one ``$ref`` member. Any other class is no candidate and stays as it is.
+        """
+        if model is None or model.fields or (location := obj.schema_location) is None:
+            return
         if _has_opaque_custom_base(model, model.BASE_CLASS) or self._should_parse_object_with_schema_validators(obj):
-            return None
-        return self._overriding_python_type(obj)
+            return
+        typed: dict[PythonTypeExpr, JsonSchemaObject] = {}
+        pending: list[JsonSchemaObject] = [obj]
+        while pending:
+            schema = pending.pop(0)
+            if schema.type == "object" and (python_type := self._overriding_python_type(schema)) is not None:
+                typed.setdefault(python_type, schema)
+            pending.extend(
+                member
+                for member in (_inherited_schemas.all_of_members(self, schema) if schema.allOf else ())
+                if isinstance(member, JsonSchemaObject) and not member.ref
+            )
+        if len(typed) + len(base_classes) != 1:
+            return
+        held: _HeldBase | _HeldType
+        if base_classes:
+            refs = [ref for item in obj.allOf if isinstance(item, JsonSchemaObject) and (ref := item.ref)]
+            if len(refs) != 1 or self._ref_path(refs[0]) != base_classes[0].path:
+                return
+            held = _HeldBase(base_classes[0], refs[0])
+        else:
+            held = _HeldType(*next(iter(typed.items())))
+        self._python_type_root_candidates.append(
+            _PythonTypeRootCandidate(model, name, obj, path, held, location.document)
+        )
 
     def _x_python_type_fits(self, obj: JsonSchemaObject, python_type: PythonTypeExpr) -> bool:
         """Return whether a schema's x-python-type is compatible with its type (``_is_compatible_python_type``)."""
@@ -4598,9 +4657,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if self.generate_schema_validators:
                 self._add_schema_validators(reference.path, reference.name, obj, path, fields, base_classes)
 
-            _rw_split.register_object_model(
+            model = _rw_split.register_object_model(
                 self, reference, obj, fields, base_classes, model_type=self.data_model_type, nullable=nullable
             )
+            self._record_python_type_root_candidate(model, name, obj, path, base_classes=base_classes)
             return frame.built(self.data_type(reference=reference))
 
     def _optional_inherited_required_names(
@@ -6154,12 +6214,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             if merged_copy and model is not None:
                 self._merged_copies.add(model)
-            if not fields and model is not None and model.reference is reference and obj.type == "object":
-                python_type = self._python_type_of_default_based_object(model, obj)
-                if python_type is not None:
-                    self._python_type_root_candidates.append(
-                        _PythonTypeRootCandidate(model, name, obj, path, python_type)
-                    )
+            self._record_python_type_root_candidate(model, name, obj, path)
             return frame.built(self.data_type(reference=reference))
 
     def parse_pattern_properties(
@@ -9467,19 +9522,25 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._settle_python_type_roots()
 
     def _settle_python_type_roots(self) -> None:
-        """Write each fieldless class ``parse_object`` built for an overriding x-python-type as a root of that type.
+        """Write each class that holds one class (``_record_python_type_root_candidate``) as a root of what it holds.
 
-        It runs last in L1, where every model is parsed, so the facts it reads are final: a class stays where a model
-        derives from it, where it keeps the keys it does not declare, or where a discriminated union names it as a
-        variant, as a member or through its mapping (``_get_mapping_discriminator_values``, as L5 reads it). The root
-        takes the class's name, Reference, description and place (``replace_parsed_model``) and keeps the naming record
-        ``parse_object`` wrote, so no name, reference or model order moves. It is built in the document of the class, as
+        It runs last in L1, where every model is parsed, so the facts it reads are final. A class stays where it keeps
+        the keys it does not declare, where a discriminated union names it as a variant, as a member or through its
+        mapping (``_get_mapping_discriminator_values``, as L5 reads it), where a model that derives from it stays a
+        class, and where it holds a base that stays a class: a chain or tree of classes over one x-python-type becomes
+        roots as a whole or stays as a whole. A class that holds an x-python-type becomes a root of that type, one that
+        holds a base a root of that base in the one form of an allOf of a ``$ref`` to a value
+        (``_all_of_values.reference_root``), whose root type the ``$ref`` row reads. The root takes the class's
+        name, Reference, description and place (``replace_parsed_model``) and keeps the naming record the class wrote,
+        so no name, reference or model order moves. It is built in the document of the class, as
         ``_parse_base_stand_in`` builds a stand-in, so the x-python-type binds there as a field of that document binds
-        it, and it stays in the module of the class.
+        it and the ``$ref`` of a base resolves there, and it stays in the module of the class.
         """
         if not (candidates := self._python_type_root_candidates):
             return
         self._python_type_root_candidates = []
+        if all(isinstance(candidate.held, _HeldBase) for candidate in candidates):
+            return
         sites = tuple(iter_union_sites(self.results))
         variants = {
             id(data_type.reference)
@@ -9488,31 +9549,50 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if data_type.reference is not None
         }
         index = self.generation_store.index
-        roots = [
-            candidate
+        by_reference = {id(candidate.model.reference): candidate for candidate in candidates}
+        roots = {
+            id(candidate.model): candidate
             for candidate in candidates
-            if not index.models_inheriting(reference := candidate.model.reference)
-            and not keeps_extra_keys(candidate.model.extra_template_data)
-            and id(reference) not in variants
+            if not keeps_extra_keys(candidate.model.extra_template_data)
+            and id(candidate.model.reference) not in variants
             and not any(_get_mapping_discriminator_values(candidate.model, site.mapping) for site in sites)
-        ]
-        for model, name, obj, path, python_type in roots:
-            x_python_type = obj.extras.get("x-python-type")
+            and (not isinstance(candidate.held, _HeldBase) or id(candidate.held.reference) in by_reference)
+        }
+        inheriting = {key: index.models_inheriting(candidate.model.reference) for key, candidate in roots.items()}
+        while dropped := [
+            key
+            for key, candidate in roots.items()
+            if any(id(child) not in roots for child in inheriting[key])
+            or (
+                isinstance(held := candidate.held, _HeldBase)
+                and id(by_reference[id(held.reference)].model) not in roots
+            )
+        ]:
+            for key in dropped:
+                del roots[key]
+        for model, name, obj, path, held, document in (c for c in candidates if id(c.model) in roots):
             source_path = self.current_source_path
             self.current_source_path = model.file_path
             try:
-                with self._ref_document_context(document_part(model.reference.path)):
-                    root_type = _type_overrides.python_type_data_type(
-                        self,
-                        python_type,
-                        needs_arbitrary_types=not isinstance(x_python_type, PythonTypeSchemaAnnotation)
-                        or x_python_type.arbitrary_types,
-                    )
+                with self._ref_document_context(document):
+                    root_obj, root_type = obj, None
+                    if isinstance(held, _HeldBase):
+                        root_obj = _all_of_values.reference_root(obj, held.ref).with_schema_location(
+                            obj.schema_location
+                        )
+                    else:
+                        x_python_type = held.named_by.extras.get("x-python-type")
+                        root_type = _type_overrides.python_type_data_type(
+                            self,
+                            held.python_type,
+                            needs_arbitrary_types=not isinstance(x_python_type, PythonTypeSchemaAnnotation)
+                            or x_python_type.arbitrary_types,
+                        )
                     with self._unrecorded_naming_frames(), self._graph_builder.replace_parsed_model(model) as taken:
                         JsonSchemaParser._parse_root_type_with_context(
                             self,
                             name,
-                            obj,
+                            root_obj,
                             path,
                             root_type=root_type,
                             reference=model.reference,

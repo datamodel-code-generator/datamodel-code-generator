@@ -1,0 +1,17 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Pets", "version": "1"},
+  "paths": {},
+  "components": {
+    "schemas": {
+      "LoggerBase": {"type": "object", "x-python-type": "logging.Logger"},
+      "CatLogger": {"allOf": [{"$ref": "#/components/schemas/LoggerBase"}], "description": "A variant that wraps the class."},
+      "Dog": {"type": "object", "required": ["petType"], "properties": {"petType": {"type": "string"}}},
+      "Pet": {
+        "oneOf": [{"$ref": "#/components/schemas/CatLogger"}, {"$ref": "#/components/schemas/Dog"}],
+        "discriminator": {"propertyName": "petType"}
+      },
+      "Holder": {"type": "object", "properties": {"pet": {"$ref": "#/components/schemas/Pet"}}}
+    }
+  }
+}

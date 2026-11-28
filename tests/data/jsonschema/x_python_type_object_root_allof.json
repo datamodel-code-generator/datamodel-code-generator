@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "inline": {"$ref": "#/$defs/LoggerInline"},
+    "wrapped": {"$ref": "#/$defs/LoggerWrapped"},
+    "chain": {"$ref": "#/$defs/HandlerChain"},
+    "inlineChain": {"$ref": "#/$defs/InlineChain"},
+    "twoSame": {"$ref": "#/$defs/TwoSame"},
+    "closed": {"$ref": "#/$defs/Closed"},
+    "unevaluated": {"$ref": "#/$defs/Unevaluated"},
+    "minProperties": {"$ref": "#/$defs/MinProperties"},
+    "titled": {"$ref": "#/$defs/Titled"},
+    "typed": {"$ref": "#/$defs/Typed"},
+    "nullDefault": {"$ref": "#/$defs/NullDefault"},
+    "objectMember": {"$ref": "#/$defs/ObjectMember"},
+    "branches": {"$ref": "#/$defs/Branches"},
+    "property": {"allOf": [{"type": "object", "x-python-type": "logging.Logger"}]},
+    "items": {"type": "array", "items": {"allOf": [{"type": "object", "x-python-type": "logging.Logger"}]}},
+    "values": {
+      "type": "object",
+      "additionalProperties": {"allOf": [{"type": "object", "x-python-type": "logging.Logger"}]}
+    },
+    "member": {"anyOf": [{"allOf": [{"type": "object", "x-python-type": "logging.Logger"}]}, {"type": "integer"}]}
+  },
+  "$defs": {
+    "LoggerInline": {"allOf": [{"type": "object", "x-python-type": "logging.Logger"}]},
+    "LoggerBase": {"type": "object", "x-python-type": "logging.Logger"},
+    "LoggerWrapped": {"allOf": [{"$ref": "#/$defs/LoggerBase"}], "description": "A logger."},
+    "HandlerBase": {"type": "object", "x-python-type": "logging.Handler"},
+    "HandlerMiddle": {"allOf": [{"$ref": "#/$defs/HandlerBase"}]},
+    "HandlerChain": {"allOf": [{"$ref": "#/$defs/HandlerMiddle"}], "description": "A handler over two wrappers."},
+    "InlineChain": {"allOf": [{"$ref": "#/$defs/LoggerInline"}]},
+    "TwoSame": {
+      "allOf": [
+        {"type": "object", "x-python-type": "logging.Logger"},
+        {"type": "object", "x-python-type": "logging.Logger"}
+      ]
+    },
+    "Closed": {"allOf": [{"$ref": "#/$defs/LoggerBase"}], "additionalProperties": false},
+    "Unevaluated": {"allOf": [{"$ref": "#/$defs/LoggerBase"}], "unevaluatedProperties": false},
+    "MinProperties": {"allOf": [{"$ref": "#/$defs/LoggerBase"}], "minProperties": 1},
+    "Titled": {"allOf": [{"$ref": "#/$defs/LoggerBase"}], "title": "Titled logger"},
+    "Typed": {"allOf": [{"$ref": "#/$defs/LoggerBase"}], "type": "object"},
+    "NullDefault": {"allOf": [{"$ref": "#/$defs/LoggerBase"}], "default": null},
+    "ObjectMember": {
+      "allOf": [{"$ref": "#/$defs/LoggerBase"}, {"type": "object"}],
+      "description": "A logger beside an object member that adds nothing."
+    },
+    "Branches": {
+      "allOf": [{"type": "object", "x-python-type": "logging.Logger"}],
+      "oneOf": [{"title": "First"}, {"title": "Second"}]
+    }
+  }
+}
