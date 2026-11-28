@@ -1,0 +1,2 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Z", "type": "object", "properties": {"c": {"$ref": "#/$defs/Child"}, "l": {"$ref": "a.json#/$defs/Lone"}, "u": {"anyOf": [{"$ref": "a.json#/$defs/Lone"}, {"type": "integer"}]}},
+ "$defs": {"Child": {"allOf": [{"$ref": "a.json#/$defs/Plain"}, {"properties": {"x": {"type": "integer"}}}]}}}

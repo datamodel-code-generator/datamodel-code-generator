@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: Python type variants
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Pet:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: petType
+        mapping:
+          cat: '#/components/schemas/Cat'
+          dog: '#/components/schemas/Dog'
+    Cat:
+      type: object
+      x-python-type: logging.Logger
+    Dog:
+      type: object
+      properties:
+        petType:
+          type: string
+        bark:
+          type: string
+    Owner:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: '#/components/schemas/Dog'
+          discriminator:
+            propertyName: petType
+            mapping:
+              bird: '#/components/schemas/Bird'
+              dog: '#/components/schemas/Dog'
+    Bird:
+      type: object
+      x-python-type: logging.Logger

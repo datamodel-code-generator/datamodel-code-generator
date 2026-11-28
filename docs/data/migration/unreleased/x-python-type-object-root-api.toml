@@ -1,0 +1,6 @@
+[[change]]
+id = "x-python-type-object-root-api"
+extends = "input-model-arbitrary-types-api"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

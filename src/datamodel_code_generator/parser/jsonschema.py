@@ -214,6 +214,7 @@ from datamodel_code_generator.model._decisions.enum_kind import (
 from datamodel_code_generator.model._decisions.enum_kind import holds_member_value as holds_member_value
 from datamodel_code_generator.model._decisions.enum_kind import is_literal_kind as is_literal_kind
 from datamodel_code_generator.model._decisions.enum_kind import literal_value_kind as literal_value_kind
+from datamodel_code_generator.model._decisions.extra_keys import keeps_extra_keys
 from datamodel_code_generator.model._decisions.literal_default import const_type as const_type
 from datamodel_code_generator.model._decisions.tag_value import FieldTag as FieldTag
 from datamodel_code_generator.model._decisions.tag_value import distinct_tags as distinct_tags
@@ -224,6 +225,7 @@ from datamodel_code_generator.model.base import (
     ALL_MODEL,
     UNDEFINED,
     _field_source_name,
+    _has_opaque_custom_base,
     _mark_forbids_unknown_fields,
     _with_field_origin,
     sanitize_module_name,
@@ -353,6 +355,7 @@ from datamodel_code_generator.parser._passes._reference_users import (
     type_additional_properties_users,
     type_reference_users,
 )
+from datamodel_code_generator.parser._passes._shared import _get_mapping_discriminator_values
 from datamodel_code_generator.parser._pipeline import warn_at_parse_caller
 from datamodel_code_generator.parser._schema_dispatch import (
     Default,
@@ -438,6 +441,7 @@ from datamodel_code_generator.parser._schema_refs import (
     _ref_path_parts,
     _Worklist,
 )
+from datamodel_code_generator.parser._tag_plan import iter_union_sites
 from datamodel_code_generator.parser._union_tags import TaggedUnionValue as TaggedUnionValue
 from datamodel_code_generator.parser._value_keywords import (
     _LITERAL_PARTS,
@@ -959,6 +963,16 @@ class _UnionWalk(NamedTuple):
     """The schemas the walk has read the unions of so far, the site's first (``_union_chain``)."""
 
 
+class _PythonTypeRootCandidate(NamedTuple):
+    """A fieldless class ``parse_object`` built for a schema whose x-python-type types it, and what its root reads."""
+
+    model: DataModel
+    name: str
+    obj: JsonSchemaObject
+    path: list[str]
+    python_type: PythonTypeExpr
+
+
 class _UnionBranch(NamedTuple):
     """One branch of an allOf's ``anyOf`` or ``oneOf`` as the walk meets it (``_branch_models``)."""
 
@@ -1235,6 +1249,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._raw_inherited_fields_cache: dict[str, tuple[DataModelFieldBase, ...]] = {}
         self._raw_inherited_own_names_cache: dict[str, frozenset[str]] = {}
         self._request_response_fields: dict[str, tuple[DataModelFieldBase, ...]] = {}
+        self._python_type_root_candidates: list[_PythonTypeRootCandidate] = []
+        """The fieldless classes ``parse_object`` built for an overriding x-python-type, which the settle pass reads."""
         self._rw_model_field_facts_cache: dict[str, tuple[bool, bool, bool, bool]] = {}
         self._rw_model_field_facts_in_progress: set[str] = set()
         self._rw_model_references_cache: dict[str, tuple[bool, tuple[str, ...]]] = {}
@@ -2833,6 +2849,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the context of a document parse: no naming frame is open, so the document's models are roots."""
         return nullcontext() if (frames := self._naming_frames) is None else frames.detached()
 
+    @contextmanager
+    def _unrecorded_naming_frames(self) -> Generator[None, None, None]:
+        """Record no naming frame in the ``with`` block, so a model it builds keeps the record its Reference holds."""
+        frames, self._naming_frames = self._naming_frames, None
+        try:
+            yield
+        finally:
+            self._naming_frames = frames
+
     def _is_definition_location(self, location: SchemaLocation | None) -> bool:
         """Return whether ``location`` is an entry of a definitions container of its document's schema paths.
 
@@ -3038,6 +3063,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (python_type := self._get_x_python_type(obj)) is None:
             return None
         return None if self._x_python_type_fits(obj, python_type) else python_type
+
+    def _python_type_of_default_based_object(self, model: DataModel, obj: JsonSchemaObject) -> PythonTypeExpr | None:
+        """Return the overriding x-python-type of an object model with the default base and no schema validators."""
+        if _has_opaque_custom_base(model, model.BASE_CLASS) or self._should_parse_object_with_schema_validators(obj):
+            return None
+        return self._overriding_python_type(obj)
 
     def _x_python_type_fits(self, obj: JsonSchemaObject, python_type: PythonTypeExpr) -> bool:
         """Return whether a schema's x-python-type is compatible with its type (``_is_compatible_python_type``)."""
@@ -6112,6 +6143,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             if merged_copy and model is not None:
                 self._merged_copies.add(model)
+            if not fields and model is not None and model.reference is reference and obj.type == "object":
+                python_type = self._python_type_of_default_based_object(model, obj)
+                if python_type is not None:
+                    self._python_type_root_candidates.append(
+                        _PythonTypeRootCandidate(model, name, obj, path, python_type)
+                    )
             return frame.built(self.data_type(reference=reference))
 
     def parse_pattern_properties(
@@ -7433,9 +7470,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         preserve_constraints: bool = False,
         use_annotated: bool | None = None,
         root_type: DataType | None = None,
+        reference: Reference | None = None,
     ) -> DataType:
-        """Parse a root type with an internal output representation override; ``root_type`` is a type already built."""
-        reference: Reference | None = None
+        """Parse a root type with an internal output representation override; ``root_type`` is a type already built.
+
+        ``reference`` is the Reference the root takes, which a root of a class built before it holds; else the root
+        adds its own.
+        """
         array_constraints: Any = None
         constraint_obj = obj
         effective_use_annotated = self.use_annotated if use_annotated is None else use_annotated
@@ -9395,6 +9436,57 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._parse_base_stand_ins()
         self._type_imported_references_without_model()
         self._generate_forced_base_models()
+        self._settle_python_type_roots()
+
+    def _settle_python_type_roots(self) -> None:
+        """Write each fieldless class ``parse_object`` built for an overriding x-python-type as a root of that type.
+
+        It runs last in L1, where every model is parsed, so the facts it reads are final: a class stays where a model
+        derives from it, where it keeps the keys it does not declare, or where a discriminated union names it as a
+        variant, as a member or through its mapping (``_get_mapping_discriminator_values``, as L5 reads it). The root
+        takes the class's name, Reference and place (``replace_parsed_model``) and keeps the naming record
+        ``parse_object`` wrote, so no name, reference or model order moves; it is built in the document of the class and
+        stays in its module.
+        """
+        if not (candidates := self._python_type_root_candidates):
+            return
+        self._python_type_root_candidates = []
+        sites = tuple(iter_union_sites(self.results))
+        variants = {
+            id(data_type.reference)
+            for site in sites
+            for data_type in site.field.data_type.all_data_types
+            if data_type.reference is not None
+        }
+        index = self.generation_store.index
+        roots = [
+            candidate
+            for candidate in candidates
+            if not index.models_inheriting(reference := candidate.model.reference)
+            and not keeps_extra_keys(candidate.model.extra_template_data)
+            and id(reference) not in variants
+            and not any(_get_mapping_discriminator_values(candidate.model, site.mapping) for site in sites)
+        ]
+        for model, name, obj, path, python_type in roots:
+            x_python_type = obj.extras.get("x-python-type")
+            root_type = _type_overrides.python_type_data_type(
+                self,
+                python_type,
+                needs_arbitrary_types=not isinstance(x_python_type, PythonTypeSchemaAnnotation)
+                or x_python_type.arbitrary_types,
+            )
+            source_path = self.current_source_path
+            self.current_source_path = model.file_path
+            try:
+                with self._unrecorded_naming_frames(), self._graph_builder.replace_parsed_model(model) as taken:
+                    JsonSchemaParser._parse_root_type_with_context(
+                        self, name, obj, path, root_type=root_type, reference=model.reference
+                    )
+            finally:
+                self.current_source_path = source_path
+            if model in self._merged_copies:
+                self._merged_copies.discard(model)
+                self._merged_copies.add(taken[0])
 
     def _build_definition_array(self, site: _Site) -> object:
         return self.parse_array(site.name, site.obj, site.path)

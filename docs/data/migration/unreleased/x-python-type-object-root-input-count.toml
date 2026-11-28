@@ -1,0 +1,6 @@
+[[change]]
+id = "x-python-type-object-root-input-count"
+extends = "dataclass-later-base-input-count"
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]

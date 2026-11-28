@@ -6,6 +6,7 @@ import contextlib
 import importlib
 import inspect
 import json
+import logging
 import pickle
 import platform
 import re
@@ -45,6 +46,7 @@ from datamodel_code_generator import (
 from datamodel_code_generator import reference as reference_module
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.config import GenerateConfig
+from datamodel_code_generator.enums import NamingStrategy
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model import base as model_base
 from datamodel_code_generator.parser.openapi import OpenAPIParser
@@ -18364,3 +18366,104 @@ def test_directory_input_type_of_top_level_files_does_not_depend_on_the_listing(
                 expected_stderr=inferred_message.format("jsonschema") + "\n",
                 name="model",
             )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--extra-fields", "allow"], id="extra-fields-allow"),
+        pytest.param(["--strict-nullable"], id="strict-nullable"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+        pytest.param(["--strict-nullable", "--collapse-root-models"], id="strict-nullable-collapse"),
+        pytest.param(["--preset", "standard-py314-20261127"], id="preset"),
+        pytest.param(["--read-only-write-only-model-type", "request-response"], id="request-response"),
+        pytest.param(["--naming-strategy", "full-path"], id="full-path"),
+        pytest.param(["--naming-strategy", "parent-prefixed"], id="parent-prefixed"),
+        pytest.param(["--naming-strategy", "primary-first"], id="primary-first"),
+        pytest.param(["--naming-strategy", "definitions-first"], id="definitions-first"),
+        pytest.param(["--strict-nullable", "--output-model-type", "dataclasses.dataclass"], id="dataclass"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+    ],
+)
+def test_x_python_type_object_component(extra_args: list[str], output_file: Path) -> None:
+    """Write the object schemas of a document that hold nothing and name an x-python-type as roots of it (#7581).
+
+    A component and an inline request or response body are one rule, under the names each naming strategy gives
+    them. A ``nullable`` one admits None in every null mode, and a component that keeps keys
+    (``additionalProperties: true``, ``--extra-fields allow``) stays an empty model.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "x_python_type_object_root.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", "paths", *extra_args],
+    )
+
+
+@pytest.mark.allow_direct_assert("the generated model's values are the payload facts under test")
+def test_x_python_type_object_component_holds_its_value(output_file: Path) -> None:
+    """Hold an instance of the class, or None where the schema is nullable, in a fieldless object root (#7581)."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "x_python_type_object_root.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", "paths"],
+    )
+    logger = logging.getLogger("x_python_type_object_component")
+    with _generated_model(output_file, "_generated_x_python_type_object_component", "Basket") as basket:
+        parsed = basket.model_validate({"thing": logger, "nullable": None, "requiredNullable": logger})
+        assert parsed.model_dump(exclude_unset=True) == {"thing": logger, "nullable": None, "requiredNullable": logger}
+        with pytest.raises(pydantic.ValidationError):
+            basket.model_validate({"thing": {}, "requiredNullable": None})
+
+
+@pytest.mark.allow_direct_assert("the naming record of a parsed model is internal state with no generated output")
+def test_x_python_type_object_component_keeps_its_naming_record() -> None:
+    """Keep on a fieldless class written as a root the naming record of the frame its class was built in (#7581).
+
+    ``definitions-first`` reads where each model was built; the root of a component or an inline body is built at the
+    end of the parse, where no frame is open, so it keeps the record ``parse_object`` wrote for the class.
+    """
+    parser = OpenAPIParser(
+        OPEN_API_DATA_PATH / "x_python_type_object_root.json",
+        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Paths],
+        naming_strategy=NamingStrategy.DefinitionsFirst,
+        formatters=[Formatter.BUILTIN],
+    )
+    parser.parse()
+    assert {
+        model.class_name: model.reference.__dict__["_build_record"].frames[0].model is model.reference
+        for model in parser.results
+    } == {
+        "Thing": True,
+        "Open": True,
+        "Nullable": True,
+        "NullableDefault": True,
+        "Basket": True,
+        "ThingsPostRequest": True,
+        "ThingsPostResponse": True,
+        "ThingsGetResponse": True,
+    }
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"], id="msgspec-tagged"),
+        pytest.param(["--output-model-type", "dataclasses.dataclass"], id="dataclass"),
+    ],
+)
+def test_x_python_type_object_component_discriminator_variant(extra_args: list[str], output_file: Path) -> None:
+    """Keep a fieldless python-type class that a discriminated union names, as a member or by its mapping (#7581).
+
+    The union tags each variant with the property of the discriminator, so ``Cat`` and ``Bird`` stay the classes main
+    writes.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "x_python_type_object_root_discriminator.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=extra_args,
+    )

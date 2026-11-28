@@ -2398,3 +2398,23 @@ cli	main/openapi/main_openapi/numeric_union_preserves_nullable_warning[cli].py	=
 	main/openapi/main_openapi/validation_refused_with_no_allow_remote_refs.txt
 [test_webhooks_ref_with_external_schema]
 	main/openapi/main_openapi/webhooks_ref_with_external_schema.py
+[test_x_python_type_object_component]
+collapse-root-models	main/openapi/main_openapi/x_python_type_object_component[collapse-root-models].py
+dataclass	main/openapi/main_openapi/x_python_type_object_component[dataclass].py
+default	main/openapi/main_openapi/x_python_type_object_component[default].py
+definitions-first	main/openapi/main_openapi/x_python_type_object_component[definitions-first].py	= main/openapi/main_openapi/x_python_type_object_component[default].py
+extra-fields-allow	main/openapi/main_openapi/x_python_type_object_component[extra-fields-allow].py
+full-path	main/openapi/main_openapi/x_python_type_object_component[full-path].py	= main/openapi/main_openapi/x_python_type_object_component[default].py
+msgspec	main/openapi/main_openapi/x_python_type_object_component[msgspec].py
+parent-prefixed	main/openapi/main_openapi/x_python_type_object_component[parent-prefixed].py	= main/openapi/main_openapi/x_python_type_object_component[default].py
+preset	main/openapi/main_openapi/x_python_type_object_component[preset].py
+primary-first	main/openapi/main_openapi/x_python_type_object_component[primary-first].py	= main/openapi/main_openapi/x_python_type_object_component[default].py
+request-response	main/openapi/main_openapi/x_python_type_object_component[request-response].py	= main/openapi/main_openapi/x_python_type_object_component[default].py
+strict-nullable	main/openapi/main_openapi/x_python_type_object_component[strict-nullable].py
+strict-nullable-collapse	main/openapi/main_openapi/x_python_type_object_component[strict-nullable-collapse].py	= main/openapi/main_openapi/x_python_type_object_component[collapse-root-models].py
+[test_x_python_type_object_component_discriminator_variant]
+dataclass	main/openapi/main_openapi/x_python_type_object_component_discriminator_variant[dataclass].py
+default	main/openapi/main_openapi/x_python_type_object_component_discriminator_variant[default].py
+msgspec-tagged	main/openapi/main_openapi/x_python_type_object_component_discriminator_variant[msgspec-tagged].py
+[test_x_python_type_object_component_holds_its_value]
+	main/openapi/main_openapi/x_python_type_object_component_holds_its_value.py	= main/openapi/main_openapi/x_python_type_object_component[default].py

@@ -39,6 +39,7 @@ from tests.conftest import (
 )
 from tests.data.python.input_model import inherited_overrides, union_annotations
 from tests.data.python.input_model.inherited_override_runtime import CASES as INHERITED_OVERRIDE_CASES
+from tests.data.python.input_model.structured_annotations import Thing
 from tests.data.python.input_model.union_runtime import CASES, VALUES, describe
 from tests.main.conftest import (
     DATA_PATH,
@@ -1485,6 +1486,21 @@ ARBITRARY_CLASS_CASES: dict[str, tuple[str, tuple[str, ...]]] = {
     "root-in-model-root-alias": ("HoldsRoot", _ROOT_MODEL_ALIAS),
     "root-alias": ("RootOptional", _ROOT_MODEL_ALIAS),
     "root-in-model-type-alias": ("HoldsRoot", _TYPE_ALIAS),
+    "root-class": ("RootThing", ()),
+    "root-instance-of": ("RootInstanceOf", ()),
+    "root-hooked": ("RootHooked", ()),
+    "root-of-root": ("RootOfRootThing", ()),
+    "root-held": ("HoldsRootThing", ()),
+    "root-held-hooked": ("HoldsRootHooked", ()),
+    "root-field-list": ("ListsRootThing", ()),
+    "root-held-reuse-model": ("HoldsRootThing", ("--reuse-model",)),
+    "root-held-collapse": ("HoldsRootThing", ("--collapse-root-models",)),
+    "root-held-preset": ("HoldsRootThing", ("--preset", "standard-py314-20261125")),
+    "root-held-preset-20261127": ("HoldsRootThing", ("--preset", "standard-py314-20261127")),
+    "root-class-root-alias": ("RootThing", _ROOT_MODEL_ALIAS),
+    "root-held-type-alias": ("HoldsRootThing", _TYPE_ALIAS),
+    "root-held-reuse-foreign": ("HoldsRootThing", ("--input-model-ref-strategy", "reuse-foreign")),
+    "root-held-reuse-all": ("HoldsRootThing", ("--input-model-ref-strategy", "reuse-all")),
     "preserved-union": ("PreservedUnion", ()),
     "preserved-union-dataclass": ("PreservedUnion", _DATACLASS),
     "optional-preserved-union": ("OptionalPreservedUnion", ()),
@@ -1518,7 +1534,28 @@ def test_input_model_arbitrary_class_fields(case: str, tmp_path: Path) -> None:
         assert generated.__name__ == model
 
 
-@pytest.mark.parametrize("model", ["Holder", "PydanticDataclassHolder", "DataclassHolder", "TypedDictHolder"])
+@pytest.mark.parametrize("model", ["RootThing", "RootInstanceOf", "HoldsRootThing"])
+def test_input_model_root_of_arbitrary_class_holds_its_value(model: str, tmp_path: Path) -> None:
+    """Write a root of a class no schema can describe as a root that holds the class, not an empty model (#7581)."""
+    output = tmp_path / "output.py"
+    run_input_model_and_assert(
+        input_model=f"{ARBITRARY_CLASSES_MODULE}:{model}",
+        output_path=output,
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+    )
+    thing = Thing()
+    holds = model == "HoldsRootThing"
+    with _generated_model(output, "_generated_root_arbitrary_class", model) as generated:
+        assert generated.model_validate({"a": thing, "b": 1} if holds else thing).model_dump() == (
+            {"a": thing, "b": 1} if holds else thing
+        )
+        with pytest.raises(ValidationError):
+            generated.model_validate({"a": {}, "b": 1} if holds else {})
+
+
+@pytest.mark.parametrize(
+    "model", ["Holder", "PydanticDataclassHolder", "DataclassHolder", "TypedDictHolder", "HoldsRootThing"]
+)
 @pytest.mark.parametrize(
     "output_model_type",
     ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],

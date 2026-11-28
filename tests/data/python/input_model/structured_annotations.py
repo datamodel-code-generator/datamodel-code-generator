@@ -207,6 +207,53 @@ class HoldsRoot(BaseModel):
     root_field: RootOptional
 
 
+class RootThing(RootModel):
+    """A root of a class no schema can describe."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    root: Thing
+
+
+class RootInstanceOf(RootModel):
+    """A root of an ``InstanceOf`` class, with no config."""
+
+    root: InstanceOf[Thing]
+
+
+class RootHooked(RootModel):
+    """A root of a class that builds its own schema."""
+
+    root: Hooked
+
+
+class RootOfRootThing(RootModel):
+    """A root of a root of a class no schema can describe."""
+
+    root: RootThing
+
+
+class HoldsRootThing(BaseModel):
+    """A model that holds a root of a class no schema can describe."""
+
+    a: RootThing
+    b: int
+
+
+class HoldsRootHooked(BaseModel):
+    """A model that holds a root of a class that builds its own schema."""
+
+    a: RootHooked
+    b: int
+
+
+class ListsRootThing(BaseModel):
+    """A model that holds a list of the class and a root of it."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    things: list[Thing]
+    r: RootThing
+
+
 class PreservedUnion(BaseModel):
     """The class beside a type whose Python type the field keeps: the field's own type spells the union."""
 

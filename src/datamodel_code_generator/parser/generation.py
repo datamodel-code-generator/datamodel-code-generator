@@ -219,6 +219,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "rename_model",
     "replace_additional_properties_type",
     "replace_model",
+    "replace_parsed_model",
     "require_field",
     "restore_required_inherited_field",
     "retire_model",
@@ -1388,6 +1389,24 @@ class GenerationStore:  # noqa: PLR0904
         """Record that ``replacement``, built after parsing under the same model key, takes the place of ``model``."""
         self._builder.retire_model(model)
         self._builder.register_model(replacement)
+
+    @contextmanager
+    def replace_parsed_model(self, model: DataModel) -> Generator[list[DataModel], None, None]:
+        """Make the one model the ``with`` block registers while parsing take the place of ``model``, which leaves.
+
+        The new model takes the list place of ``model`` in the parsed models (``Parser.results``), and ``model`` leaves
+        the parsed universe: unlike ``retire_model``, which keeps a model parsed, no second model stays under its key.
+        The block registers exactly one model, and runs while parsing (only L1 builds the parsed models). The list the
+        block gets holds that model after the block.
+        """
+        place = next(index for index, parsed in enumerate(self.models) if parsed is model)
+        count = len(self.models)
+        taken: list[DataModel] = []
+        yield taken
+        (new,) = self.models[count:]
+        del self.models[count:]
+        taken.append(new)
+        self.models[place] = new
 
     @staticmethod
     def set_module_models(models: list[DataModel], members: Iterable[DataModel]) -> None:
@@ -2694,6 +2713,10 @@ class GraphBuilder:
     def replace_model(self, model: DataModel, replacement: DataModel) -> None:
         """Record that ``replacement``, built after parsing under the same model key, takes the place of ``model``."""
         self._store.replace_model(model, replacement)
+
+    def replace_parsed_model(self, model: DataModel) -> AbstractContextManager[list[DataModel]]:
+        """Make the one model the ``with`` block registers while parsing take the place of ``model``, which leaves."""
+        return self._store.replace_parsed_model(model)
 
     def replace_nested_data_type(
         self, parent_data_type: DataType, old_data_type: DataType, new_data_type: DataType
