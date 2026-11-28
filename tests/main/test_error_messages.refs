@@ -17,6 +17,8 @@
 	main/error_messages/dangling_local_ref_warns_and_preserves_generated_output.txt
 [test_dangling_ref_warning_names_the_caller_of_a_traced_parse]
 	main/error_messages/dangling_ref_warning_names_the_caller_of_a_traced_parse.txt
+[test_debug_generates_an_allof_with_a_oneof_member]
+	main/error_messages/debug_generates_an_allof_with_a_oneof_member.model.py
 [test_directory_input_custom_header_trailing_newlines]
 False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].model.py	= main/person.py
 False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].tree/
