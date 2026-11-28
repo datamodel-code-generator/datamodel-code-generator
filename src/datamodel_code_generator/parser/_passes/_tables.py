@@ -32,7 +32,10 @@ from datamodel_code_generator.parser._passes import (
     settle,
     structure,
 )
-from datamodel_code_generator.parser._passes._import_aliases import alias_shadowed_imports
+from datamodel_code_generator.parser._passes._import_aliases import (
+    alias_module_shadowed_imports,
+    apply_decided_import_aliases,
+)
 from datamodel_code_generator.parser._passes._shared import (
     InheritedFieldHost,
     override_required_field,
@@ -217,7 +220,7 @@ STRUCTURE_BODY: tuple[StepLike[PipelineHost, _StructureState], ...] = (
 
 MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
     PassSpec("record_decimal_alias_models", late(modules.record_decimal_alias_models)),
-    PassSpec("alias_shadowed_imports", lambda self, s: alias_shadowed_imports(self, s.model_list, s.all_module_fields)),
+    PassSpec("alias_shadowed_imports", alias_module_shadowed_imports),
     PassSpec("override_required_field", lambda self, s: override_required_field(self, s.model_list)),
     PassSpec(
         "replace_unique_list_to_set",
@@ -370,6 +373,7 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
                 "mark_set_item_models_hashable",
                 lambda self, s: render_prep.mark_set_item_models_hashable(self, s.all_models),
             ),
+            PassSpec("apply_decided_import_aliases", apply_decided_import_aliases),
             PassSpec("finalize_structured_imports", lambda self, s: self._finalize_structured_imports(s.contexts)),
             PassSpec(
                 "finalize_sequence_interface",

@@ -1,0 +1,24 @@
+[[change]]
+id = "fix-7601-rejects-all"
+category = "default-fix"
+title = "Types written after a module aliases an import name the alias where the bare name read another field's default"
+summary = "Where a field name of a module hides an import (Item has a field date), the module imports it as from datetime import date as date_aliased. A type a --type-overrides key wrote after that, or a root type --collapse-root-models inlined from another module, named the bare date, which in a Pydantic class body is the default of the field date (None). These modules imported, but the field accepted only None: a required when: date, list[date], the date branch of date | int and a collapsed list[date] rejected every valid date and accepted null or [null], which the schema rejects. In a plain dataclass, Decimal | None made get_type_hints and pydantic.TypeAdapter raise TypeError while construction worked. Such a type now names the alias (when: date_aliased, list[date_aliased]), so a valid date parses to the type the override or the schema names. It changes by default because such a field matched neither the schema nor the override and no valid value of the date it names got through. Class names, field names, required-ness, defaults and field order are unchanged."
+refs = ["#7616", "#7601", "#7604", "#7615"]
+decision = ["#7616"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "main/main_general/collapse_root_models_spell_the_module_import_alias[list]/",
+    "main/main_general/type_overrides_spell_the_module_import_alias[annotation_list].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[annotation_union_int].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[model_level_annotation_list].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[required].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[stdlib-dataclasses.dataclass].py",
+]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/import_alias_late_types/collapse_list.json"]
+backends = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+options = "*"
+aspects = ["type"]

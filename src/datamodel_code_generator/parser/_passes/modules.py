@@ -3347,11 +3347,12 @@ def _replace_aliases(
     replacements: Mapping[int, DataModel],
 ) -> None:
     """Put each replacement of ``aliases``, by the id of the alias, in its place in every model list of the run."""
+    prepared_modules = parser._prepared_modules
     for model_list in chain(
         (ctx.models for ctx in run.contexts),
         (models for _, models in run.module_models),
-        (prepared.model_list for prepared in parser._prepared_modules),
-        (prepared.model_list_before_override_removal for prepared in parser._prepared_modules),
+        (prepared.model_list for prepared in prepared_modules),
+        (prepared.model_list_before_override_removal for prepared in prepared_modules),
     ):
         parser._graph_builder.set_module_models(model_list, [replacements.get(id(m), m) for m in model_list])
     for model in aliases:

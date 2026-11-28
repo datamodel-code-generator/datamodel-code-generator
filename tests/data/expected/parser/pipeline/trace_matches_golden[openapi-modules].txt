@@ -288,6 +288,7 @@ collect_all_models
 prepare_type_alias_fields
 finalize_type_alias_users
 mark_set_item_models_hashable
+apply_decided_import_aliases
 finalize_structured_imports
 finalize_sequence_interface
 decide_nested_model_default_factories

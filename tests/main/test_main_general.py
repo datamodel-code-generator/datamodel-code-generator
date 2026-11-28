@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import datetime as dt
 import importlib.util
 import inspect
 import json
@@ -25,6 +26,7 @@ import black
 import pytest
 from inline_snapshot import snapshot
 from packaging import version
+from pydantic import ValidationError
 
 import datamodel_code_generator
 from datamodel_code_generator import (
@@ -101,6 +103,7 @@ from tests.main.conftest import (
     PROTOBUF_DATA_PATH,
     PYTHON_DATA_PATH,
     TIMESTAMP,
+    _generated_package_module,
     _optional_test_parsed_source_cache,
     assert_generated_model_json_validation,
     run_generate_and_assert,
@@ -8429,3 +8432,364 @@ def test_generation_without_parse_checks(
         input_file_type="openapi",
         extra_args=args,
     )
+
+
+_IMPORT_ALIAS_PATH = JSON_SCHEMA_DATA_PATH / "import_alias_late_types"
+_DATE_MESSAGE = "Input should be a valid date"
+_STATE_MESSAGE = "Input should be 'UNWRAPPED'"
+_WHEN_DATE = json.dumps({"Item.when": "datetime.date"})
+
+
+class _AliasPayload(NamedTuple):
+    valid_json: str
+    invalid_json: str
+    error_type: str
+    field: str
+    value: object
+
+
+_WHEN_PAYLOAD = _AliasPayload(
+    '{"when": "2024-01-02"}', '{"when": "x"}', "date_from_datetime_parsing", "when", dt.date(2024, 1, 2)
+)
+_WHEN_LIST_PAYLOAD = _AliasPayload(
+    '{"when": ["2024-01-02"]}', '{"when": [null]}', "date_type", "when", [dt.date(2024, 1, 2)]
+)
+
+
+@pytest.mark.parametrize(
+    ("input_name", "args", "payload", "imports"),
+    [
+        pytest.param(
+            "item_and_plain.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--type-overrides", _WHEN_DATE],
+            _WHEN_PAYLOAD,
+            True,
+            id="issue-pydantic_v2.BaseModel",
+        ),
+        pytest.param(
+            "item_and_plain.json",
+            ["--output-model-type", "pydantic_v2.dataclass", "--type-overrides", _WHEN_DATE],
+            _WHEN_PAYLOAD,
+            True,
+            id="issue-pydantic_v2.dataclass",
+        ),
+        pytest.param(
+            "item_and_plain.json",
+            ["--preset", "standard-py314-20261127", "--type-overrides", _WHEN_DATE],
+            _WHEN_PAYLOAD,
+            True,
+            id="issue-preset",
+        ),
+        pytest.param(
+            "item_alone.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--type-overrides", _WHEN_DATE],
+            _WHEN_PAYLOAD,
+            True,
+            id="alone",
+        ),
+        pytest.param(
+            "item_required.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--type-overrides", _WHEN_DATE],
+            _WHEN_PAYLOAD._replace(invalid_json='{"when": null}', error_type="date_type"),
+            True,
+            id="required",
+        ),
+        pytest.param(
+            "same_model.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--type-overrides", _WHEN_DATE],
+            _WHEN_PAYLOAD,
+            True,
+            id="same_model",
+        ),
+        pytest.param(
+            "stdlib.json",
+            [
+                *("--output-model-type", "pydantic_v2.BaseModel", "--type-overrides"),
+                json.dumps({"Item.amount": "decimal.Decimal", "Item.ident": "uuid.UUID"}),
+            ],
+            _AliasPayload('{"amount": "1.5"}', '{"amount": "x"}', "decimal_parsing", "amount", Decimal("1.5")),
+            True,
+            id="stdlib-pydantic_v2.BaseModel",
+        ),
+        pytest.param(
+            "stdlib.json",
+            [
+                *("--output-model-type", "dataclasses.dataclass", "--type-overrides"),
+                json.dumps({"Item.amount": "decimal.Decimal", "Item.ident": "uuid.UUID"}),
+            ],
+            None,
+            True,
+            id="stdlib-dataclasses.dataclass",
+        ),
+        pytest.param(
+            "item_and_plain.json",
+            [
+                *("--output-model-type", "pydantic_v2.BaseModel", "--type-overrides"),
+                json.dumps({"Item.when": "datetime.date | None"}),
+            ],
+            _WHEN_PAYLOAD,
+            True,
+            id="annotation",
+        ),
+        pytest.param(
+            "item_and_plain.json",
+            [
+                *("--output-model-type", "pydantic_v2.BaseModel", "--type-overrides"),
+                json.dumps({"Item.when": "list[datetime.date]"}),
+            ],
+            _WHEN_LIST_PAYLOAD,
+            True,
+            id="annotation_list",
+        ),
+        pytest.param(
+            "union.json",
+            [
+                *("--output-model-type", "pydantic_v2.BaseModel", "--type-overrides"),
+                json.dumps({"Item.opt": "datetime.date | int | None"}),
+            ],
+            _AliasPayload(
+                '{"opt": "2024-01-02"}', '{"opt": "x"}', "date_from_datetime_parsing", "opt", dt.date(2024, 1, 2)
+            ),
+            True,
+            id="annotation_union_int",
+        ),
+        pytest.param(
+            "model_level.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--type-overrides", json.dumps({"Day": "datetime.date"})],
+            _WHEN_PAYLOAD,
+            True,
+            id="model_level",
+        ),
+        pytest.param(
+            "model_level.json",
+            [
+                *("--output-model-type", "pydantic_v2.BaseModel", "--type-overrides"),
+                json.dumps({"Day": "list[datetime.date]"}),
+            ],
+            _WHEN_LIST_PAYLOAD,
+            True,
+            id="model_level_annotation_list",
+        ),
+        pytest.param(
+            "item_and_plain.json",
+            [
+                *("--output-model-type", "pydantic_v2.BaseModel", "--type-overrides", _WHEN_DATE),
+                "--type-overrides-replace-whole-type",
+            ],
+            _WHEN_PAYLOAD,
+            True,
+            id="replace_whole_type",
+        ),
+        pytest.param(
+            "item_python_type.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--type-overrides", _WHEN_DATE],
+            _WHEN_PAYLOAD,
+            True,
+            id="python_type_field",
+        ),
+        pytest.param(
+            "item_and_plain.json",
+            ["--output-model-type", "dataclasses.dataclass", "--type-overrides", _WHEN_DATE],
+            None,
+            True,
+            id="issue-dataclasses.dataclass",
+        ),
+        pytest.param(
+            "item_and_plain.json",
+            ["--output-model-type", "typing.TypedDict", "--type-overrides", _WHEN_DATE],
+            None,
+            True,
+            id="issue-typing.TypedDict",
+        ),
+        pytest.param(
+            "item_and_plain.json",
+            ["--output-model-type", "msgspec.Struct", "--type-overrides", _WHEN_DATE],
+            None,
+            True,
+            id="issue-msgspec.Struct",
+        ),
+        pytest.param(
+            "item_and_plain.json",
+            [
+                *("--output-model-type", "pydantic_v2.BaseModel", "--type-overrides"),
+                json.dumps({"Item.when": "pendulum.date"}),
+            ],
+            None,
+            False,
+            id="other_identity",
+        ),
+        pytest.param(
+            "item_and_plain.json",
+            ["--output-model-type", "pydantic_v2.BaseModel"],
+            _WHEN_PAYLOAD,
+            True,
+            id="no_override",
+        ),
+        pytest.param(
+            "unaliased.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--type-overrides", _WHEN_DATE],
+            _WHEN_PAYLOAD,
+            True,
+            id="unaliased_control",
+        ),
+    ],
+)
+def test_type_overrides_spell_the_module_import_alias(
+    output_file: Path, input_name: str, args: list[str], payload: _AliasPayload | None, *, imports: bool
+) -> None:
+    """A type a type override writes names the alias the module gave its import where a field name hides it (#7601).
+
+    The module aliases ``from datetime import date as date_aliased`` because ``Item`` has a field ``date``; the
+    override of ``Item.when``, written after that decision, names the alias too, whichever channel it renders by: the
+    class name a class override writes, the annotation text of an annotation override, a model-level override, the
+    whole type, also where an ``x-python-type`` field beside it makes the module decide its aliases from its structured
+    imports. The bare ``date`` resolved to the field's default (None) in a Pydantic class body: ``date | None``
+    failed at import, and ``date``, ``list[date]`` and ``date | int`` rejected every valid date. The dataclass,
+    TypedDict and msgspec outputs (no alias of ``date`` there), another identity of the same name (``pendulum.date``,
+    which the module binds as ``date_aliased_1`` and is not installed), the input without the override and an override
+    that is the only ``date`` of the module keep their output.
+    """
+    run_main_and_assert(
+        input_path=_IMPORT_ALIAS_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=imports,
+    )
+    if payload is not None:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="import_alias_late_types",
+            model_name="Item",
+            valid_json=payload.valid_json,
+            invalid_json=payload.invalid_json,
+            expected_error_type=payload.error_type,
+            expected_attribute_path=(payload.field,),
+            expected_attribute_value=payload.value,
+        )
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        pytest.param(["--type-overrides", _WHEN_DATE], id="modular"),
+        pytest.param(["--use-exact-imports", "--type-overrides", _WHEN_DATE], id="modular_exact_imports"),
+        pytest.param(
+            ["--all-exports-scope", "recursive", "--type-overrides", _WHEN_DATE], id="modular_all_exports_recursive"
+        ),
+    ],
+)
+def test_type_overrides_spell_the_module_import_alias_in_a_package(output_dir: Path, args: list[str]) -> None:
+    """The overridden ``a.Item.when`` names the alias module ``a`` gave ``date`` beside its field ``date`` (#7601).
+
+    Module ``a`` dropped the aliased import, which no type of it named, and wrote ``when: date | None``, which failed at
+    import; ``b.Plain`` keeps its own ``date``, and ``__init__.py`` keeps its exports.
+    """
+    run_main_and_assert(
+        input_path=_IMPORT_ALIAS_PATH / "modules.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"),
+            *args,
+        ],
+        force_exec_validation=True,
+        runtime_validation_module="a",
+        runtime_validation_model_name="Item",
+        runtime_validation_data={"when": "2024-01-02"},
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "module", "model", "data", "invalid", "message"),
+    [
+        pytest.param(
+            "collapse_scalar.json", "b", "Item", {"when": "2024-01-02"}, {"when": "x"}, _DATE_MESSAGE, id="scalar"
+        ),
+        pytest.param(
+            "collapse_list.json",
+            "b",
+            "Item",
+            {"when": ["2024-01-02"], "other": {"days": ["2024-01-02"]}},
+            {"when": [None]},
+            _DATE_MESSAGE,
+            id="list",
+        ),
+        pytest.param(
+            "collapse_aliasing_root.json",
+            "a",
+            "Other",
+            {"days": ["2024-01-01"], "d2": "2024-01-02"},
+            {"days": [None]},
+            _DATE_MESSAGE,
+            id="aliasing_root",
+        ),
+        pytest.param(
+            "collapse_aliasing_root_mirror.json",
+            "b",
+            "Other",
+            {"days": ["2024-01-01"], "d2": "2024-01-02"},
+            {"days": [None]},
+            _DATE_MESSAGE,
+            id="aliasing_root_mirror",
+        ),
+        pytest.param(
+            "collapse_module_symbol.json",
+            "a",
+            "Other",
+            {"states": ["WRAPPED"]},
+            {"states": ["OPEN"]},
+            _STATE_MESSAGE,
+            id="module_symbol",
+        ),
+        pytest.param(
+            "collapse_module_symbol_mirror.json",
+            "b",
+            "Other",
+            {"states": ["WRAPPED"]},
+            {"states": ["OPEN"]},
+            _STATE_MESSAGE,
+            id="module_symbol_mirror",
+        ),
+    ],
+)
+def test_collapse_root_models_spell_the_module_import_alias(
+    output_dir: Path,
+    input_name: str,
+    module: str,
+    model: str,
+    data: dict[str, object],
+    invalid: dict[str, object],
+    message: str,
+) -> None:
+    """A root type collapse copies into another module names the binding that module gave ``date`` (#7604, #7615).
+
+    ``b`` aliases ``date`` beside its field ``Item.date``; the collapsed ``a.Day`` wrote ``date | None``, which failed
+    at import, and ``a.Days`` wrote ``list[date] | None``, which rejected every valid date. Module ``a``, whose
+    ``Other.days`` holds the same root type and which has no field ``date``, keeps ``list[date]``. The other way
+    round, ``b.Days`` of the aliasing module ``b`` carried ``date_aliased`` into ``a.Other.days``, and ``a``, which
+    aliased nothing, imported only ``date as date_aliased`` and left its own ``d2: date`` unbound; it now writes
+    ``date`` throughout. With the module names swapped the receiving module is prepared first and was right already.
+    The same holds for a root typed by a module-qualified ``x-python-import`` name (``sslproto.SSLProtocolState`` of
+    ``asyncio``, which ``b`` imports as ``asyncio_aliased`` beside its field ``asyncio``): ``a`` imports the module
+    bare and spells ``asyncio.sslproto...`` with it, where it spelled the qualifier ``asyncio_aliased`` of the other
+    module's import and left it unbound.
+    """
+    run_main_and_assert(
+        input_path=_IMPORT_ALIAS_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models"),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+        runtime_validation_module=module,
+        runtime_validation_model_name=model,
+        runtime_validation_data=data,
+    )
+    with (
+        _generated_package_module(output_dir, module) as generated,
+        pytest.raises(ValidationError, match=message),
+    ):
+        getattr(generated, model).model_validate(invalid)

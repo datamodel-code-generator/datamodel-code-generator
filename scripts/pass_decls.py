@@ -1501,6 +1501,29 @@ MARK_SET_ITEM_MODELS_HASHABLE = PassDecl(
     reads=_facts(Fact.CONTAINERS, Fact.FIELD_TYPES),
     writes=_facts(RenderFact.SET_ITEM_HASH),
 )
+APPLY_DECIDED_IMPORT_ALIASES = PassDecl(
+    "apply_decided_import_aliases",
+    Phase.RENDER_PREPARATION,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(
+        RenderFact.IMPORT_ALIASES,
+        Fact.FIELD_TYPES,
+        Fact.BASES,
+        RenderFact.DEFAULT_EXPRESSION,
+        RenderFact.MODULE_MEMBERSHIP,
+    ),
+    writes=_facts(RenderFact.IMPORT_ALIASES, RenderFact.DEFAULT_EXPRESSION, RenderFact.MODULE_IMPORTS),
+    after=(
+        After("prepare_type_alias_fields", "aliases the types of alias bodies once they are final"),
+        After("finalize_type_alias_users", "aliases the types the copies a model redeclares name"),
+    ),
+    summary=(
+        "Writes the import aliases each module decided (alias_shadowed_imports) into the types, annotations, runtime "
+        "expressions, base classes and additional imports that passes after the decision wrote, such as type "
+        "overrides and collapsed root types."
+    ),
+)
 FINALIZE_STRUCTURED_IMPORTS = PassDecl(
     "finalize_structured_imports",
     Phase.RENDER_PREPARATION,
@@ -1511,6 +1534,7 @@ FINALIZE_STRUCTURED_IMPORTS = PassDecl(
     after=(
         After("prepare_type_alias_fields", "aliases imports after alias bodies dropped their con* imports"),
         After("finalize_type_alias_users", "aliases imports after the copies a model redeclares imported their models"),
+        After("apply_decided_import_aliases", "aliases imports after the types written late took the decided aliases"),
     ),
     summary="Aliases imports that runtime default expressions shadow (Avro also aligns shared defaults).",
     target=Phase.IMPORTS,
@@ -2120,6 +2144,7 @@ PASS_DECLS: tuple[PassDecl, ...] = in_execution_order(
     PREPARE_TYPE_ALIAS_FIELDS,
     FINALIZE_TYPE_ALIAS_USERS,
     MARK_SET_ITEM_MODELS_HASHABLE,
+    APPLY_DECIDED_IMPORT_ALIASES,
     FINALIZE_STRUCTURED_IMPORTS,
     FINALIZE_SEQUENCE_INTERFACE,
     DECIDE_NESTED_MODEL_DEFAULT_FACTORIES,

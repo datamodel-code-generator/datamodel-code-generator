@@ -1,0 +1,15 @@
+[[change]]
+id = "fix-7601-pass-listing"
+extends = "pass-triggers"
+refs = ["#7616"]
+covers = [
+    "parser/fact_finality/reports_passes_in_a_later_phase.txt",
+    "parser/pipeline/tables_follow_the_rules.provisional_reads.txt",
+    "parser/pipeline/trace_matches_golden[jsonschema].txt",
+    "parser/pipeline/trace_matches_golden[msgspec-tree-reuse].txt",
+    "parser/pipeline/trace_matches_golden[openapi-modules].txt",
+    "parser/pipeline/trace_matches_golden[renamed-sequence-roots].txt",
+    "parser/pipeline/trace_matches_golden[typed-dict-import-overrides].txt",
+    "where_script/where_answers[fact].txt",
+    "where_script/where_grammar[all].txt",
+]
