@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Plain": {
+      "customTypePath": "queue.Queue"
+    },
+    "Text": {
+      "type": "string",
+      "customTypePath": "queue.Queue"
+    },
+    "Number": {
+      "type": "integer",
+      "customTypePath": "queue.Queue"
+    },
+    "Items": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "customTypePath": "queue.Queue"
+      }
+    },
+    "Nullable": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "customTypePath": "queue.Queue"
+    },
+    "Either": {
+      "anyOf": [
+        {
+          "type": "string",
+          "customTypePath": "queue.Queue"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "Renamed": {
+      "$ref": "#/$defs/Text"
+    }
+  }
+}

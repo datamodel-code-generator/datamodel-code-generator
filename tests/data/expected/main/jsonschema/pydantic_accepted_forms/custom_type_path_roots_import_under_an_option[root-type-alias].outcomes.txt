@@ -1,0 +1,8 @@
+default
+Handle
+queue: PydanticSchemaGenerationError
+object: PydanticSchemaGenerationError
+option
+Handle
+queue: PydanticSchemaGenerationError
+object: PydanticSchemaGenerationError

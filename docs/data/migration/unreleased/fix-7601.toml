@@ -1,0 +1,58 @@
+[[change]]
+id = "fix-7601"
+category = "crash-fix"
+title = "Types written after a module aliases an import name the alias, so the module imports"
+summary = "Where a field name of a module hides an import (Item has a field date), the module imports it as from datetime import date as date_aliased. A type a --type-overrides key wrote after that (a class or annotation override, scoped, model-level or with --type-overrides-replace-whole-type), or a root type --collapse-root-models inlined from another module, named the bare date. In a Pydantic class body that name is the default of the field date (None), so when: date | None failed at import with TypeError: unsupported operand type(s) for |, and where no other type of the module named the alias the import was dropped too. Such a type now names the alias (when: date_aliased | None) and the import stays. The other way round, a root of a module that aliased date, inlined by --collapse-root-models into a module that did not, carried the alias along: that module imported only date as date_aliased and left its own date fields unbound; it now writes date throughout, and a root typed by a module-qualified x-python-import name (Outer.Kind of an aliased module import) takes the receiving module's own import line and qualifier the same way, as it already did when that module was prepared first. Only modules that failed to import or imported another module's alias change; class names, field names, field order and the override's type are unchanged, and dataclasses, TypedDict and msgspec output, where nothing aliases date, keeps its output."
+refs = ["#7616", "#7601", "#7604", "#7615"]
+kind = "default-output"
+action = "none"
+source = "release-note"
+covers = [
+    "main/main_general/collapse_root_models_spell_the_module_import_alias[aliasing_root]/",
+    "main/main_general/collapse_root_models_spell_the_module_import_alias[aliasing_root_mirror]/",
+    "main/main_general/collapse_root_models_spell_the_module_import_alias[scalar]/",
+    "main/main_general/type_overrides_spell_the_module_import_alias[alone].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[annotation].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[issue-dataclasses.dataclass].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[issue-msgspec.Struct].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[issue-preset].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[issue-pydantic_v2.BaseModel].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[issue-pydantic_v2.dataclass].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[issue-typing.TypedDict].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[model_level].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[no_override].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[other_identity].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[python_type_field].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[replace_whole_type].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[same_model].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[stdlib-pydantic_v2.BaseModel].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias[unaliased_control].py",
+    "main/main_general/type_overrides_spell_the_module_import_alias_in_a_package[modular]/",
+    "main/main_general/type_overrides_spell_the_module_import_alias_in_a_package[modular_all_exports_recursive]/",
+    "main/main_general/type_overrides_spell_the_module_import_alias_in_a_package[modular_exact_imports]/",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_import_alias_late_types_item_alone.json~4a33ae51].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_import_alias_late_types_same_model.json~cd50e649].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_import_alias_late_types_stdlib.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_import_alias_late_types_unaliased.json~023cb984].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_import_alias_late_types_union.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_import_al~5a53239d.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_import_al~a4d51fca.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema_import_al~c0e85c93.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_import_alias_late_types_item_alone.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_import_alias_late_types_item_and_plain.json~ed909e8e].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_import_alias_late_types_item_required.json~d011231d].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_import_alias_late_types_model_level.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_import_alias_late_types_same_model.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_import_alias_late_types_stdlib.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_import_alias_late_types_unaliased.json].errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[jsonschema_import_alias_late_types_union.json].errors.txt",
+]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/import_alias_late_types/collapse_aliasing_root.json",
+    "tests/data/jsonschema/import_alias_late_types/collapse_scalar.json",
+    "tests/data/jsonschema/import_alias_late_types",
+]
+backends = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+options = "*"

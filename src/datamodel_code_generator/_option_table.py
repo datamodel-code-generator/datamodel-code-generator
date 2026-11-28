@@ -684,6 +684,23 @@ OPTIONS: Final[tuple[Option, ...]] = (
         help="Make non-null sequence-like Pydantic v2 RootModel classes implement collections.abc.Sequence by adding "
         "Sequence[T] inheritance and root-delegating __iter__, __getitem__, and __len__ methods",
     ),
+    toggle(
+        (Section.MODEL, _G.ROOT_MODEL),
+        "--use-root-model-any-for-custom-type-path",
+        help="pydantic_v2.BaseModel output: write a RootModel whose root holds a class named by customTypePath as "
+        "RootModel[Any] with arbitrary_types_allowed=True and the class on root, so a module whose class Pydantic "
+        "cannot build imports. Without it the root is RootModel[<class>], as in 0.104.0, and a module naming such a "
+        "class fails at import",
+        preset=PresetJoin(
+            "20261128",
+            {"use_root_model_any_for_custom_type_path": True},
+            title="Custom type path roots",
+            description=(
+                "A Pydantic v2 RootModel whose root holds a customTypePath class is written as RootModel[Any] with "
+                "arbitrary_types_allowed=True and the class on root, so it imports for any class."
+            ),
+        ),
+    ),
     flag(
         (Section.MODEL, _C.TEMPLATE),
         "--disable-appending-item-suffix",

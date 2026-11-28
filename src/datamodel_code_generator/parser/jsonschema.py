@@ -5018,14 +5018,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         default: Any,
     ) -> DataModel:
         """Create and register one concrete root model."""
-        if (factory := data_model_root_type.ROOT_MODEL_CONSTRAINTS_FALLBACK) is not None:
-            fallbacks = self._root_constraints_fallbacks
-            if data_model_root_type not in fallbacks:
-                fallbacks[data_model_root_type] = factory(self.custom_template_dir)
-            if (fallback := fallbacks[data_model_root_type]) is not None and (
-                constrained_root_type := fallback(fields)
-            ) is not None:
-                data_model_root_type = constrained_root_type
         data_model_root = self._new_model(
             data_model_root_type,
             reference=reference,
@@ -5069,7 +5061,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         requested_root_model_type = data_model_root_type
         if self.generate_schema_validators:
             self._add_path_rules_validator(reference.path, obj, fields, [], is_root_model=True)
-        data_model_root_type = self._get_runtime_validation_root_model_type(data_model_root_type, reference.path)
+        data_model_root_type = self._concrete_root_model_type(data_model_root_type, fields, reference.path)
         if _rw_split.splits_root_model(self, reference, fields):
             self._request_response_fields[reference.path] = tuple(_rw_split.copy_unregistered_fields(self, fields))
             if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
@@ -5081,8 +5073,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
                 self._rw_model_variant_requirement_cache[reference.path, suffix] = True
                 self._rw_imported_field_caches[1][reference.path, suffix] = True
-                variant_root_model_type = self._get_runtime_validation_root_model_type(
+                variant_root_model_type = self._concrete_root_model_type(
                     requested_root_model_type,
+                    variant_fields,
                     variant_reference.path,
                 )
                 variants.append(
@@ -5110,6 +5103,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             description=description,
             default=default,
         )
+
+    def _concrete_root_model_type(
+        self,
+        data_model_root_type: type[DataModel],
+        fields: list[DataModelFieldBase],
+        reference_path: str,
+    ) -> type[DataModel]:
+        """Choose the class form a root takes: runtime validators, then what the alias template cannot write."""
+        data_model_root_type = self._get_runtime_validation_root_model_type(data_model_root_type, reference_path)
+        if (factory := data_model_root_type.ROOT_MODEL_CONSTRAINTS_FALLBACK) is not None:
+            fallbacks = self._root_constraints_fallbacks
+            if data_model_root_type not in fallbacks:
+                fallbacks[data_model_root_type] = factory(self.custom_template_dir)
+            if (fallback := fallbacks[data_model_root_type]) is not None and (
+                constrained_root_type := fallback(fields)
+            ) is not None:
+                data_model_root_type = constrained_root_type
+        return data_model_root_type
 
     def _get_runtime_validation_root_model_type(
         self,
@@ -6574,9 +6585,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self._custom_type(site.obj)
 
     def _custom_type(self, obj: JsonSchemaObject) -> DataType:
-        """Return the type of a schema that ``customTypePath`` gives, the class that dotted path names."""
+        """Return the type of a schema that ``customTypePath`` gives, the class that dotted path names.
+
+        The class is unknown without importing it. With ``--use-root-model-any-for-custom-type-path`` the type counts
+        as proved to need ``arbitrary_types_allowed`` (``needs_arbitrary_types``), which gives a root model that holds
+        it ``RootModel[Any]``, the key and the class on ``root``; without it a root keeps ``RootModel[<class>]``
+        (row ``legacy-custom-type-root-keeps-subscript``).
+        """
         self._refuse_untrusted_code("customTypePath", obj.custom_type_path)
-        return self.data_type_manager.get_data_type_from_full_path(
+        data_type = self.data_type_manager.get_data_type_from_full_path(
             _type_overrides.get_emitted_python_type_path(
                 self,
                 _validate_schema_python_import_path(
@@ -6585,6 +6602,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ),
             is_custom_type=True,
         )
+        row: Literal["roots-take-any-for-custom-types", "legacy-custom-type-root-keeps-subscript"] = (
+            "roots-take-any-for-custom-types"
+            if self.config.use_root_model_any_for_custom_type_path
+            else "legacy-custom-type-root-keeps-subscript"
+        )
+        if row == "legacy-custom-type-root-keeps-subscript":
+            return data_type
+        return data_type.model_copy(update={"needs_arbitrary_types": True})
 
     def _record_site_constraints(self, site: _all_of_values.ValueSite, data_type: DataType) -> DataType:
         """Keep on ``data_type`` the constraints the allOf site ``site`` adds to the target of its first ``$ref``.

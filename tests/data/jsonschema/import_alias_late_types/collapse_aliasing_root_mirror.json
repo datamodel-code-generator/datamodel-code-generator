@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "a.Days": {"type": "array", "items": {"type": "string", "format": "date"}},
+    "a.Item": {
+      "type": "object",
+      "properties": {"when": {"$ref": "#/$defs/a.Days"}, "date": {"type": "string"}}
+    },
+    "b.Other": {
+      "type": "object",
+      "properties": {"days": {"$ref": "#/$defs/a.Days"}, "d2": {"type": "string", "format": "date"}}
+    }
+  }
+}

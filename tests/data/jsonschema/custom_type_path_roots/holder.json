@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "text": {
+      "$ref": "#/$defs/Text"
+    },
+    "items": {
+      "$ref": "#/$defs/Items"
+    },
+    "either": {
+      "$ref": "#/$defs/Either"
+    }
+  },
+  "required": [
+    "text"
+  ],
+  "$defs": {
+    "Text": {
+      "type": "string",
+      "customTypePath": "queue.Queue"
+    },
+    "Items": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "customTypePath": "queue.Queue"
+      }
+    },
+    "Either": {
+      "anyOf": [
+        {
+          "type": "string",
+          "customTypePath": "queue.Queue"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    }
+  }
+}

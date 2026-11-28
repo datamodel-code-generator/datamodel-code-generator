@@ -74,8 +74,11 @@ _LEADING_CONFIG_KEYS: frozenset[str] = frozenset({
 def names_class_by_text(data_type: DataType) -> bool:
     """Return whether the data type is a class named by text (``customTypePath``).
 
-    Its class is unknown without importing it, so the model that declares it assumes the class needs
-    ``arbitrary_types_allowed``; a model that builds the declaration again from a base answers the same.
+    Its class is unknown without importing it, so a model that builds it assumes the class needs
+    ``arbitrary_types_allowed``: the model that declares it at ``__init__``, and once the field types are final every
+    model that builds it, from a base, a collapsed root or a type alias, but a root model, which
+    ``--use-root-model-any-for-custom-type-path`` gives the key by proving the class
+    (``_counts_classes_named_by_text``).
     """
     return data_type.is_custom_type
 
@@ -110,10 +113,10 @@ def build_base_config_parameters(
 
     A class named by text (``names_class_by_text``, a ``customTypePath`` type) in the fields at ``__init__`` writes
     ``arbitrary_types_allowed``, and the config keeps it where ``--type-overrides`` later replaces the type (row
-    ``legacy-custom-type-config-at-init``): the class is unknown, so the model assumes it needs the key. A dataclass
-    that builds such a declaration again from a base, with the config it applies, gets the key once the field types
-    are final, from the same reading; so do the classes of an input model, which the model's own config allows
-    (``_PydanticV2Model.finalize_type_alias_users``).
+    ``legacy-custom-type-config-at-init``): the class is unknown, so the model assumes it needs the key. Once the
+    field types are final, every model that builds such a class with the config it applies gets the key from the same
+    reading, as do the classes of an input model, which the model's own config allows
+    (``_PydanticV2Model.finalize_type_alias_users``); there the key of an own field read here is already set.
     """
     config_attributes = get_config_attributes(
         extra_template_data,

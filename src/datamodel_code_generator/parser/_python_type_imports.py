@@ -30,6 +30,9 @@ class StructuredImportAliases(NamedTuple):
     kept_base_bindings: frozenset[tuple[_ImportKey, str]]
     """The identities and aliases of the bases that keep naming their alias although the identity takes another one
     (row ``legacy-generic-base-names-dropped-class-binding``)."""
+    established: frozenset[_ImportKey]
+    """The identities of ``imports`` that keep an alias their consumers carried before the decision, which the
+    decision propagates but does not make."""
 
 
 @dataclass(slots=True)
@@ -281,7 +284,13 @@ def resolve_structured_import_aliases(
                 import_,
                 state.unique_alias(name, field_collision=reserved and not kept_unaliased),
             )
-    return StructuredImportAliases(state.aliased_imports, frozenset(state.kept_base_bindings))
+    return StructuredImportAliases(
+        state.aliased_imports,
+        frozenset(state.kept_base_bindings),
+        frozenset(
+            key for key, import_ in state.aliased_imports.items() if import_ is state.ordinary_imports_by_key.get(key)
+        ),
+    )
 
 
 resolve_python_type_import_aliases = resolve_structured_import_aliases

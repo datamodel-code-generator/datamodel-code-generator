@@ -1,0 +1,26 @@
+default
+Day
+date: valid datetime.date(2024, 1, 2)
+text: date_from_datetime_parsing
+Amount
+decimal: valid Decimal('1.5')
+text: decimal_parsing
+Entity
+object: valid {}
+text: model_type
+Address
+address: valid IPv4Address('127.0.0.1')
+text: ip_any_address
+option
+Day
+date: valid datetime.date(2024, 1, 2)
+text: date_from_datetime_parsing
+Amount
+decimal: valid Decimal('1.5')
+text: decimal_parsing
+Entity
+object: valid {}
+text: model_type
+Address
+address: valid IPv4Address('127.0.0.1')
+text: ip_any_address

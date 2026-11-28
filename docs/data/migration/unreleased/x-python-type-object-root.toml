@@ -3,8 +3,8 @@ id = "x-python-type-object-root"
 category = "default-fix"
 title = "A definition that only holds an x-python-type class is a root of that class"
 summary = "An object definition that declares no property, no map and no validator, keeps no unknown keys and names an x-python-type class that does not fit an object (--input-model writes this for a plain class, an InstanceOf class or a class that builds its own schema) was written as an empty model that held nothing and accepted any object. It is now the root of that class under the same name, as a field of the same schema already took the class: a Pydantic RootModel[Any] with root: <class> and arbitrary_types_allowed=True, or a type alias of the class in dataclass, TypedDict and msgspec output. Inline OpenAPI request and response bodies follow the same rule. A definition stays a model where a model extends it, a union names it as a variant or by a discriminator mapping, it keeps unknown keys (additionalProperties: true, unevaluatedProperties, --extra-fields allow, --allow-extra-fields or an --extra-template-data entry) or it has a custom base class. The empty model held no value, but some working output changes. Under --collapse-root-models and the dated presets the former empty class name is inlined into its holders like any root model. Under --strip-default-none together with --use-default-factory-for-optional-nested-models, a field that holds a converted definition is required, as a field that holds any root model already is on main, because the converted root has no default factory. The owner decided this exception to the default rule on 2026-11-27 (the empty model, and the working output that changes with it) and approved the required fields and the vanished numbered class names on 2026-11-28. A numbered name such as Plain2 that the former empty class held under the collapse presets is gone with it."
-refs = ["#1", "#7581"]
-decision = ["#1"]
+refs = ["#7622", "#7581"]
+decision = ["#7622"]
 kind = "default-output"
 action = "review"
 source = "release-note"

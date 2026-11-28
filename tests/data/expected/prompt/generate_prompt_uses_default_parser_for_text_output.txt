@@ -310,6 +310,7 @@
 - `--no-use-frozen-field`
 - `--no-use-msgspec-forbid-unknown-fields`
 - `--no-use-msgspec-meta-for-map-keys`
+- `--no-use-root-model-any-for-custom-type-path`
 - `--no-use-serialize-as-any-for-every-subclass`
 - `--no-use-subclass-enum`
 - `--omit-incomplete-model-defaults`: Write a property whose object default lacks required fields of its model w...
@@ -343,6 +344,7 @@
 - `--use-msgspec-nullable-enum-alias`: Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
 - `--use-msgspec-tagged-unions`: Write a msgspec.Struct discriminated union as tagged structs as a whole.
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
+- `--use-root-model-any-for-custom-type-path`: Write a customTypePath root as RootModel[Any] with the class on r...
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement col...
 - `--use-serialize-as-any`: Wrap fields with subtypes in Pydantic's SerializeAsAny.
 - `--use-serialize-as-any-for-every-subclass`: Wrap a field in SerializeAsAny when any subclass of its model add...

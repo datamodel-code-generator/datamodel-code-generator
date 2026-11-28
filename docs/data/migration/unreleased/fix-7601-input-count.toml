@@ -1,0 +1,6 @@
+[[change]]
+id = "fix-7601-input-count"
+extends = "fix-7583-input-count"
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]

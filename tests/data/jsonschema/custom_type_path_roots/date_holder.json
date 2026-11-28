@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DateHolder",
+  "type": "object",
+  "properties": {
+    "day": {
+      "$ref": "#/$defs/Day"
+    }
+  },
+  "required": [
+    "day"
+  ],
+  "$defs": {
+    "Day": {
+      "type": "string",
+      "customTypePath": "datetime.date"
+    }
+  }
+}

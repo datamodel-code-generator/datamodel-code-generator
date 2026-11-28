@@ -1,0 +1,48 @@
+default
+Plain
+queue: PydanticSchemaGenerationError
+object: PydanticSchemaGenerationError
+Text
+queue: PydanticSchemaGenerationError
+text: PydanticSchemaGenerationError
+Number
+queue: PydanticSchemaGenerationError
+number: PydanticSchemaGenerationError
+Items
+queues: PydanticSchemaGenerationError
+texts: PydanticSchemaGenerationError
+Nullable
+queue: PydanticSchemaGenerationError
+null: PydanticSchemaGenerationError
+Either
+queue: PydanticSchemaGenerationError
+number: PydanticSchemaGenerationError
+digits: PydanticSchemaGenerationError
+text: PydanticSchemaGenerationError
+Renamed
+queue: PydanticSchemaGenerationError
+text: PydanticSchemaGenerationError
+option
+Plain
+queue: PydanticSchemaGenerationError
+object: PydanticSchemaGenerationError
+Text
+queue: PydanticSchemaGenerationError
+text: PydanticSchemaGenerationError
+Number
+queue: PydanticSchemaGenerationError
+number: PydanticSchemaGenerationError
+Items
+queues: PydanticSchemaGenerationError
+texts: PydanticSchemaGenerationError
+Nullable
+queue: PydanticSchemaGenerationError
+null: PydanticSchemaGenerationError
+Either
+queue: PydanticSchemaGenerationError
+number: PydanticSchemaGenerationError
+digits: PydanticSchemaGenerationError
+text: PydanticSchemaGenerationError
+Renamed
+queue: PydanticSchemaGenerationError
+text: PydanticSchemaGenerationError

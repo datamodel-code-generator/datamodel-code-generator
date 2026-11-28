@@ -11,7 +11,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [Model Naming](#model-naming) | 12 | Class names, suffixes, prefixes, and duplicate-name behavior. |
 | [Model Reuse](#model-reuse) | 4 | Schema deduplication and shared generated modules. |
 | [Model Shape](#model-shape) | 11 | Output model family and compatibility targets. |
-| [Root Model](#root-model) | 12 | Root model creation, collapse, and alias behavior. |
+| [Root Model](#root-model) | 13 | Root model creation, collapse, and alias behavior. |
 
 ## Model Naming {#model-naming}
 
@@ -78,4 +78,5 @@ Root model creation, collapse, and alias behavior.
 | [`--keep-shared-members-on-collapsed-root-models`](../model-customization.md#keep-shared-members-on-collapsed-root-models) | Keep each member of a root type that collapse inlined at several sites at every ... |
 | [`--remove-unused-models-beside-type-overrides`](../model-customization.md#remove-unused-models-beside-type-overrides) | Remove the unused models from a module that a model-level `--type-overrides` key... |
 | [`--skip-root-model`](../model-customization.md#skip-root-model) | Skip generation of root model when schema contains nested definitions. |
+| [`--use-root-model-any-for-custom-type-path`](../model-customization.md#use-root-model-any-for-custom-type-path) | Write a customTypePath root as RootModel\[Any\] with the class on root. |
 | [`--use-root-model-sequence-interface`](../model-customization.md#use-root-model-sequence-interface) | Make non-null sequence-like Pydantic v2 RootModel classes implement collections.... |

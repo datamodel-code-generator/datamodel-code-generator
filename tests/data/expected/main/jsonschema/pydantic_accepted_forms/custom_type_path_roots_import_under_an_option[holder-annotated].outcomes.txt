@@ -1,0 +1,8 @@
+default
+Holder: import fails with PydanticSchemaGenerationError
+option
+Holder
+queues: valid {'text': QUEUE, 'items': [QUEUE], 'either': QUEUE}
+number: valid {'text': QUEUE, 'items': None, 'either': 3}
+text: is_instance_of
+missing: missing

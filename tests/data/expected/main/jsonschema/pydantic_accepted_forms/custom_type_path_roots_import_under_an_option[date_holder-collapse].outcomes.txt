@@ -1,0 +1,10 @@
+default
+DateHolder
+date: valid {'day': datetime.date(2024, 1, 2)}
+text: date_from_datetime_parsing
+missing: missing
+option
+DateHolder
+date: valid {'day': datetime.date(2024, 1, 2)}
+text: date_from_datetime_parsing
+missing: missing

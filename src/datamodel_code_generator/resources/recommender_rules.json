@@ -980,6 +980,10 @@
       "not_recommended": "preset",
       "reason": "Pydantic v2 output only: set by the 20261128 presets; the recommendation starts from a preset."
     },
+    "use_root_model_any_for_custom_type_path": {
+      "not_recommended": "preset",
+      "reason": "pydantic_v2.BaseModel output only: set by the 20261128 presets; the recommendation starts from a preset."
+    },
     "keep_content_parameter_refs": {
       "not_recommended": "preset",
       "reason": "OpenAPI parameters scope only: set by the 20261106 presets; the recommendation starts from a preset."
