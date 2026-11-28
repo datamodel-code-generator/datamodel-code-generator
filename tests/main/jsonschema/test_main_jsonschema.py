@@ -29072,6 +29072,22 @@ def test_x_python_type_object_root_template_data(
     )
 
 
+def test_x_python_type_object_root_template_data_of_unread_file(output_file: Path, tmp_path: Path) -> None:
+    """Ask a class of a file not read yet by its name when an allOf over it is read (#7581).
+
+    The entry of the class name keeps ``Plain`` of ``other.json`` an empty model that allows extra keys, so the
+    definition that holds only an allOf over it stays its subclass, as it does over a class of the same file.
+    """
+    extra_template_data = tmp_path / "extra-template-data.json"
+    extra_template_data.write_text(json.dumps({"Plain": {"extra_fields": "allow"}}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root_external" / "main.json",
+        output_path=output_file,
+        input_file_type=None,
+        extra_args=["--extra-template-data", str(extra_template_data)],
+    )
+
+
 @pytest.mark.parametrize(
     "schema",
     [

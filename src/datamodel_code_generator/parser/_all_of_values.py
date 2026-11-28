@@ -328,7 +328,7 @@ class AllOfValuesHost(LightweightTypesHost, Protocol):
     def _has_pattern_properties_validator(self, obj: JsonSchemaObject) -> bool:
         """Return whether schema runtime validation owns patternProperties dispatch."""
 
-    def holds_nothing_but_python_type(self, obj: JsonSchemaObject, path: str) -> bool:
+    def holds_nothing_but_python_type(self, obj: JsonSchemaObject, path: str, ref: str | None = None) -> bool:
         """Return whether the schema at ``path`` is built as a root of its ``x-python-type`` (``parse_object``)."""
 
     def _inherited_override_row(self, parent: dict[str, Any], child: dict[str, Any]) -> dict[str, Any]:
@@ -911,10 +911,10 @@ def is_root_model_schema(parser: AllOfValuesHost, obj: JsonSchemaObject, ref: st
 def holds_nothing_but_python_type(parser: AllOfValuesHost, schema: JsonSchemaObject, ref: str) -> bool:
     """Return whether the schema that ``ref`` names is built as a root of its ``x-python-type``, not as a model.
 
-    The decision is ``parse_object``'s, asked of the schema at the reference's path, so an allOf over such a schema
-    reads a root where it reads one for any other root.
+    The decision is ``parse_object``'s, asked of the schema at the reference's path and by the name of the reference,
+    so an allOf over such a schema reads a root where it reads one for any other root.
     """
-    return parser.holds_nothing_but_python_type(schema, _schema_refs.ref_path(parser, ref))
+    return parser.holds_nothing_but_python_type(schema, _schema_refs.ref_path(parser, ref), ref)
 
 
 def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915

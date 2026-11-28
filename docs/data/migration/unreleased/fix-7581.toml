@@ -47,6 +47,7 @@ covers = [
     "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[all-models-allow].py",
     "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[name-key-allow].py",
     "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[name-key-forbid].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data_of_unread_file.py",
     "main/openapi/main_openapi/x_python_type_object_component[default].py",
     "main/openapi/main_openapi/x_python_type_object_component[extra-fields-allow].py",
     "main/openapi/main_openapi/x_python_type_object_component[paths-bodies].py",
@@ -54,30 +55,30 @@ covers = [
 
 [[change.cells]]
 input = ["tests/data/jsonschema/x_python_type_object_root.json"]
-backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
+backends = "*"
 options = "*"
-aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "type"]
+aspects = ["bases", "config", "constructor-order", "default", "kind", "name-removed", "probe", "required", "type"]
 
 [[change.cells]]
 input = [
     "tests/data/jsonschema/x_python_type_object_root_allof_child.json",
     "tests/data/jsonschema/x_python_type_object_root_allof_wrapper.json",
 ]
-backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
+backends = "*"
 options = "*"
-aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "type"]
+aspects = ["bases", "config", "constructor-order", "default", "kind", "name-removed", "probe", "required", "type"]
 
 [[change.cells]]
 input = ["tests/data/openapi/x_python_type_object_root.json"]
-backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
+backends = "*"
 options = "*"
 aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "type"]
 
 [[change.cells]]
 input = [
-    "tests/data/jsonschema/x_python_type_object_root_external/main.json",
-    "tests/data/jsonschema/x_python_type_object_root_external/other.json",
+    "tests/data/jsonschema/x_python_type_object_root_external",
+    "tests/data/jsonschema/x_python_type_object_root_external/**",
 ]
-backends = ["msgspec.Struct", "pydantic_v2.BaseModel"]
+backends = "*"
 options = "*"
-aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "required", "type"]
+aspects = ["bases", "config", "default", "import-path-removed", "kind", "name-removed", "probe", "required", "type"]

@@ -2,7 +2,7 @@
 id = "fix-7581-api"
 category = "api"
 title = "JsonSchemaParser.holds_nothing_but_python_type"
-summary = "JsonSchemaParser has a method holds_nothing_but_python_type(obj, path) that returns whether parse_object builds the object schema at a schema path as a root of its x-python-type instead of an empty model. Nothing is removed or renamed. Subclasses that define a method of this name override it."
+summary = "JsonSchemaParser has a method holds_nothing_but_python_type(obj, path, ref=None) that returns whether parse_object builds the object schema at a schema path as a root of its x-python-type instead of an empty model; ref is the reference an allOf names the schema by, which registers its model name first. Nothing is removed or renamed. Subclasses that define a method of this name override it."
 refs = ["#7581"]
 decision = ["#7581"]
 source = "release-note"

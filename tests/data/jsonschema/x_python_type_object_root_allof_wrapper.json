@@ -6,6 +6,7 @@
     "wrapped": {"$ref": "#/$defs/Wrapped"},
     "wrappedOpen": {"$ref": "#/$defs/WrappedOpen"},
     "both": {"$ref": "#/$defs/Both"},
+    "bothDescribed": {"$ref": "#/$defs/BothDescribed"},
     "inline": {
       "allOf": [{"$ref": "#/$defs/Plain"}],
       "description": "An allOf at a field is the reference."
@@ -27,6 +28,10 @@
         {"$ref": "#/$defs/Plain"},
         {"type": "object", "x-python-type": "logging.Logger"}
       ]
+    },
+    "BothDescribed": {
+      "allOf": [{"$ref": "#/$defs/Plain"}, {"type": "object"}],
+      "description": "An allOf of such a reference and an object member, described."
     }
   }
 }

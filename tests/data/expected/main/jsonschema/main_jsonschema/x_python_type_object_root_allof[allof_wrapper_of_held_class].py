@@ -33,14 +33,27 @@ class WrappedOpen(Open):
     pass
 
 
-class Both(RootModel[Logger]):
+class Both(RootModel[Any]):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
     root: Logger
+
+
+class BothDescribed(RootModel[Any]):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
+    root: Logger = Field(
+        ..., description='An allOf of such a reference and an object member, described.'
+    )
 
 
 class Holder(BaseModel):
     wrapped: Wrapped | None = None
     wrappedOpen: WrappedOpen | None = None
     both: Both | None = None
+    bothDescribed: BothDescribed | None = None
     inline: Plain | None = Field(
         None, description='An allOf at a field is the reference.'
     )

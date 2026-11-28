@@ -486,19 +486,18 @@ def _copy_all_model_data(source: Mapping[str, object], target: dict[str, object]
 def _model_template_data(
     extra_template_data: dict[str, dict[str, Any]],
     path_key: str,
-    reference: ModelNames | None,
+    reference: ModelNames,
     parsed: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
     """Return the template data a model starts with, the one home of the order it is assembled in.
 
     It is the entry of the model's schema path (``path_key``), ``parsed`` (what the parser stores for the schema on that
-    entry, where it is not stored yet), the entry of the name of its ``reference`` (none where the model has no
-    reference yet) and the ``#all#`` entry over them, each over the earlier ones. ``DataModel.__init__`` takes it, so a
-    reader before the model exists (``keeps_extra_keys``) sees what the model gets.
+    entry, where it is not stored yet), the entry of the name of its ``reference`` and the ``#all#`` entry
+    over them, each over the earlier ones. ``DataModel.__init__`` takes it, so a reader before the model exists
+    (``keeps_extra_keys``) sees what the model gets.
     """
     data = {**extra_template_data[path_key], **(parsed or {})}
-    if reference is not None:
-        data.update(extra_template_data[template_data_keys(reference)[1]])
+    data.update(extra_template_data[template_data_keys(reference)[1]])
     if all_model_extra_template_data := extra_template_data.get(ALL_MODEL):
         _copy_all_model_data(all_model_extra_template_data, data)
     return data

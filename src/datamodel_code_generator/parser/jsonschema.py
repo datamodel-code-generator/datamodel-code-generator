@@ -1092,6 +1092,20 @@ _BOOLEAN_BEFORE_DRAFT6_KEYWORDS = frozenset({"additionalProperties", "additional
 """The keywords whose value may be a boolean before boolean schemas (Draft 6): Draft 4 and OpenAPI 3.0 accept it."""
 
 
+def _stored_unevaluated_properties(obj: JsonSchemaObject) -> dict[str, object]:
+    """Return the template data that ``JsonSchemaParser.set_unevaluated_properties`` stores for ``obj``.
+
+    A boolean ``unevaluatedProperties`` is stored as it is; a schema is stored as ``True`` where
+    ``additionalProperties`` is unset. It is a module function, not a static method: ``--debug`` wraps the methods
+    of a parser subclass as plain functions, so a static method called through the instance would get it too.
+    """
+    if isinstance(obj.unevaluatedProperties, bool):
+        return {"unevaluatedProperties": obj.unevaluatedProperties}
+    if isinstance(obj.unevaluatedProperties, JsonSchemaObject) and obj.additionalProperties is None:
+        return {"unevaluatedProperties": True}
+    return {}
+
+
 def _set_schema_location(reference: Reference, location: SchemaLocation | None) -> None:
     """Record where the model of a reference is built from; two different schema objects leave it without one.
 
@@ -2802,20 +2816,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def set_unevaluated_properties(self, path: str, obj: JsonSchemaObject) -> None:
         """Set unevaluated properties flag in extra template data."""
-        self.extra_template_data[path].update(self._stored_unevaluated_properties(obj))
-
-    @staticmethod
-    def _stored_unevaluated_properties(obj: JsonSchemaObject) -> dict[str, object]:
-        """Return the template data that ``set_unevaluated_properties`` stores for ``obj``.
-
-        A boolean ``unevaluatedProperties`` is stored as it is; a schema is stored as ``True`` where
-        ``additionalProperties`` is unset.
-        """
-        if isinstance(obj.unevaluatedProperties, bool):
-            return {"unevaluatedProperties": obj.unevaluatedProperties}
-        if isinstance(obj.unevaluatedProperties, JsonSchemaObject) and obj.additionalProperties is None:
-            return {"unevaluatedProperties": True}
-        return {}
+        self.extra_template_data[path].update(_stored_unevaluated_properties(obj))
 
     def set_title(self, path: str, obj: JsonSchemaObject) -> None:
         """Set title in extra template data."""
@@ -5281,14 +5282,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return root_data_type
 
     def _parse_all_of_merged_root(self, name: str, merged_root: JsonSchemaObject, path: list[str]) -> DataType:
-        """Parse the schema an allOf merges into like the same schema written without allOf."""
+        """Parse the schema an allOf merges into like the same schema written without allOf.
+
+        An object an allOf over a root of an ``x-python-type`` merges into is that root where ``parse_object`` would
+        build it so (``_parse_python_type_root``).
+        """
         if self._reads_enum(merged_root) and self._enum_site_form(merged_root, name) == "class":
             return self._parse_enum_class(name, self._definition_enum(merged_root), path)
-        return (
-            self.parse_array(name, merged_root, path)
-            if merged_root.is_array
-            else self.parse_root_type(name, merged_root, path)
-        )
+        if merged_root.is_array:
+            return self.parse_array(name, merged_root, path)
+        return self._parse_python_type_root(
+            name,
+            merged_root,
+            path,
+            self.model_resolver.add(path, name, loaded=True, class_name=True).path,
+        ) or self.parse_root_type(name, merged_root, path)
 
     def parse_all_of(  # noqa: PLR0911, PLR0914
         self,
@@ -6057,29 +6065,32 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return True
         return _value_keywords.should_parse_empty_object_as_dict(self, obj)
 
-    def _keeps_extra_keys(self, obj: JsonSchemaObject, path: str) -> bool:
+    def _keeps_extra_keys(self, obj: JsonSchemaObject, path: str, reference: Reference) -> bool:
         """Return whether the model of ``obj`` at schema ``path`` keeps the keys it does not declare.
 
         It asks what the model asks (``keeps_extra_keys``) of the template data the model starts with
         (``_model_template_data``): the schema's closedness stored as ``set_additional_properties`` and
         ``set_unevaluated_properties`` store it, and the entries of ``--extra-template-data`` for its schema path, its
-        name (where the reference of the path has one) and ``#all#``.
+        name and ``#all#``. The name is that of ``reference``, the Reference of the path, or the one ``_add_ref``
+        registers for the reference an allOf names the schema by, so a definition of a file not read yet is asked by
+        the name its model gets.
         """
         return keeps_extra_keys(
             _model_template_data(
                 self.extra_template_data,
                 path,
-                self.model_resolver.references.get(path),
-                {**self._stored_additional_properties(obj), **self._stored_unevaluated_properties(obj)},
+                reference,
+                {**self._stored_additional_properties(obj), **_stored_unevaluated_properties(obj)},
             )
         )
 
-    def holds_nothing_but_python_type(self, obj: JsonSchemaObject, path: str) -> bool:
+    def holds_nothing_but_python_type(self, obj: JsonSchemaObject, path: str, ref: str | None = None) -> bool:
         """Return whether the schema ``obj`` at ``path`` would be an empty model that its ``x-python-type`` types.
 
         Such a model has no properties, validators, dict root or kept keys, so the type the schema names is what it
         stands for, as it is for a field of the same schema; a model that keeps keys, or whose type fits ``object``,
-        keeps its form.
+        keeps its form. ``ref`` is the reference an allOf names the schema by, read for the name of its model
+        (``_keeps_extra_keys``).
         """
         return (
             obj.type == "object"
@@ -6087,8 +6098,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and not obj.properties
             and not self._parses_fieldless_object_as_dict(obj)
             and not self._should_parse_object_with_schema_validators(obj)
-            and not self._keeps_extra_keys(obj, path)
+            and not self._keeps_extra_keys(
+                obj, path, self.model_resolver.references[path] if ref is None else self._add_ref(ref)
+            )
         )
+
+    def _parse_python_type_root(self, name: str, obj: JsonSchemaObject, path: list[str], key: str) -> DataType | None:
+        """Parse ``obj`` as the root of its ``x-python-type`` where it holds nothing but it, None where it does not.
+
+        ``key`` is the schema path of its model (``holds_nothing_but_python_type``). The root is marked
+        (``_PYTHON_TYPE_ROOT_KEY``) so its type is read as an arbitrary class.
+        """
+        if not self.holds_nothing_but_python_type(obj, key):
+            return None
+        obj.__dict__[_PYTHON_TYPE_ROOT_KEY] = True
+        return self.parse_root_type(name, obj, path)
 
     def parse_object(
         self,
@@ -6121,9 +6145,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             singular_name=singular_name,
             loaded=True,
         )
-        if self.holds_nothing_but_python_type(obj, reference.path):
-            obj.__dict__[_PYTHON_TYPE_ROOT_KEY] = True
-            return self.parse_root_type(name, obj, path)
+        if (python_type_root := self._parse_python_type_root(name, obj, path, reference.path)) is not None:
+            return python_type_root
         with self._model_frame() as frame:
             class_name = class_key("reference-name", reference)
             self.set_title(reference.path, obj)

@@ -16227,6 +16227,8 @@ allof_wrapper_of_held_class	main/jsonschema/main_jsonschema/x_python_type_object
 all-models-allow	main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[all-models-allow].py	= main/jsonschema/main_jsonschema/x_python_type_object_root[allow-extra-fields].py
 name-key-allow	main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[name-key-allow].py
 name-key-forbid	main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[name-key-forbid].py	= main/jsonschema/main_jsonschema/x_python_type_object_root[as-written].py
+[test_x_python_type_object_root_template_data_of_unread_file]
+	main/jsonschema/main_jsonschema/x_python_type_object_root_template_data_of_unread_file.py
 [test_x_python_type_qualified_spans]
 	main/jsonschema/main_jsonschema/x_python_type_qualified_spans.py
 [test_x_python_type_structured_binding]
