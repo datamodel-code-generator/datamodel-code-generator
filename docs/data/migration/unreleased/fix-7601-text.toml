@@ -1,0 +1,29 @@
+[[change]]
+id = "fix-7601-text"
+category = "default-fix"
+title = "A root type inlined from a module-qualified import names the receiving module's own import"
+summary = "A root typed by a module-qualified x-python-import name (Outer.Kind of an aliased module import), inlined by --collapse-root-models into a module that does not alias the module, took the alias of the module it came from (asyncio_aliased.sslproto.SSLProtocolState) and the receiving module imported only its own name. It now names the receiving module's own import and qualifier (asyncio.sslproto.SSLProtocolState). The same input with the dataclasses, TypedDict and msgspec backends changes the same way. Class names, field names and field order are unchanged."
+refs = ["#7616", "#7601", "#7615"]
+kind = "default-output"
+action = "review"
+decision = ["#7616"]
+source = "release-note"
+covers = [
+    "main/main_general/collapse_root_models_spell_the_module_import_alias[module_symbol]/",
+    "main/main_general/collapse_root_models_spell_the_module_import_alias[module_symbol_mirror]/",
+]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/import_alias_late_types/collapse_module_symbol.json",
+    "tests/data/jsonschema/import_alias_late_types",
+]
+backends = ["dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict"]
+options = "*"
+aspects = ["type"]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/import_alias_late_types/collapse_module_symbol.json"]
+backends = ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+options = "*"
+aspects = ["type"]

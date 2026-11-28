@@ -49,7 +49,7 @@ def alias_bound_python_type(
         changed = True
         imports.append(aliased_import)
         if import_.from_ is None:
-            module_aliases[import_.import_] = aliased_import.alias or aliased_import.import_
+            module_aliases[import_.alias or import_.import_] = aliased_import.alias or aliased_import.import_
 
     if not changed:
         return bound_type

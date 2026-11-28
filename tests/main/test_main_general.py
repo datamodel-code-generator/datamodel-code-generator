@@ -8435,6 +8435,8 @@ def test_generation_without_parse_checks(
 
 
 _IMPORT_ALIAS_PATH = JSON_SCHEMA_DATA_PATH / "import_alias_late_types"
+_DATE_MESSAGE = "Input should be a valid date"
+_STATE_MESSAGE = "Input should be 'UNWRAPPED'"
 _WHEN_DATE = json.dumps({"Item.when": "datetime.date"})
 
 
@@ -8699,15 +8701,18 @@ def test_type_overrides_spell_the_module_import_alias_in_a_package(output_dir: P
 
 
 @pytest.mark.parametrize(
-    ("input_name", "module", "model", "data", "invalid"),
+    ("input_name", "module", "model", "data", "invalid", "message"),
     [
-        pytest.param("collapse_scalar.json", "b", "Item", {"when": "2024-01-02"}, {"when": "x"}, id="scalar"),
+        pytest.param(
+            "collapse_scalar.json", "b", "Item", {"when": "2024-01-02"}, {"when": "x"}, _DATE_MESSAGE, id="scalar"
+        ),
         pytest.param(
             "collapse_list.json",
             "b",
             "Item",
             {"when": ["2024-01-02"], "other": {"days": ["2024-01-02"]}},
             {"when": [None]},
+            _DATE_MESSAGE,
             id="list",
         ),
         pytest.param(
@@ -8716,6 +8721,7 @@ def test_type_overrides_spell_the_module_import_alias_in_a_package(output_dir: P
             "Other",
             {"days": ["2024-01-01"], "d2": "2024-01-02"},
             {"days": [None]},
+            _DATE_MESSAGE,
             id="aliasing_root",
         ),
         pytest.param(
@@ -8724,12 +8730,37 @@ def test_type_overrides_spell_the_module_import_alias_in_a_package(output_dir: P
             "Other",
             {"days": ["2024-01-01"], "d2": "2024-01-02"},
             {"days": [None]},
+            _DATE_MESSAGE,
             id="aliasing_root_mirror",
+        ),
+        pytest.param(
+            "collapse_module_symbol.json",
+            "a",
+            "Other",
+            {"states": ["WRAPPED"]},
+            {"states": ["OPEN"]},
+            _STATE_MESSAGE,
+            id="module_symbol",
+        ),
+        pytest.param(
+            "collapse_module_symbol_mirror.json",
+            "b",
+            "Other",
+            {"states": ["WRAPPED"]},
+            {"states": ["OPEN"]},
+            _STATE_MESSAGE,
+            id="module_symbol_mirror",
         ),
     ],
 )
 def test_collapse_root_models_spell_the_module_import_alias(
-    output_dir: Path, input_name: str, module: str, model: str, data: dict[str, object], invalid: dict[str, object]
+    output_dir: Path,
+    input_name: str,
+    module: str,
+    model: str,
+    data: dict[str, object],
+    invalid: dict[str, object],
+    message: str,
 ) -> None:
     """A root type collapse copies into another module names the binding that module gave ``date`` (#7604, #7615).
 
@@ -8739,6 +8770,10 @@ def test_collapse_root_models_spell_the_module_import_alias(
     round, ``b.Days`` of the aliasing module ``b`` carried ``date_aliased`` into ``a.Other.days``, and ``a``, which
     aliased nothing, imported only ``date as date_aliased`` and left its own ``d2: date`` unbound; it now writes
     ``date`` throughout. With the module names swapped the receiving module is prepared first and was right already.
+    The same holds for a root typed by a module-qualified ``x-python-import`` name (``sslproto.SSLProtocolState`` of
+    ``asyncio``, which ``b`` imports as ``asyncio_aliased`` beside its field ``asyncio``): ``a`` imports the module
+    bare and spells ``asyncio.sslproto...`` with it, where it spelled the qualifier ``asyncio_aliased`` of the other
+    module's import and left it unbound.
     """
     run_main_and_assert(
         input_path=_IMPORT_ALIAS_PATH / input_name,
@@ -8755,6 +8790,6 @@ def test_collapse_root_models_spell_the_module_import_alias(
     )
     with (
         _generated_package_module(output_dir, module) as generated,
-        pytest.raises(ValidationError, match="Input should be a valid date"),
+        pytest.raises(ValidationError, match=message),
     ):
         getattr(generated, model).model_validate(invalid)

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "State": {
+      "x-python-import": {
+        "module": "asyncio",
+        "name": "sslproto",
+        "qualname": "sslproto.SSLProtocolState"
+      }
+    },
+    "b.States": {"type": "array", "items": {"$ref": "#/$defs/State"}, "x-python-type": "list[State]"},
+    "b.Item": {
+      "type": "object",
+      "properties": {"when": {"$ref": "#/$defs/b.States"}, "asyncio": {"type": "string"}}
+    },
+    "a.Other": {
+      "type": "object",
+      "properties": {"states": {"$ref": "#/$defs/b.States"}}
+    }
+  }
+}
