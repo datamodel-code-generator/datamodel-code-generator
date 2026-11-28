@@ -7773,14 +7773,6 @@ heuristic = 2
 path = "src/datamodel_code_generator/parser/_passes/_tables.py"
 qualname = "<module>"
 rule_code = "MUT206"
-target = "_const_narrowed_values"
-count = 1
-heuristic = 1
-
-[[entries]]
-path = "src/datamodel_code_generator/parser/_passes/_tables.py"
-qualname = "<module>"
-rule_code = "MUT206"
 target = "_import_overrides"
 count = 1
 heuristic = 1

@@ -1,1 +1,0 @@
-TRIGGERS lists a, which has no trigger: remove it

@@ -812,6 +812,7 @@ def fix_constructor_field_ordering(
     *,
     early: bool = False,
     copies: InheritedFieldCopies | None = None,
+    bases_first: bool = False,
 ) -> None:
     """Fix constructor field ordering after inherited defaults are resolved.
 
@@ -819,10 +820,32 @@ def fix_constructor_field_ordering(
     field has its final name, the form of ``--order-constructor-fields-by final-names`` off. The rendered nullability
     is final only after the modules, so it then counts the defaults as the construction key gives them. With
     ``copies``, a written model gets a keyword-only copy of each inherited field that two of its bases put after a
-    default. The nested factories read row ``legacy-nested-factory-order-before-nullability``.
+    default. The nested factories read row ``legacy-nested-factory-order-before-nullability``. With ``bases_first``,
+    each model follows the models it inherits from. It returns at once when no model can change
+    (``constructor_ordering_models``).
     """
+    if not (ordered := constructor_ordering_models(models)):
+        return
+    if bases_first:
+        ordered.sort(key=lambda model: len(constructor_base_models(parser, model)))
     with ordering_constructor_fields(before_nullability=True, construction_defaults=early):
-        fix_constructor_field_ordering_of(parser, models, early=early, copies=copies)
+        fix_constructor_field_ordering_of(parser, ordered, early=early, copies=copies)
+
+
+def constructor_ordering_models(models: Iterable[DataModel]) -> list[DataModel]:
+    """Return the models whose constructor ordering can write: the loop of ``fix_constructor_field_ordering_of``.
+
+    The loop writes a model only through ``restore_required_inherited_field_state`` (the base hook restores nothing),
+    ``get_inherited_constructor_info`` (``None`` without ``SUPPORTS_KW_ONLY``) and
+    ``get_local_constructor_ordering_key`` (which the loop asks only of a model with ``SUPPORTS_KW_ONLY``), so any
+    other model is left as it is.
+    """
+    restore = DataModel.restore_required_inherited_field_state.__func__
+    return [
+        model
+        for model in models
+        if model.SUPPORTS_KW_ONLY or type(model).restore_required_inherited_field_state.__func__ is not restore
+    ]
 
 
 def fix_constructor_field_ordering_bases_first(
@@ -832,11 +855,7 @@ def fix_constructor_field_ordering_bases_first(
 
     A model then reads its bases as this pass left them: the fields they make keyword-only and the copies they take.
     """
-    fix_constructor_field_ordering(
-        parser,
-        sorted(models, key=lambda model: len(constructor_base_models(parser, model))),
-        copies=copies,
-    )
+    fix_constructor_field_ordering(parser, models, copies=copies, bases_first=True)
 
 
 def order_constructor_fields_by_decided_nested_factories(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:
@@ -863,7 +882,7 @@ def fix_constructor_field_ordering_of(
             )
 
         if (inherited := get_inherited_constructor_info(parser, model, early=early, places=places)) is None:
-            if (order_key := get_local_constructor_ordering_key(model)) is not None:
+            if model.SUPPORTS_KW_ONLY and (order_key := get_local_constructor_ordering_key(model)) is not None:
                 parser._graph_builder.set_fields(model, sorted(model.fields, key=order_key))
             continue
         if (
@@ -929,14 +948,14 @@ def get_local_constructor_ordering_key(
 ) -> Callable[[DataModelFieldBase], tuple[bool, bool, bool, bool]] | None:
     """Return the positional order key that keeps constructor defaults last, when a local required field follows one.
 
+    The model has ``SUPPORTS_KW_ONLY``: the loop of ``fix_constructor_field_ordering_of`` asks no other.
+
     A required field rendered as ``= Field(...)`` is a dataclass default but required in the validator's
     signature, so it also precedes fields with real defaults when the output model asks for that order.
     Otherwise only the assignments the output model keeps among the required fields precede them. Fields that the
     written defaults tie are then ordered as they take their places (``AssignmentFacts.place_assigned``), the order
     of 0.86.0. Each field is classified once, for the check and the key.
     """
-    if not model.SUPPORTS_KW_ONLY:
-        return None
     facts_of = assignment_facts_of(model)
     if model.orders_required_assignments_before_defaults():
 

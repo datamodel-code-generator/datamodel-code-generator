@@ -2029,10 +2029,18 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
     name too: importing it binds the name in the package whatever the import is named. An import of the builtin itself
     (``--type-overrides`` with ``builtins.list``) is the name's own binding, not the module import that hides it.
     """
+    target = parser.target_python_version.version_key
+    if not (
+        imported := {
+            binding: key
+            for key, binding in _import_bindings(ctx.imports)
+            if key[0] != "builtins" and is_builtin_type_name(binding, target)
+        }
+    ):
+        return
     references = [
         data_type for model in ctx.models for data_type in _named_data_types(model) if data_type.reference is not None
     ]
-    target = parser.target_python_version.version_key
     if not (
         bindings := {
             binding
@@ -2047,7 +2055,6 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         for data_type in model.all_data_types
         for enum_class, _ in data_type.enum_member_literals
     )
-    imported = {binding: key for key, binding in _import_bindings(ctx.imports) if key[0] != "builtins"}
     resolver = ctx.scoped_model_resolver
     held = {reference.name: reference for reference in resolver.references.values()}
     if not (
@@ -2369,6 +2376,8 @@ def _module_import_users(
     comes with its model, the model it names, the import and the parts of the dotted module the named model is in.
     """
     imports = ctx.imports
+    if not imports.reference_paths:
+        return
     for model in ctx.models:
         for data_type in _named_data_types(model):
             if (

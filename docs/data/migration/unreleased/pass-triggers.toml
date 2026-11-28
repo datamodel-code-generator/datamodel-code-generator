@@ -1,0 +1,32 @@
+[[change]]
+id = "pass-triggers"
+category = "internal"
+title = "Passes return early on their own source instead of a trigger"
+summary = "The pass traces list six passes that run on every output and the pass checks of the test suite no longer name a trigger; no package output changes."
+refs = ["#7608"]
+covers = [
+    "checks/checks/a_failing_check_is_no_error_that_a_generation_catches.txt",
+    "checks/checks/trigger_check_reports_a_pass_that_writes_where_its_trigger_is_false.txt",
+    "checks/checks/trigger_check_turned_off.txt",
+    "parser/pipeline/decision_phase_runs_the_registry_after_the_generic_base_class[checked].txt",
+    "parser/pipeline/decision_phase_runs_the_registry_after_the_generic_base_class[unchecked].txt",
+    "parser/pipeline/trace_matches_golden[jsonschema].txt",
+    "parser/pipeline/trace_matches_golden[msgspec-tree-reuse].txt",
+    "parser/pipeline/trace_matches_golden[openapi-modules].txt",
+    "parser/pipeline/trace_matches_golden[renamed-sequence-roots].txt",
+    "parser/pipeline/trace_matches_golden[typed-dict-import-overrides].txt",
+    "parser/pipeline/trigger_problems[a-listed-pass-without-trigger].txt",
+    "parser/pipeline/trigger_problems[a-listed-trigger].txt",
+    "parser/pipeline/trigger_problems[a-trigger-reading-more-than-the-pass].txt",
+    "parser/pipeline/trigger_problems[a-trigger-the-declaration-lacks].txt",
+    "parser/pipeline/trigger_problems[a-trigger-the-table-lacks].txt",
+    "parser/pipeline/trigger_problems[a-trigger-without-reason].txt",
+    "parser/pipeline/trigger_problems[an-unlisted-trigger].txt",
+    "parser/pipeline/trigger_problems[no-trigger].txt",
+    "parser/pipeline/when_names_only_options[a-helper-of-a-module].txt",
+    "parser/pipeline/when_names_only_options[a-positional-when].txt",
+    "parser/pipeline/when_names_only_options[a-produced-length].txt",
+    "parser/pipeline/when_names_only_options[a-produced-record].txt",
+    "parser/pipeline/when_names_only_options[a-record-of-an-option-object].txt",
+    "parser/pipeline/when_names_only_options[a-record-of-the-parser].txt",
+]

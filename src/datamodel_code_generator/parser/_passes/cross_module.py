@@ -65,6 +65,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ImportPass
     from datamodel_code_generator.parser._passes._import_edges import ImportCycleSeeds
     from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath, _ConstNarrowing
@@ -419,12 +420,17 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
     changes after the literal is made.
     """
     for ctx in run.contexts:
-        members = module_member_keys(parser, ctx.models, row="members")
-        module = ModuleImportTarget.of(parser.imports, ctx, run)
+        target: tuple[KeyedModels, ModuleImportTarget] | None = None
         for model in ctx.models:
             for data_type in model.all_data_types:
                 if (reference := data_type._enum_member_literal_reference) is None or data_type.alias:
                     continue
+                if target is None:
+                    target = (
+                        module_member_keys(parser, ctx.models, row="members"),
+                        ModuleImportTarget.of(parser.imports, ctx, run),
+                    )
+                members, module = target
                 enum_class = (
                     reference.short_name
                     if members.key_of(reference) in members.models

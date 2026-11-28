@@ -1604,7 +1604,7 @@ def test_finalize_modules_plans_schema_helpers_after_root_collapse() -> None:
         [collapsed_root],
         {collapsed_root: (("output.py",), models)},
         {("output.py",): imports},
-        (),
+        {},
         with_import=True,
         config=ParseConfig(True, True, None, None, None, None),
         internal_modules=set(),

@@ -28,15 +28,6 @@ msgspec-tree-reuse	parser/pipeline/trace_matches_golden[msgspec-tree-reuse].txt
 openapi-modules	parser/pipeline/trace_matches_golden[openapi-modules].txt
 renamed-sequence-roots	parser/pipeline/trace_matches_golden[renamed-sequence-roots].txt
 typed-dict-import-overrides	parser/pipeline/trace_matches_golden[typed-dict-import-overrides].txt
-[test_trigger_problems]
-a-listed-pass-without-trigger	parser/pipeline/trigger_problems[a-listed-pass-without-trigger].txt
-a-listed-trigger	parser/pipeline/trigger_problems[a-listed-trigger].txt	= parser/pipeline/when_names_only_options[options-only].txt
-a-trigger-reading-more-than-the-pass	parser/pipeline/trigger_problems[a-trigger-reading-more-than-the-pass].txt
-a-trigger-the-declaration-lacks	parser/pipeline/trigger_problems[a-trigger-the-declaration-lacks].txt
-a-trigger-the-table-lacks	parser/pipeline/trigger_problems[a-trigger-the-table-lacks].txt
-a-trigger-without-reason	parser/pipeline/trigger_problems[a-trigger-without-reason].txt
-an-unlisted-trigger	parser/pipeline/trigger_problems[an-unlisted-trigger].txt
-no-trigger	parser/pipeline/trigger_problems[no-trigger].txt	= parser/pipeline/when_names_only_options[options-only].txt
 [test_when_names_only_options]
 a-helper-of-a-module	parser/pipeline/when_names_only_options[a-helper-of-a-module].txt
 a-positional-when	parser/pipeline/when_names_only_options[a-positional-when].txt	= parser/pipeline/when_names_only_options[a-produced-record].txt

@@ -52,6 +52,7 @@ refresh_field_config
 rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 -- module
 record_decimal_alias_models
@@ -71,6 +72,7 @@ refresh_field_config
 rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 -- module
 record_decimal_alias_models
@@ -90,6 +92,7 @@ refresh_field_config
 rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 -- module
 record_decimal_alias_models
@@ -109,6 +112,7 @@ refresh_field_config
 rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 -- module
 record_decimal_alias_models
@@ -128,6 +132,7 @@ refresh_field_config
 rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 -- module
 record_decimal_alias_models
@@ -147,6 +152,7 @@ refresh_field_config
 rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 -- module
 record_decimal_alias_models
@@ -166,6 +172,7 @@ refresh_field_config
 rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 -- module
 record_decimal_alias_models
@@ -185,6 +192,7 @@ refresh_field_config
 rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 -- module
 record_decimal_alias_models
@@ -204,6 +212,7 @@ refresh_field_config
 rename_fields_hiding_types
 remove_overridden_models
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 settle_kept_parent_roots
 write_rule_aliases_as_classes
@@ -216,6 +225,7 @@ flatten_conflicting_final_layouts
 warn_enums_admitting_other_values
 import_removed_reuse_canonicals
 import_renamed_types
+import_enum_member_literal_classes
 omit_untaken_union_constraints
 assign_forward_reference_fields
 assign_forward_reference_fields
@@ -226,6 +236,7 @@ assign_forward_reference_fields
 assign_forward_reference_fields
 assign_forward_reference_fields
 assign_forward_reference_fields
+fix_constructor_field_ordering
 settle_module_unused_models
 unbind_hidden_type_fields
 update_type_aliases
