@@ -5129,6 +5129,7 @@ DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-api	main/jsonsc
 DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-cli	main/jsonschema/main_jsonschema/field_name_bindings[DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-cli].py	= main/jsonschema/main_jsonschema/field_name_bindings[DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-api].py
 DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-cli	main/jsonschema/main_jsonschema/field_name_bindings[DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-cli].runtime.txt	= main/jsonschema/main_jsonschema/field_name_bindings[DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_310-api].runtime.txt
 [test_field_name_bindings_of_dataclass_base_field_named_like_the_subclass]
+	main/jsonschema/main_jsonschema/field_name_bindings_of_dataclass_base_field_named_like_the_subclass.json
 	main/jsonschema/main_jsonschema/field_name_bindings_of_dataclass_base_field_named_like_the_subclass.py
 [test_field_name_bindings_of_dataclass_base_of_the_module]
 builtin_pair	main/jsonschema/main_jsonschema/field_name_bindings_of_dataclass_base_of_the_module[builtin_pair].json

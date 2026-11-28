@@ -570,7 +570,7 @@ def _bind_module_field_names(
                     model.class_name,
                     by_field,
                     text,
-                    {*shadowable_imports, *class_names.difference([model.class_name])},
+                    {*shadowable_imports, *class_names},
                     scope,
                 )
                 collisions.update(found.intersection(shadowable_imports))

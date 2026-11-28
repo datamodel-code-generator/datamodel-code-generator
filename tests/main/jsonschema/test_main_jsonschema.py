@@ -38417,12 +38417,12 @@ def test_field_name_bindings_of_dataclass_base_of_the_module(
 
 
 def test_field_name_bindings_of_dataclass_base_field_named_like_the_subclass(output_file: Path) -> None:
-    """Keep the output of a base field named like the subclass that redeclares another field with its own type.
+    """Import a module whose subclass redeclares a field where a base field is named like the subclass.
 
     Pydantic 2.10 and later evaluate ``Concert | None`` where the class body of the base binds ``Concert`` to
-    ``None``, so the module does not import. An alias of the class itself is a forward reference that Pydantic
-    before 2.6 never resolves, where the name resolved at the creation of the class, so the output waits for the
-    owner's decision and is stored as it is written today.
+    ``None``, so the module did not import. The subclass is bound beside the class as ``Concert_aliased`` and the
+    annotation names that. It is a forward reference, which Pydantic 2.1 to 2.5 never resolve (their dataclasses fail
+    at first use, as every forward reference does there, where the old output imported on them).
     """
     run_main_and_assert(
         input_path=_DATACLASS_BASES_PATH / "class_self_name.json",
@@ -38438,6 +38438,16 @@ def test_field_name_bindings_of_dataclass_base_field_named_like_the_subclass(out
             "--disable-timestamp",
         ],
     )
+    with _generated_model(output_file, "dataclass_base_field_named_like_the_subclass", "Concert") as model:
+        assert_output(
+            json.dumps(
+                asdict(TypeAdapter(model).validate_python({"Concert": "c", "where": {"Concert": "d"}})),
+                indent=2,
+                default=str,
+            )
+            + "\n",
+            suffix=".json",
+        )
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])

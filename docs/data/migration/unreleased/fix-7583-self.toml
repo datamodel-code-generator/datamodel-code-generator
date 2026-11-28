@@ -1,0 +1,21 @@
+[[change]]
+id = "fix-7583-self"
+category = "crash-fix"
+title = "A pydantic dataclass whose base has a field named like the dataclass aliases the dataclass itself"
+summary = "A pydantic dataclass that redeclared a field of its base with its own type failed to import on Pydantic 2.10 and later when the base has a field named like the dataclass: Pydantic evaluates Concert | None in the base's class body, where Concert is that field's default, and raised a TypeError. The module now binds Concert_aliased = Concert after the class and the annotation names the alias. The alias is a forward reference, so Pydantic 2.1 to 2.5, where the old output imported, fail at first use of the dataclass as every forward reference does there; Pydantic 2.0 and 2.6 or later work. Only modules that failed to import on Pydantic 2.10 and later change; class names, field names, bases, field order and parsed values are the same."
+refs = ["#7614", "#7583"]
+kind = "default-output"
+action = "none"
+source = "release-note"
+covers = [
+    "main/jsonschema/main_jsonschema/field_name_bindings_of_dataclass_base_field_named_like_the_subclass.json",
+    "main/jsonschema/main_jsonschema/field_name_bindings_of_dataclass_base_field_named_like_the_subclass.py",
+]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/field_name_bindings_dataclass_bases",
+    "tests/data/jsonschema/field_name_bindings_dataclass_bases/**",
+]
+backends = ["pydantic_v2.dataclass"]
+options = "*"
