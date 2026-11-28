@@ -292,7 +292,7 @@ def _inherited_field_name_collisions(
     The library evaluates the annotation of a field that ``namespaces`` names (``annotation_namespaces``) in the
     namespace of each of its bases that declares it: the base's module and its class body. A name an annotation loads
     whose value there makes the evaluation raise is a collision, where it is one of ``hideable``: a name the module
-    imports, a builtin or a class of the module other than the class itself. Its alias is a ``NameError`` in the base of
+    imports, a builtin or a class of the module, the class itself included. Its alias is a ``NameError`` in the base of
     another module and a class in the base of the same one. An alias lets the evaluation go on to the next name that
     raises, so each annotation is evaluated again until it no longer raises. The names the own fields alias
     (``aliased``) are loaded under their aliases already.

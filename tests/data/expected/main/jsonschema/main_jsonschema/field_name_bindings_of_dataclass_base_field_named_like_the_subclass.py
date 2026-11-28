@@ -15,7 +15,10 @@ class Event:
 
 @dataclass
 class Concert(Event):
-    where: Concert | None = None
+    where: Concert_aliased | None = None
+
+
+Concert_aliased = Concert
 
 
 Model = TypeAliasType("Model", Concert)
