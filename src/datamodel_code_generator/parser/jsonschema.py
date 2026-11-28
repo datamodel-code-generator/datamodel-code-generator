@@ -4987,14 +4987,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         default: Any,
     ) -> DataModel:
         """Create and register one concrete root model."""
-        if (factory := data_model_root_type.ROOT_MODEL_CONSTRAINTS_FALLBACK) is not None:
-            fallbacks = self._root_constraints_fallbacks
-            if data_model_root_type not in fallbacks:
-                fallbacks[data_model_root_type] = factory(self.custom_template_dir)
-            if (fallback := fallbacks[data_model_root_type]) is not None and (
-                constrained_root_type := fallback(fields)
-            ) is not None:
-                data_model_root_type = constrained_root_type
         data_model_root = self._new_model(
             data_model_root_type,
             reference=reference,
@@ -5038,7 +5030,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         requested_root_model_type = data_model_root_type
         if self.generate_schema_validators:
             self._add_path_rules_validator(reference.path, obj, fields, [], is_root_model=True)
-        data_model_root_type = self._get_runtime_validation_root_model_type(data_model_root_type, reference.path)
+        data_model_root_type = self._concrete_root_model_type(data_model_root_type, fields, reference.path)
         if _rw_split.splits_root_model(self, reference, fields):
             self._request_response_fields[reference.path] = tuple(_rw_split.copy_unregistered_fields(self, fields))
             if "legacy-rw-parsed-facts" in self._legacy_rw_variants:
@@ -5050,8 +5042,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
                 self._rw_model_variant_requirement_cache[reference.path, suffix] = True
                 self._rw_imported_field_caches[1][reference.path, suffix] = True
-                variant_root_model_type = self._get_runtime_validation_root_model_type(
+                variant_root_model_type = self._concrete_root_model_type(
                     requested_root_model_type,
+                    variant_fields,
                     variant_reference.path,
                 )
                 variants.append(
@@ -5079,6 +5072,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             description=description,
             default=default,
         )
+
+    def _concrete_root_model_type(
+        self,
+        data_model_root_type: type[DataModel],
+        fields: list[DataModelFieldBase],
+        reference_path: str,
+    ) -> type[DataModel]:
+        """Choose the class form a root takes: runtime validators, then what the alias template cannot write."""
+        data_model_root_type = self._get_runtime_validation_root_model_type(data_model_root_type, reference_path)
+        if (factory := data_model_root_type.ROOT_MODEL_CONSTRAINTS_FALLBACK) is not None:
+            fallbacks = self._root_constraints_fallbacks
+            if data_model_root_type not in fallbacks:
+                fallbacks[data_model_root_type] = factory(self.custom_template_dir)
+            if (fallback := fallbacks[data_model_root_type]) is not None and (
+                constrained_root_type := fallback(fields)
+            ) is not None:
+                data_model_root_type = constrained_root_type
+        return data_model_root_type
 
     def _get_runtime_validation_root_model_type(
         self,
