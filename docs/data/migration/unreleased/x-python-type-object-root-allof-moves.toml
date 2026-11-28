@@ -1,0 +1,23 @@
+[[change]]
+id = "x-python-type-object-root-allof-moves"
+extends = "x-python-type-object-root"
+covers = [
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[allof_wrapper_of_class_in_other_file].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[two-equal-classes-reuse-dataclass].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[two-equal-classes-reuse].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[two-equal-classes].py",
+]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/x_python_type_object_root_equal.json"]
+backends = "*"
+options = "*"
+input_file_type = "jsonschema"
+aspects = ["config", "constructor-order", "default", "kind", "name-removed", "probe", "required", "type"]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/x_python_type_object_root_external"]
+backends = "*"
+options = "*"
+input_file_type = "jsonschema"
+aspects = ["config", "constructor-order", "default", "import-path-removed", "kind", "name-removed", "probe", "required", "type"]

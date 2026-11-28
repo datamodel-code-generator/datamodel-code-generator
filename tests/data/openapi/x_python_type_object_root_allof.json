@@ -1,0 +1,46 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Loggers", "version": "1"},
+  "paths": {
+    "/log": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {"allOf": [{"$ref": "#/components/schemas/LoggerBase"}], "description": "An inline body."}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The loggers.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Holder"}}}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LoggerBase": {"type": "object", "x-python-type": "logging.Logger"},
+      "LoggerInline": {"allOf": [{"type": "object", "x-python-type": "logging.Logger"}]},
+      "LoggerWrapped": {"allOf": [{"$ref": "#/components/schemas/LoggerBase"}], "description": "A logger."},
+      "LoggerNullable": {"allOf": [{"$ref": "#/components/schemas/LoggerBase"}], "nullable": true},
+      "NullableBase": {"type": "object", "x-python-type": "logging.Handler", "nullable": true},
+      "NullableBaseWrapped": {
+        "allOf": [{"$ref": "#/components/schemas/NullableBase"}],
+        "description": "A wrapper of a nullable class."
+      },
+      "Holder": {
+        "type": "object",
+        "required": ["wrapped", "handler"],
+        "properties": {
+          "inline": {"$ref": "#/components/schemas/LoggerInline"},
+          "wrapped": {"$ref": "#/components/schemas/LoggerWrapped"},
+          "nullable": {"$ref": "#/components/schemas/LoggerNullable"},
+          "handler": {"$ref": "#/components/schemas/NullableBaseWrapped"}
+        }
+      }
+    }
+  }
+}

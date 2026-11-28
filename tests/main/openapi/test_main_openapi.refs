@@ -2412,6 +2412,19 @@ primary-first	main/openapi/main_openapi/x_python_type_object_component[primary-f
 request-response	main/openapi/main_openapi/x_python_type_object_component[request-response].py	= main/openapi/main_openapi/x_python_type_object_component[default].py
 strict-nullable	main/openapi/main_openapi/x_python_type_object_component[strict-nullable].py
 strict-nullable-collapse	main/openapi/main_openapi/x_python_type_object_component[strict-nullable-collapse].py	= main/openapi/main_openapi/x_python_type_object_component[collapse-root-models].py
+[test_x_python_type_object_component_allof]
+collapse-root-models	main/openapi/main_openapi/x_python_type_object_component_allof[collapse-root-models].py
+dataclass	main/openapi/main_openapi/x_python_type_object_component_allof[dataclass].py
+default	main/openapi/main_openapi/x_python_type_object_component_allof[default].py
+msgspec	main/openapi/main_openapi/x_python_type_object_component_allof[msgspec].py
+preset	main/openapi/main_openapi/x_python_type_object_component_allof[preset].py
+scopes-paths	main/openapi/main_openapi/x_python_type_object_component_allof[scopes-paths].py
+strict-nullable	main/openapi/main_openapi/x_python_type_object_component_allof[strict-nullable].py
+[test_x_python_type_object_component_allof_discriminator_variant]
+default	main/openapi/main_openapi/x_python_type_object_component_allof_discriminator_variant[default].py
+msgspec-tagged	main/openapi/main_openapi/x_python_type_object_component_allof_discriminator_variant[msgspec-tagged].py
+[test_x_python_type_object_component_allof_holds_its_value]
+	main/openapi/main_openapi/x_python_type_object_component_allof_holds_its_value.py	= main/openapi/main_openapi/x_python_type_object_component_allof[default].py
 [test_x_python_type_object_component_discriminator_variant]
 dataclass	main/openapi/main_openapi/x_python_type_object_component_discriminator_variant[dataclass].py
 default	main/openapi/main_openapi/x_python_type_object_component_discriminator_variant[default].py

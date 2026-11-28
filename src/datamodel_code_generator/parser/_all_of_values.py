@@ -124,6 +124,7 @@ __all__ = [
     "read_false_all_of_map_schemas",
     "read_false_all_of_values",
     "ref_member_narrows_literals",
+    "reference_root",
     "reference_site_schema",
     "reference_site_value",
     "reference_value_parts",
@@ -788,6 +789,15 @@ def reference_site_constraints(parser: AllOfValuesHost, site: ValueSite) -> dict
         return {}
     target_value = intersect_typed_value_parts(parser, target_parts, None)
     return _added_constraints(intersection, target_value.model_dump(exclude_unset=True, by_alias=True))
+
+
+def reference_root(obj: JsonSchemaObject, ref: str) -> JsonSchemaObject:
+    """Return the allOf site ``obj`` of one ``$ref`` member, which adds no constraint, as a root of that reference.
+
+    It is the form ``merge_all_of_root_schema`` writes for a site of a value target (``_reference_root``), which a
+    class that holds only its base takes once that base is a root (``JsonSchemaParser._settle_python_type_roots``).
+    """
+    return _reference_root(obj, ref, {})
 
 
 def _reference_root(obj: JsonSchemaObject, ref: str, constraints: dict[str, Any]) -> JsonSchemaObject:

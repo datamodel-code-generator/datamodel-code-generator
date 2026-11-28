@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "twoClasses": {"$ref": "#/$defs/TwoClasses"},
+    "twoBases": {"$ref": "#/$defs/TwoBases"},
+    "withProperties": {"$ref": "#/$defs/WithProperties"},
+    "baseWithProperties": {"$ref": "#/$defs/BaseWithProperties"},
+    "decimal": {"$ref": "#/$defs/DecimalValue"},
+    "dict": {"$ref": "#/$defs/DictValue"},
+    "child": {"$ref": "#/$defs/Child"},
+    "wrapperChild": {"$ref": "#/$defs/WrapperChild"},
+    "open": {"$ref": "#/$defs/Open"},
+    "required": {"$ref": "#/$defs/RequiredKey"},
+    "ownType": {"$ref": "#/$defs/OwnType"},
+    "ownSameType": {"$ref": "#/$defs/OwnSameType"},
+    "refAndMember": {"$ref": "#/$defs/RefAndMember"},
+    "wrappedModel": {"$ref": "#/$defs/WrappedModel"}
+  },
+  "$defs": {
+    "TwoClasses": {
+      "allOf": [
+        {"type": "object", "x-python-type": "logging.Logger"},
+        {"type": "object", "x-python-type": "logging.Handler"}
+      ]
+    },
+    "LoggerBase": {"type": "object", "x-python-type": "logging.Logger"},
+    "HandlerBase": {"type": "object", "x-python-type": "logging.Handler"},
+    "TwoBases": {"allOf": [{"$ref": "#/$defs/LoggerBase"}, {"$ref": "#/$defs/HandlerBase"}]},
+    "WithProperties": {
+      "allOf": [
+        {"type": "object", "x-python-type": "logging.Logger"},
+        {"type": "object", "properties": {"level": {"type": "integer"}}}
+      ]
+    },
+    "PropertyBase": {"type": "object", "x-python-type": "logging.Logger"},
+    "BaseWithProperties": {
+      "allOf": [{"$ref": "#/$defs/PropertyBase"}, {"type": "object", "properties": {"level": {"type": "integer"}}}]
+    },
+    "DecimalValue": {"allOf": [{"type": "string", "x-python-type": "decimal.Decimal"}]},
+    "DictValue": {"allOf": [{"type": "object", "x-python-type": "dict[str, int]"}]},
+    "ChildBase": {"allOf": [{"type": "object", "x-python-type": "logging.Logger"}]},
+    "Child": {"allOf": [{"$ref": "#/$defs/ChildBase"}, {"type": "object", "properties": {"level": {"type": "integer"}}}]},
+    "WrapperBase": {"type": "object", "x-python-type": "logging.Logger"},
+    "Wrapper": {"allOf": [{"$ref": "#/$defs/WrapperBase"}], "description": "A wrapper another model extends."},
+    "WrapperChild": {
+      "allOf": [{"$ref": "#/$defs/Wrapper"}, {"type": "object", "properties": {"level": {"type": "integer"}}}]
+    },
+    "KeptBase": {"type": "object", "x-python-type": "logging.Logger"},
+    "Open": {"allOf": [{"$ref": "#/$defs/KeptBase"}], "additionalProperties": true},
+    "RequiredKey": {"allOf": [{"$ref": "#/$defs/KeptBase"}], "required": ["name"]},
+    "OwnType": {"allOf": [{"$ref": "#/$defs/KeptBase"}], "type": "object", "x-python-type": "logging.Handler"},
+    "OwnSameType": {"allOf": [{"$ref": "#/$defs/KeptBase"}], "type": "object", "x-python-type": "logging.Logger"},
+    "RefAndMember": {
+      "allOf": [{"$ref": "#/$defs/KeptBase"}, {"type": "object", "x-python-type": "logging.Logger"}]
+    },
+    "Model": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "WrappedModel": {"allOf": [{"$ref": "#/$defs/Model"}], "description": "A wrapper of an ordinary model."}
+  }
+}

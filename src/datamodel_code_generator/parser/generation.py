@@ -1396,6 +1396,7 @@ class GenerationStore:  # noqa: PLR0904
 
         The new model takes the list place of ``model`` in the parsed models (``Parser.results``), and ``model`` leaves
         the parsed universe: unlike ``retire_model``, which keeps a model parsed, no second model stays under its key.
+        Its bases leave the graph as ``reset_base_classes`` lets them: each stops being a child of the model it names.
         The block registers exactly one model, and runs while parsing (only L1 builds the parsed models). The list the
         block gets holds that model after the block.
         """
@@ -1407,6 +1408,8 @@ class GenerationStore:  # noqa: PLR0904
         del self.models[count:]
         taken.append(new)
         self.models[place] = new
+        for base_class in model.base_classes:
+            base_class.unregister_reference()
 
     @staticmethod
     def set_module_models(models: list[DataModel], members: Iterable[DataModel]) -> None:
