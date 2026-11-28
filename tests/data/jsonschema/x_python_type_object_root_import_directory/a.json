@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "$defs": {"Thing": {"x-python-import": {"module": "logging", "name": "Handler"}}, "Box": {"type": "object", "x-python-type": "Thing"}}}

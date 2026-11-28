@@ -29043,17 +29043,21 @@ _BUILTIN_FORMATTERS = ["--formatters", "builtin"]  # isort places a ``tests`` im
         pytest.param(["--output-model-type", "dataclasses.dataclass"], id="dataclass"),
         pytest.param(["--output-model-type", "typing.TypedDict"], id="typed-dict"),
         pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+        pytest.param(["--use-schema-description"], id="schema-description"),
+        pytest.param(
+            ["--use-schema-description", "--output-model-type", "typing.TypedDict"], id="schema-description-typed-dict"
+        ),
     ],
 )
 def test_x_python_type_object_root(extra_args: list[str], output_file: Path) -> None:
     """Write an object that holds nothing and names an x-python-type as a root of that type (#7581).
 
     A definition of type object without properties, a dict root or kept keys was an empty model. It is the root of its
-    class now, as a field of the same schema takes the class (owner exception to the default rule, 2026-11-27). An
-    object with properties, size keywords, typed values, a type that fits ``object``, a type list, no type, kept keys
-    (``additionalProperties: true``, ``--extra-fields allow``, ``--allow-extra-fields``) or a configured base other
-    than the default (``--base-class``, ``--base-class-map``) is written as before, and a reference to a changed
-    definition stays a reference.
+    class now, as a field of the same schema takes the class (owner exception to the default rule, 2026-11-27), and
+    keeps the docstring of the class (``--use-schema-description``). An object with properties, size keywords, typed
+    values, a type that fits ``object``, a type list, no type, kept keys (``additionalProperties: true``,
+    ``--extra-fields allow``, ``--allow-extra-fields``) or a configured base other than the default (``--base-class``,
+    ``--base-class-map``) is written as before, and a reference to a changed definition stays a reference.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root.json",
@@ -29195,6 +29199,31 @@ def test_x_python_type_object_root_same_name_directory(output_dir: Path) -> None
         assert (parsed.a.root, parsed.b.root) == (handler, logger)
         with pytest.raises(ValidationError):
             z_module.Z.model_validate({"a": logger, "b": handler})
+
+
+@pytest.mark.allow_direct_assert("the generated modules' classes and values are the payload facts under test")
+def test_x_python_type_object_root_import_directory(output_dir: Path) -> None:
+    """Bind the x-python-type of a root in the file of its class, which is not the file parsed last (#7581).
+
+    ``a.json`` and ``b.json`` each define ``Thing`` by an ``x-python-import`` of another class, and each holds a root
+    of ``Thing``: ``Box`` in ``a.json`` takes the ``Thing`` of ``a.json``, ``Crate`` in ``b.json`` the one of
+    ``b.json``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root_import_directory",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+    )
+    handler, logger = logging.Handler(), logging.getLogger("x_python_type_object_root_import")
+    with _generated_package_module(output_dir, "a") as a_module, _generated_package_module(output_dir, "b") as b_module:
+        assert a_module.Box(handler).root is handler
+        assert b_module.Crate(logger).root is logger
+        parsed = b_module.Other.model_validate({"box": handler, "crate": logger})
+        assert (parsed.box.root, parsed.crate.root) == (handler, logger)
+        with pytest.raises(ValidationError):
+            a_module.Box(logger)
+        with pytest.raises(ValidationError):
+            b_module.Other.model_validate({"box": logger})
 
 
 def test_x_python_type_custom_fqpath(output_file: Path) -> None:

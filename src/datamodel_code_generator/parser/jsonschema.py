@@ -7496,11 +7496,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         use_annotated: bool | None = None,
         root_type: DataType | None = None,
         reference: Reference | None = None,
+        description: str | None = None,
     ) -> DataType:
         """Parse a root type with an internal output representation override; ``root_type`` is a type already built.
 
         ``reference`` is the Reference the root takes, which a root of a class built before it holds; else the root
-        adds its own.
+        adds its own. ``description`` is the docstring of the root, which such a root takes from the class.
         """
         array_constraints: Any = None
         constraint_obj = obj
@@ -7669,6 +7670,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 fields=fields,
                 obj=obj,
                 custom_base_class_name=class_key("predicted", name),
+                description=description,
                 default=root_default,
             )
             return self.data_type(reference=reference)
@@ -7678,6 +7680,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             fields=fields,
             obj=obj,
             custom_base_class_name=class_key("predicted", name),
+            description=description,
             default=root_default,
         )
         return self.data_type(reference=reference)
@@ -9469,9 +9472,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         It runs last in L1, where every model is parsed, so the facts it reads are final: a class stays where a model
         derives from it, where it keeps the keys it does not declare, or where a discriminated union names it as a
         variant, as a member or through its mapping (``_get_mapping_discriminator_values``, as L5 reads it). The root
-        takes the class's name, Reference and place (``replace_parsed_model``) and keeps the naming record
-        ``parse_object`` wrote, so no name, reference or model order moves; it is built in the document of the class and
-        stays in its module.
+        takes the class's name, Reference, description and place (``replace_parsed_model``) and keeps the naming record
+        ``parse_object`` wrote, so no name, reference or model order moves. It is built in the document of the class, as
+        ``_parse_base_stand_in`` builds a stand-in, so the x-python-type binds there as a field of that document binds
+        it, and it stays in the module of the class.
         """
         if not (candidates := self._python_type_root_candidates):
             return
@@ -9494,19 +9498,26 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ]
         for model, name, obj, path, python_type in roots:
             x_python_type = obj.extras.get("x-python-type")
-            root_type = _type_overrides.python_type_data_type(
-                self,
-                python_type,
-                needs_arbitrary_types=not isinstance(x_python_type, PythonTypeSchemaAnnotation)
-                or x_python_type.arbitrary_types,
-            )
             source_path = self.current_source_path
             self.current_source_path = model.file_path
             try:
-                with self._unrecorded_naming_frames(), self._graph_builder.replace_parsed_model(model) as taken:
-                    JsonSchemaParser._parse_root_type_with_context(
-                        self, name, obj, path, root_type=root_type, reference=model.reference
+                with self._ref_document_context(document_part(model.reference.path)):
+                    root_type = _type_overrides.python_type_data_type(
+                        self,
+                        python_type,
+                        needs_arbitrary_types=not isinstance(x_python_type, PythonTypeSchemaAnnotation)
+                        or x_python_type.arbitrary_types,
                     )
+                    with self._unrecorded_naming_frames(), self._graph_builder.replace_parsed_model(model) as taken:
+                        JsonSchemaParser._parse_root_type_with_context(
+                            self,
+                            name,
+                            obj,
+                            path,
+                            root_type=root_type,
+                            reference=model.reference,
+                            description=model.description,
+                        )
             finally:
                 self.current_source_path = source_path
             if model in self._merged_copies:

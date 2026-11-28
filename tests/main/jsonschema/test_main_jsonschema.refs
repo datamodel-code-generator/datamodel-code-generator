@@ -16225,6 +16225,8 @@ preset-20261127	main/jsonschema/main_jsonschema/x_python_type_object_root[preset
 pydantic-dataclass	main/jsonschema/main_jsonschema/x_python_type_object_root[pydantic-dataclass].py
 reuse-model	main/jsonschema/main_jsonschema/x_python_type_object_root[reuse-model].py
 root-model-type-alias	main/jsonschema/main_jsonschema/x_python_type_object_root[root-model-type-alias].py
+schema-description	main/jsonschema/main_jsonschema/x_python_type_object_root[schema-description].py
+schema-description-typed-dict	main/jsonschema/main_jsonschema/x_python_type_object_root[schema-description-typed-dict].py
 schema-validators	main/jsonschema/main_jsonschema/x_python_type_object_root[schema-validators].py	= main/jsonschema/main_jsonschema/x_python_type_object_root[as-written].py
 type-alias	main/jsonschema/main_jsonschema/x_python_type_object_root[type-alias].py
 typed-dict	main/jsonschema/main_jsonschema/x_python_type_object_root[typed-dict].py
@@ -16232,6 +16234,8 @@ typed-dict	main/jsonschema/main_jsonschema/x_python_type_object_root[typed-dict]
 	main/jsonschema/main_jsonschema/x_python_type_object_root_directory/
 [test_x_python_type_object_root_holds_its_value]
 	main/jsonschema/main_jsonschema/x_python_type_object_root_holds_its_value.py	= main/jsonschema/main_jsonschema/x_python_type_object_root[as-written].py
+[test_x_python_type_object_root_import_directory]
+	main/jsonschema/main_jsonschema/x_python_type_object_root_import_directory/
 [test_x_python_type_object_root_same_name_directory]
 	main/jsonschema/main_jsonschema/x_python_type_object_root_same_name_directory/
 [test_x_python_type_object_root_shapes]
