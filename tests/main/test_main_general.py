@@ -8702,10 +8702,17 @@ def test_type_overrides_spell_the_module_import_alias_in_a_package(output_dir: P
 
 
 @pytest.mark.parametrize(
-    ("input_name", "module", "model", "data", "invalid", "message"),
+    ("input_name", "module", "model", "data", "invalid", "message", "python"),
     [
         pytest.param(
-            "collapse_scalar.json", "b", "Item", {"when": "2024-01-02"}, {"when": "x"}, _DATE_MESSAGE, id="scalar"
+            "collapse_scalar.json",
+            "b",
+            "Item",
+            {"when": "2024-01-02"},
+            {"when": "x"},
+            _DATE_MESSAGE,
+            "3.10",
+            id="scalar",
         ),
         pytest.param(
             "collapse_list.json",
@@ -8714,6 +8721,7 @@ def test_type_overrides_spell_the_module_import_alias_in_a_package(output_dir: P
             {"when": ["2024-01-02"], "other": {"days": ["2024-01-02"]}},
             {"when": [None]},
             _DATE_MESSAGE,
+            "3.10",
             id="list",
         ),
         pytest.param(
@@ -8723,6 +8731,7 @@ def test_type_overrides_spell_the_module_import_alias_in_a_package(output_dir: P
             {"days": ["2024-01-01"], "d2": "2024-01-02"},
             {"days": [None]},
             _DATE_MESSAGE,
+            "3.10",
             id="aliasing_root",
         ),
         pytest.param(
@@ -8732,6 +8741,7 @@ def test_type_overrides_spell_the_module_import_alias_in_a_package(output_dir: P
             {"days": ["2024-01-01"], "d2": "2024-01-02"},
             {"days": [None]},
             _DATE_MESSAGE,
+            "3.10",
             id="aliasing_root_mirror",
         ),
         pytest.param(
@@ -8741,6 +8751,7 @@ def test_type_overrides_spell_the_module_import_alias_in_a_package(output_dir: P
             {"states": ["WRAPPED"]},
             {"states": ["OPEN"]},
             _STATE_MESSAGE,
+            "3.11",
             id="module_symbol",
         ),
         pytest.param(
@@ -8750,6 +8761,7 @@ def test_type_overrides_spell_the_module_import_alias_in_a_package(output_dir: P
             {"states": ["WRAPPED"]},
             {"states": ["OPEN"]},
             _STATE_MESSAGE,
+            "3.11",
             id="module_symbol_mirror",
         ),
     ],
@@ -8762,6 +8774,7 @@ def test_collapse_root_models_spell_the_module_import_alias(
     data: dict[str, object],
     invalid: dict[str, object],
     message: str,
+    python: str,
 ) -> None:
     """A root type collapse copies into another module names the binding that module gave ``date`` (#7604, #7615).
 
@@ -8774,7 +8787,7 @@ def test_collapse_root_models_spell_the_module_import_alias(
     The same holds for a root typed by a module-qualified ``x-python-import`` name (``sslproto.SSLProtocolState`` of
     ``asyncio``, which ``b`` imports as ``asyncio_aliased`` beside its field ``asyncio``): ``a`` imports the module
     bare and spells ``asyncio.sslproto...`` with it, where it spelled the qualifier ``asyncio_aliased`` of the other
-    module's import and left it unbound.
+    module's import and left it unbound. ``SSLProtocolState`` exists from Python 3.11 on, so those outputs target 3.11.
     """
     run_main_and_assert(
         input_path=_IMPORT_ALIAS_PATH / input_name,
@@ -8782,7 +8795,7 @@ def test_collapse_root_models_spell_the_module_import_alias(
         input_file_type="jsonschema",
         extra_args=[
             *("--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models"),
-            *("--formatters", "builtin", "--disable-timestamp"),
+            *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", python),
         ],
         force_exec_validation=True,
         runtime_validation_module=module,
