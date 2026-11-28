@@ -1187,11 +1187,6 @@ PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES: tuple[tuple[str, dict[PayloadB
                     "Pydantic 2.0.x rejects a dict that holds exactly the maximum number of items "
                     "('at most N items after validation, not N')",
                 ),
-                "jsonschema/field_name_bindings_dataclass_bases/class_self_and_earlier_class.json": (
-                    "Pydantic 2.0.x evaluates the annotations of a dataclass subclass with the inherited field "
-                    "defaults in the class dict, so the subclass itself is None in a field typed by it when an "
-                    "inherited field is named like it, and no alias bound before the class can name it (#7584)"
-                ),
             },
         },
     ),
