@@ -1,0 +1,22 @@
+[[change]]
+id = "merge-config-of-generated-bases-warning-module"
+category = "notice"
+kind = "warning"
+action = "warn"
+title = "The pattern warning of a pydantic dataclass that redeclares inherited fields comes from another module"
+summary = "A pydantic_v2.dataclass that redeclares an inherited field without a pattern Python's re rejects still warns with the same text, but the warning now comes from datamodel_code_generator.model.pydantic_v2.base_model instead of datamodel_code_generator.model.pydantic_v2.dataclass, because the step moved to the class both Pydantic backends share. A warnings filter that names the old module no longer matches; name the new one."
+refs = ["#7613", "#7579"]
+source = "release-note"
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/inherited_lookaround_dataclass_config.json",
+    "tests/data/jsonschema/python_engine_beside_rejected_in_an_alias.json",
+    "tests/data/openapi/inherited_lookaround_dataclass_modules.yaml",
+    "tests/data/openapi/python_engine_beside_rejected_alias_in_a_builtin_named_module.yaml",
+    "tests/data/openapi/python_engine_beside_rejected_alias_in_other_modules.yaml",
+    "tests/data/openapi/python_engine_beside_rejected_in_other_modules.yaml",
+]
+backends = ["pydantic_v2.dataclass"]
+options = "*"
+match = "Python's regex engine, which the config building it selects, does not compile pattern"
