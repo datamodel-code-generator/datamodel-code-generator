@@ -38390,6 +38390,7 @@ _DATACLASS_BASES_SAMPLE = {
     "tag": "abc",
 }
 _SLOTS = ["--dataclass-arguments", '{"slots": true}']
+_TARGET_2 = ["--target-pydantic-version", "2"]
 _CLASS_SAMPLE = {"Place": "p", "where": "w", "Concert.where": {"name": "x"}, "x": 1}
 
 
@@ -38520,6 +38521,96 @@ def _dataclass_bases_values(cls: type, sample: dict[str, object]) -> dict[str, o
             pytest.param("class_of_the_module", backend, [], _CLASS_SAMPLE, id=f"class_of_the_module-{backend}")
             for backend in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict")
         ),
+        pytest.param("no_redeclare", "pydantic_v2.dataclass", _TARGET_2, {}, id="no_redeclare-target2"),
+        pytest.param(
+            "no_redeclare",
+            "pydantic_v2.dataclass",
+            [*_TARGET_2, "--no-use-union-operator"],
+            {},
+            id="no_redeclare-target2-optional",
+        ),
+        pytest.param(
+            "no_redeclare",
+            "pydantic_v2.dataclass",
+            [*_TARGET_2, "--use-annotated"],
+            {},
+            id="no_redeclare-target2-annotated",
+        ),
+        pytest.param(
+            "no_redeclare", "pydantic_v2.dataclass", [*_TARGET_2, *_SLOTS], {}, id="no_redeclare-target2-slots"
+        ),
+        pytest.param(
+            "no_redeclare",
+            "pydantic_v2.dataclass",
+            ["--preset", "standard-py312-20261127", *_TARGET_2],
+            {},
+            id="no_redeclare-target2-preset",
+            marks=needs("type-statements"),
+        ),
+        *(
+            pytest.param("no_redeclare", backend, _TARGET_2, {}, id=f"no_redeclare-target2-{backend}")
+            for backend in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict")
+        ),
+        pytest.param("from_import_no_redeclare", "pydantic_v2.dataclass", _TARGET_2, {}, id="from_import-target2"),
+        pytest.param(
+            "from_import_no_redeclare",
+            "pydantic_v2.dataclass",
+            [*_TARGET_2, "--no-use-union-operator"],
+            {},
+            id="from_import-target2-optional",
+        ),
+        pytest.param("builtin_no_redeclare_modules", "pydantic_v2.dataclass", _TARGET_2, {}, id="builtin-target2"),
+        pytest.param(
+            "class_no_redeclare_modules",
+            "pydantic_v2.dataclass",
+            _TARGET_2,
+            {"Place": "p", "other": {"name": "x"}},
+            id="class-target2",
+        ),
+        pytest.param(
+            "class_other_module",
+            "pydantic_v2.dataclass",
+            _TARGET_2,
+            {"Place": "p", "other": {"name": "x"}},
+            id="class_other_module-target2",
+        ),
+        pytest.param(
+            "class_other_module",
+            "pydantic_v2.dataclass",
+            [*_TARGET_2, "--use-exact-imports"],
+            {"Place": "p", "other": {"name": "x"}},
+            id="class_other_module-target2-exact",
+        ),
+        pytest.param("chain_no_redeclare", "pydantic_v2.dataclass", _TARGET_2, {}, id="grandparent-target2"),
+        pytest.param(
+            "chain_required",
+            "pydantic_v2.dataclass",
+            _TARGET_2,
+            {"home_address": {"city": "h"}},
+            id="required_redeclare-target2",
+        ),
+        pytest.param("bases_no_redeclare", "pydantic_v2.dataclass", _TARGET_2, {}, id="several_bases-target2"),
+        pytest.param(
+            "default_no_redeclare",
+            "pydantic_v2.dataclass",
+            _TARGET_2,
+            {"shipping_address": {"city": "s"}},
+            id="value_default-target2",
+        ),
+        pytest.param(
+            "alias_no_redeclare",
+            "pydantic_v2.dataclass",
+            [*_TARGET_2, "--snake-case-field"],
+            {"postal_address": {"city": "p"}},
+            id="field_alias-target2",
+        ),
+        pytest.param(
+            "alias_no_redeclare",
+            "pydantic_v2.dataclass",
+            [*_TARGET_2, "--snake-case-field", "--use-default-kwarg"],
+            {"postal_address": {"city": "p"}},
+            id="field_alias-target2-default_kwarg",
+        ),
     ],
 )
 def test_field_name_bindings_of_dataclass_bases(
@@ -38532,6 +38623,12 @@ def test_field_name_bindings_of_dataclass_bases(
     class with slots): the module that holds the redeclaring class imports the name under an alias. In the
     ``alias_of_*`` cases a base declares a field named like the alias that the names a class hides were given before,
     so the alias is renamed again and the annotations write the last one.
+
+    With ``--target-pydantic-version 2`` the annotations of every field of the class body count too: Pydantic 2.0
+    sets the default of each inherited field on the subclass before it evaluates them, so a name the subclass loads
+    that an inherited default binds (a module, a builtin, a class of a module) is imported or bound under an alias.
+    A required field, one redeclared required on the way (``required_redeclare``) and the other outputs bind none
+    and keep their text.
     """
     run_main_and_assert(
         input_path=_DATACLASS_BASES_PATH / case,
@@ -38595,6 +38692,30 @@ _CLASS_PAYLOAD = {"Place": "p", "where": {"name": "x"}}
         pytest.param("class_pair_none.json", [], _CLASS_PAYLOAD, id="class_pair_none"),
         pytest.param("class_and_import.json", [], {"when": "2026-01-02"}, id="class_and_import"),
         pytest.param("builtin_pair.json", [], {"when": 3}, id="builtin_pair"),
+        pytest.param("class_no_redeclare.json", _TARGET_2, {"other": {"name": "x"}}, id="class_no_redeclare-target2"),
+        pytest.param("builtin_no_redeclare.json", _TARGET_2, {"str": 1, "label": "7"}, id="builtin-target2"),
+        pytest.param(
+            "builtin_no_redeclare.json",
+            [*_TARGET_2, "--no-use-union-operator"],
+            {"str": 1, "label": "7"},
+            id="builtin-target2-optional",
+        ),
+        pytest.param(
+            "class_in_list_no_redeclare.json",
+            _TARGET_2,
+            {"Place": "p", "others": [{"name": "x"}]},
+            id="class_in_list-target2",
+        ),
+        pytest.param(
+            "class_self_and_earlier_class.json",
+            _TARGET_2,
+            {"either": {"name": "x"}},
+            id="class_self_and_earlier-target2",
+        ),
+        pytest.param("diamond.json", _TARGET_2, {"str": 1, "label": "7"}, id="diamond-target2"),
+        pytest.param(
+            "diamond_required_side.json", _TARGET_2, {"str": 1, "label": "7"}, id="diamond_required_side-target2"
+        ),
     ],
 )
 def test_field_name_bindings_of_dataclass_base_of_the_module(
@@ -38609,6 +38730,12 @@ def test_field_name_bindings_of_dataclass_base_of_the_module(
     needs the alias of two classes, ``class_and_import`` that of a class beside an import and ``builtin_pair`` that of
     two builtins. ``class_py314`` writes no future import, and the plain execution of the generated code that the run
     validates it with has no module name for Pydantic to find the base in: the import below checks it.
+
+    The ``-target2`` cases redeclare nothing: Pydantic 2.0 evaluates the subclass's annotations with the inherited
+    defaults bound, so ``str`` and an earlier class of the module take an alias, also in ``Optional[str]`` and
+    ``list[Place]``, which import there but name ``None``. ``diamond_required_side`` takes the required ``str`` that
+    the merged dataclass fields give it, so nothing changes, and ``class_self_and_earlier`` loads the class itself
+    beside ``Place``: no alias bound before the class names it, so the annotation keeps its text.
     """
     run_main_and_assert(
         input_path=_DATACLASS_BASES_PATH / input_name,

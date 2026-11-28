@@ -223,7 +223,7 @@ def _evaluate(node: ast.expr, namespace: _Namespace) -> _Value:
     An attribute, a subscript or a call of ``None`` or of another value that a class body binds raises, and so does
     ``|`` of one of them. The arguments of a subscript or a call load their names and raise on an attribute of
     such a value; the check of their values (``typing`` of Python 3.10) is not modelled, so a miss keeps today's
-    failure and never changes a working module.
+    failure and never changes a working module. A type names the values of a class body it was built of.
     """
     if isinstance(node, ast.Name):
         return _evaluate_name(node, namespace)
@@ -236,8 +236,8 @@ def _evaluate(node: ast.expr, namespace: _Namespace) -> _Value:
         if isinstance(node, ast.Call)
         else None
     )
-    if head is not None and (value := _evaluate(head, namespace)).kind != "type":
-        return _Value("raise", value.names) if value.kind in {"none", "object"} else value
+    if (head_value := _TYPE if head is None else _evaluate(head, namespace)).kind != "type":
+        return _Value("raise", head_value.names) if head_value.kind in {"none", "object"} else head_value
     operands = (
         [*node.args, *(keyword.value for keyword in node.keywords)]
         if isinstance(node, ast.Call)
@@ -249,15 +249,17 @@ def _evaluate(node: ast.expr, namespace: _Namespace) -> _Value:
         if value.kind in {"raise", "stop"}:
             return value
         values.append(value)
-    return _union_value(values) if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr) else _TYPE
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+        return _union_value(values)
+    return _Value("type", (*head_value.names, *(name for value in values for name in value.names)))
 
 
 def _union_value(operands: Sequence[_Value]) -> _Value:
     """Return the value of ``a | b``: it raises for any other value that a class body binds and for two ``None``."""
     kinds = [operand.kind for operand in operands]
     if "object" in kinds or kinds == ["none", "none"]:
-        return _Value("raise", tuple(name for operand in operands for name in operand.names))
-    return _TYPE
+        return _Value("raise", tuple(name for operand in operands if operand.kind != "type" for name in operand.names))
+    return _Value("type", tuple(name for operand in operands for name in operand.names))
 
 
 class _ModuleScope(NamedTuple):
@@ -323,6 +325,51 @@ def _inherited_field_name_collisions(
                 hidden.add(name)
         found.update(hidden)
     return found
+
+
+def _own_hidden_names(annotation: ast.expr, namespace: _Namespace, hideable: Collection[str]) -> Collection[str]:
+    """Return the names the annotation loads from the values ``namespace`` binds, until it evaluates without them.
+
+    Each is loaded under its alias next. None where a name is not one of ``hideable``: the annotation keeps its text.
+    """
+    hidden: set[str] = set()
+    while (
+        value := _evaluate(annotation, namespace._replace(aliased=[*namespace.aliased, *hidden]))
+    ).kind != "stop" and (names := value.names):
+        if not all(name in hideable for name in names):
+            return ()
+        hidden.update(names)
+    return hidden
+
+
+def _own_namespace_collisions(
+    model: DataModel,
+    rendered: str,
+    *,
+    defined: Collection[str],
+    hideable: Collection[str],
+    scope: _ModuleScope,
+) -> set[str]:
+    """Find the names that the inherited defaults of the model hide from the annotations of its class body.
+
+    The library evaluates each of them in the namespace of the class too, which holds the inherited defaults
+    (``DataModel.inherited_namespace_bindings``) beside the class body, then in its module, which binds
+    ``defined`` while the class is defined. A name it loads from them is a collision, whether the evaluation then
+    raises or gives a type that holds the value, unless it stops at a ``NameError`` first. Its alias must be one the
+    module binds before the class: ``hideable`` are the imports, the builtins and the earlier classes, and an
+    annotation loading another name keeps its text, which no alias makes work. The names ``scope.aliased`` names are
+    loaded under their aliases already.
+    """
+    tree, restore_name = _parsed(rendered)
+    namespace = _Namespace(
+        model.inherited_namespace_bindings(), defined, restore_name, scope.aliased, scope.is_builtin, binds_aliases=True
+    )
+    return {
+        name
+        for node in next(_class_bodies(tree, restore_name, model.class_name), [])
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
+        for name in _own_hidden_names(node.annotation, namespace, hideable)
+    }
 
 
 class OutputModelContext:

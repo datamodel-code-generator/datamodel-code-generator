@@ -76,6 +76,7 @@ from datamodel_code_generator.model.output import (
     _inherited_field_name_collisions,
     _model_field_name_collisions,
     _ModuleScope,
+    _own_namespace_collisions,
 )
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._imports_plan import Added, Aliased, ImportProducer, Removed
@@ -523,7 +524,9 @@ def _bind_module_field_names(
     Where ``module_names_of`` gives the names the module of a model binds, the annotations a library evaluates as
     strings also count the namespaces of the bases it declares a redeclared field in
     (``DataModel.annotation_namespaces``): a name that a base binds in its class body to a value the annotation
-    raises on is hidden as well, and the alias avoids every name of those bases. It needs ``texts``. A class of the
+    raises on is hidden as well, and the alias avoids every name of those bases. So is a name that an inherited
+    default binds in the namespace of the class itself (``DataModel.inherited_namespace_bindings``), where only a
+    name the module binds before the class takes an alias. It needs ``texts``. A class of the
     module that such a name hides keeps its name: the module binds the alias beside it with the statement that the
     result holds for the index of the class (the text of the class precedes it), and only the classes whose
     annotations were evaluated through the name write it through the alias.
@@ -531,10 +534,15 @@ def _bind_module_field_names(
     namespaces = (
         [model.annotation_namespaces() for model in models] if module_names_of is not None else [{} for _ in models]
     )
+    own_bindings = (
+        [model.inherited_namespace_bindings() for model in models]
+        if module_names_of is not None
+        else [{} for _ in models]
+    )
     declaring_bases = [base for by_field in namespaces for bases in by_field.values() for base in bases]
     inherited_names = {
         field.name for base in declaring_bases for field in _class_body_fields(base) if field.name is not None
-    }
+    }.union(*own_bindings)
     field_names = {
         field.name for model in models for field in _class_body_fields(model) if field.name is not None
     } | inherited_names
@@ -564,17 +572,27 @@ def _bind_module_field_names(
             partial(is_builtin_type_name, target_version=target),
             set(models).__contains__,
         )
-        for index, (text, model, by_field) in enumerate(zip(texts, models, namespaces, strict=True)):
-            if by_field:
-                found = _inherited_field_name_collisions(
-                    model.class_name,
-                    by_field,
-                    text,
-                    {*shadowable_imports, *class_names},
-                    scope,
+        for index, (text, model, by_field, own) in enumerate(zip(texts, models, namespaces, own_bindings, strict=True)):
+            found = (
+                _inherited_field_name_collisions(
+                    model.class_name, by_field, text, {*shadowable_imports, *class_names}, scope
                 )
-                collisions.update(found.intersection(shadowable_imports))
-                class_collisions[index] = found.difference(shadowable_imports)
+                if by_field
+                else set()
+            )
+            if own:
+                later = {later_model.class_name for later_model in models[index + 1 :]}
+                found.update(
+                    _own_namespace_collisions(
+                        model,
+                        text,
+                        defined={name for name in module_names_of(model) if name not in later},
+                        hideable={*shadowable_imports, *class_names.difference(later, (model.class_name,))},
+                        scope=scope._replace(aliased=frozenset((*collisions, *found))),
+                    )
+                )
+            collisions.update(found.intersection(shadowable_imports))
+            class_collisions[index] = found.difference(shadowable_imports)
     if not collisions and not any(class_collisions):
         return None
     reserved_names = _alias_reserved_names(

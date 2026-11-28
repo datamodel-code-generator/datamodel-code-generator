@@ -2448,6 +2448,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """Whether the first base of a class gives an option its bases set differently, not the last (msgspec)."""
     EVALUATES_ANNOTATIONS_IN_BASES: ClassVar[bool] = False
     """Whether the library evaluates a field's string annotation in the namespace of each base declaring it too."""
+    _SETS_INHERITED_DEFAULTS: ClassVar[bool] = False
+    """Whether the library sets the defaults of inherited fields on the class before it evaluates its annotations."""
     FIELD_ASSIGNMENT_CHECKER: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_has_field_assignment)
     FIELD_DEFAULT_CLASSIFIER: ClassVar[Callable[[DataModelFieldBase], tuple[bool, bool]]] = staticmethod(
         _get_field_default_info
@@ -3436,6 +3438,27 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             field.name: declaring
             for field in _class_body_fields(self)
             if field.name is not None and (declaring := [base for base in bases if field.name in declared[base]])
+        }
+
+    def inherited_namespace_bindings(self) -> dict[str, Literal["none", "object"]]:
+        """Return the inherited defaults that the library binds on the class before it evaluates its own annotations.
+
+        By the name of each inherited field whose default the namespace of the class then holds beside its class body:
+        ``none`` for ``None``, ``object`` for any other value. Where the library sets the defaults of the fields it
+        collects on the class (``_SETS_INHERITED_DEFAULTS``), those are the fields of the class with its bases
+        (``get_effective_fields``) that its body does not declare and that its constructor takes with a value. The
+        other libraries bind none.
+        """
+        if not (self._SETS_INHERITED_DEFAULTS and self.base_classes):
+            return {}
+        body = {field.name for field in _class_body_fields(self)}
+        return {
+            name: "none" if field.default is None else "object"
+            for field in get_effective_fields(self)
+            if (name := field.name) is not None
+            and name not in body
+            and (facts := self._field_assignment_facts(field)).constructor_default == "value"
+            and facts.participates_in_constructor
         }
 
     def assigns_forward_reference_field(  # noqa: PLR6301

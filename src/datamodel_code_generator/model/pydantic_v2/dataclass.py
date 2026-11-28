@@ -6,7 +6,7 @@ Generates pydantic.dataclasses.dataclass decorated classes with validation suppo
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
 from typing_extensions import override
 
@@ -120,6 +120,7 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = True
     SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = True
     EVALUATES_ANNOTATIONS_IN_BASES: ClassVar[bool] = True
+    _SETS_INHERITED_DEFAULTS: ClassVar[bool] = True
     _ORDERS_FIELDS_FOR_CONSTRUCTION: ClassVar[bool] = True
     FIELD_ASSIGNMENT_CHECKER = staticmethod(_has_pydantic_dataclass_field_assignment)
     FIELD_DEFAULT_CLASSIFIER = staticmethod(_get_pydantic_dataclass_field_default_info)
@@ -257,6 +258,18 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         return super().class_attribute_hides_named_type(
             field, assigned=assigned, resolved_late=resolved_late, as_string=as_string
         ) or (resolved_late and bool(self.dataclass_arguments.get("slots")))
+
+    @override
+    def inherited_namespace_bindings(self) -> dict[str, Literal["none", "object"]]:
+        """Return the inherited defaults that Pydantic 2.0 sets on the class before it evaluates its annotations.
+
+        It sets the default of every field of the class's ``__dataclass_fields__`` that its constructor takes with a
+        value, the inherited ones too, and evaluates the annotations in ``vars(cls)`` next. Pydantic 2.1 sets only those
+        of the class body, which the own field names decide.
+        """
+        if model_target_meets(self, "pydantic.dataclass_body_namespace"):
+            return {}
+        return super().inherited_namespace_bindings()
 
     @override
     def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:

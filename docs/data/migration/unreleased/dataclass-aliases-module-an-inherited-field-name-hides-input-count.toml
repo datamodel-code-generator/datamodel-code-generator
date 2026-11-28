@@ -1,0 +1,7 @@
+[[change]]
+id = "dataclass-aliases-module-an-inherited-field-name-hides-input-count"
+extends = "dataclass-later-base-input-count"
+refs = ["#7631"]
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]
