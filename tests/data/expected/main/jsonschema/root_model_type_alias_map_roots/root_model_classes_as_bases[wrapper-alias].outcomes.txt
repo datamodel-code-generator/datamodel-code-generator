@@ -1,0 +1,2 @@
+Model valid string property: accepted {'wrapper': {'xa': 'v'}} as Model
+Model invalid int property: rejected: string_type

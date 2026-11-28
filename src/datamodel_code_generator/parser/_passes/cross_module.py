@@ -130,8 +130,8 @@ class CrossModuleHost(ReimportHost, GenerationStoreHost, Protocol):
     def use_generic_base_class(self) -> bool:
         """Whether the models share a generated base class."""
 
-    def _is_root_model(self, model: DataModel) -> bool:
-        """Return whether a model uses the configured root model representation."""
+    def _is_root_model_in_any_form(self, model: DataModel) -> bool:
+        """Return whether a model is a root model, in the configured representation or as a root model class."""
 
     def _new_model(self, factory: Callable[..., DataModel | None], /, **kwargs: Any) -> DataModel | None:
         """Build a model with ``factory``, a model class or a model factory, for the run's target Python."""
@@ -538,7 +538,9 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     modules_with_targets: list[tuple[tuple[str, ...], list[DataModel], list[DataModel], Imports, bool]] = []
     module_keys: list[ModulePath] = []
     for ctx in run.contexts:
-        if target_models := [m for m in ctx.models if m.SUPPORTS_GENERIC_BASE_CLASS and not parser._is_root_model(m)]:
+        if target_models := [
+            m for m in ctx.models if m.SUPPORTS_GENERIC_BASE_CLASS and not parser._is_root_model_in_any_form(m)
+        ]:
             modules_with_targets.append((ctx.module, ctx.models, target_models, ctx.imports, ctx.is_init))
             module_keys.append(ctx.module_key)
             all_target_models.update(target_models)

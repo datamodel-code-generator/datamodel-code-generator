@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {"mixed": {"$ref": "#/$defs/Mixed"}},
+  "$defs": {
+    "Labels": {"type": "object", "additionalProperties": {"type": "string"}, "propertyNames": {"maxLength": 3}, "maxProperties": 2},
+    "Owner": {"type": "object", "properties": {"n": {"type": "string"}}},
+    "Mixed": {"allOf": [{"$ref": "#/$defs/Labels"}, {"$ref": "#/$defs/Owner"}]}
+  }
+}

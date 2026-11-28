@@ -1,0 +1,2 @@
+Model valid string property: accepted {'mixed': {'n': 'x'}} as Model
+Model invalid int property: rejected: string_type

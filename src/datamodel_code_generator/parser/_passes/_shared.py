@@ -401,10 +401,13 @@ class RootModelTypeHost(Protocol):
 
 
 class RootModelHost(Protocol):
-    """The hook that tells whether a model uses the configured root model representation."""
+    """The hooks that tell whether a model uses the configured root model representation, or is a root model at all."""
 
     def _is_root_model(self, model: DataModel) -> bool:
         """Return whether a model uses the configured root model representation."""
+
+    def _is_root_model_in_any_form(self, model: DataModel) -> bool:
+        """Return whether a model is a root model, in the configured representation or as a root model class."""
 
 
 def site_display_name(host: RootModelHost, model: DataModel, field: DataModelFieldBase) -> str:

@@ -1,0 +1,2 @@
+Model valid one key: accepted {'labels': {'a': 'x'}} as Model
+Model invalid three keys: rejected: too_long

@@ -2862,6 +2862,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Return whether model uses the configured root model representation."""
         return isinstance(model, self.data_model_root_type)
 
+    def _is_root_model_in_any_form(self, model: DataModel) -> bool:
+        """Return whether model is a root model, in the configured representation or as a root model class.
+
+        A root the configured representation cannot write, such as a constrained root under
+        ``--use-root-model-type-alias``, is written as a root model class instead (``_concrete_root_model_type``,
+        ``write_rule_aliases_as_classes``); the readers that keep a root model out of a role only an object model takes,
+        a base of a model Pydantic refuses as its subclass or the user of a generated base class, read this fact.
+        """
+        return self._is_root_model(model) or model.IS_ROOT_MODEL
+
     def _reset_local_source_cache(self) -> None:
         self._cache_local_sources = False
         self._local_source_cache = None

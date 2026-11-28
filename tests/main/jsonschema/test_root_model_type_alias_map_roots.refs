@@ -48,3 +48,14 @@ request_response-schema-validators	main/jsonschema/root_model_type_alias_map_roo
 root-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[root-alias].default.py
 root-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[root-alias].option.py
 root-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[root-alias].outcomes.txt
+[test_root_model_classes_as_bases]
+generic_base-alias	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[generic_base-alias].model.py
+generic_base-alias	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[generic_base-alias].outcomes.txt
+mixed-alias	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[mixed-alias].model.py
+mixed-alias	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[mixed-alias].outcomes.txt
+pod_labels-alias	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[pod_labels-alias].model.py
+pod_labels-alias	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[pod_labels-alias].outcomes.txt
+pod_labels-class	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[pod_labels-class].model.py
+pod_labels-class	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[pod_labels-class].outcomes.txt
+wrapper-alias	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[wrapper-alias].model.py
+wrapper-alias	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[wrapper-alias].outcomes.txt

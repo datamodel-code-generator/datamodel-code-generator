@@ -1159,6 +1159,28 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--keep-constrained-map-roots-as-classes",
     ),
     LegacyRow(
+        "legacy-configured-root-model-leaves-every-child",
+        (
+            "a root model in the configured representation leaves the bases of every model that inherits it, also of "
+            "one that adds no field and no other base, so `{description, allOf: [$ref Labels]}` over a map root is an "
+            "empty class that parses `{'a': 'x'}` to `{}`, while a root model class written in its place (under "
+            "`--use-root-model-type-alias`) stays the base of such a child and leaves only the children Pydantic "
+            "refuses as its subclass (`parser/_passes/structure.py:_drop_root_model_bases`)"
+        ),
+        fix=7628,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/root_model_class_bases/pod_labels.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+    ),
+    LegacyRow(
         "legacy-nullable-as-type-list",
         (
             "OpenAPI `nullable` is read as a type list only after the first `_get_data_type` of a schema (a list item "

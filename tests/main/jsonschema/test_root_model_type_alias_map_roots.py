@@ -248,3 +248,64 @@ def test_constrained_map_roots_as_classes(
             outcomes += _outcomes(output_path, input_name, name)
     if payloads:
         assert_output(outcomes, name="outcomes")
+
+
+ROOT_MODEL_CLASS_BASES_PATH = JSON_SCHEMA_DATA_PATH / "root_model_class_bases"
+THREE_LABELS = {**TWO_LABELS, "c": "z"}
+ROOT_MODEL_CLASS_BASES_PAYLOADS: dict[str, dict[str, object]] = {
+    "wrapper": {"valid string property": {"wrapper": {"xa": "v"}}, "invalid int property": {"wrapper": {"xa": 1}}},
+    "mixed": {"valid string property": {"mixed": {"n": "x"}}, "invalid int property": {"mixed": {"n": 1}}},
+    "generic_base": {
+        "valid map and list": {"k": {"a": "x"}, "t": ["a"]},
+        "invalid three keys": {"k": THREE_LABELS},
+        "invalid three items": {"t": ["a", "b", "c"]},
+    },
+    "pod_labels": {"valid one key": {"labels": {"a": "x"}}, "invalid three keys": {"labels": THREE_LABELS}},
+}
+"""The payloads ``Model`` of each input parses: the label says whether the schema accepts it."""
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("wrapper", [USE_ROOT_MODEL_TYPE_ALIAS], id="wrapper-alias"),
+        pytest.param("mixed", [USE_ROOT_MODEL_TYPE_ALIAS], id="mixed-alias"),
+        pytest.param(
+            "generic_base",
+            [USE_ROOT_MODEL_TYPE_ALIAS, "--use-generic-base-class", "--extra-fields", "forbid"],
+            id="generic_base-alias",
+        ),
+        pytest.param("pod_labels", [USE_ROOT_MODEL_TYPE_ALIAS], id="pod_labels-alias"),
+        pytest.param("pod_labels", [], id="pod_labels-class"),
+    ],
+)
+def test_root_model_classes_as_bases(tmp_path: Path, input_name: str, extra_args: list[str]) -> None:
+    """Keep a root model class out of the bases and the generated base class Pydantic refuses for it (#7626).
+
+    Under ``--use-root-model-type-alias`` a constrained root is a ``RootModel`` class, which Pydantic refuses as the
+    base of a model with its own fields (``Wrapper``, the schema of #7626) or with another base (``Mixed``), and as a
+    ``RootModel`` that takes the generated base class of ``--use-generic-base-class`` instead (``KeyPatternCount``,
+    ``Tags``). Each such model kept that base until 0.104.0 and the module failed at import; now it takes its default
+    base, as without ``--use-root-model-type-alias``, and the valid payloads parse. ``PodLabels``, an ``allOf`` of the
+    map with only a description, stays ``class PodLabels(Labels)`` and keeps the map's values and count; without the
+    option row ``legacy-configured-root-model-leaves-every-child`` makes it an empty ``class PodLabels(BaseModel)``,
+    as in 0.104.0, which parses every map to ``{}``.
+    """
+    output_path = tmp_path / "model.py"
+    run_main_and_assert(
+        input_path=ROOT_MODEL_CLASS_BASES_PATH / f"{input_name}.json",
+        output_path=output_path,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        name="model",
+    )
+    with _generated_model(output_path, f"root_model_class_bases_{input_name}", "Model") as model:
+        outcomes = "".join(
+            f"Model {label}: {_outcome(model, payload)}\n"
+            for label, payload in ROOT_MODEL_CLASS_BASES_PAYLOADS[input_name].items()
+        )
+    assert_output(outcomes, name="outcomes")

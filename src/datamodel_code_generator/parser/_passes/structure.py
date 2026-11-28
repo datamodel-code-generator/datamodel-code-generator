@@ -12,7 +12,7 @@ from collections import defaultdict
 from itertools import count, groupby
 from keyword import iskeyword
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from typing_extensions import Protocol
 
@@ -304,8 +304,24 @@ def renders_as_duplicate(
 
 
 def _drop_root_model_bases(parser: StructureHost, model: DataModel) -> None:
-    """Remove a root model from the bases of the models that inherit it, which then keep their default base."""
+    """Remove a root model from the bases of the models Pydantic refuses as its subclass, which keep their default base.
+
+    Pydantic refuses a subclass of a root model that declares its own fields or takes another base, so a root model
+    class (one the configured representation cannot write, ``Parser._is_root_model_in_any_form``) leaves the bases of
+    such a child and stays the base of a child that adds nothing. Row
+    ``legacy-configured-root-model-leaves-every-child``: a root model in the configured representation leaves the bases
+    of every child, also of one that adds nothing, which then has no field and parses none of the root's values.
+    """
+    row: Literal["refused-subclasses", "legacy-configured-root-model-leaves-every-child"] = (
+        "legacy-configured-root-model-leaves-every-child" if parser._is_root_model(model) else "refused-subclasses"
+    )
     for child in model.reference.iter_data_model_children():
+        if (
+            row != "legacy-configured-root-model-leaves-every-child"
+            and not child.fields
+            and all(base.reference is model.reference for base in child.base_classes)
+        ):
+            continue
         parser._graph_builder.set_base_classes(
             child,
             [bc for bc in child.base_classes if bc.reference is not model.reference],
@@ -346,13 +362,17 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
     )
     for model in parser._reuse_groups.site_models_last(models):
         reuse_allowed = reuse_constraint is None or reuse_constraint(model)
-        if parser._is_root_model(model) and (model_key_of(model.reference) not in parser._declared_class_stand_ins):
-            root_data_type = model.fields[0].data_type
-
+        if parser._is_root_model_in_any_form(model) and (
+            model_key_of(model.reference) not in parser._declared_class_stand_ins
+        ):
             # backward compatible
             # Remove duplicated root model
-            if reuse_allowed and (
-                root_reference := parser._get_duplicate_root_reference(model, root_data_type, models_set)
+            if (
+                reuse_allowed
+                and parser._is_root_model(model)
+                and (
+                    root_reference := parser._get_duplicate_root_reference(model, model.fields[0].data_type, models_set)
+                )
             ):
                 _drop_duplicate_root_model(parser, model, root_reference)
                 models_to_remove.add(model)

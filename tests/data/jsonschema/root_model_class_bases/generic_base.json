@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {"k": {"$ref": "#/$defs/KeyPatternCount"}, "t": {"$ref": "#/$defs/Tags"}},
+  "$defs": {
+    "KeyPatternCount": {"type": "object", "additionalProperties": {"type": "string"}, "propertyNames": {"maxLength": 3}, "maxProperties": 2},
+    "Tags": {"type": "array", "items": {"type": "string"}, "maxItems": 2}
+  }
+}
