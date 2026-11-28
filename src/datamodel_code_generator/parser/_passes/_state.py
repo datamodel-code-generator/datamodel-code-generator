@@ -31,10 +31,16 @@ if TYPE_CHECKING:
     from datamodel_code_generator._warning_control import ShownWarning
     from datamodel_code_generator.enums import AllExportsCollisionStrategy, AllExportsScope, ModuleSplitMode
     from datamodel_code_generator.format import CodeFormatter
-    from datamodel_code_generator.imports import Import, Imports
+    from datamodel_code_generator.imports import Import, Imports, _ImportKey
     from datamodel_code_generator.model._decisions.collapse_eligibility import LaterHolderFacts
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType
+
+    DecidedImportAliases: TypeAlias = tuple[
+        dict[_ImportKey, Import], frozenset[tuple[_ImportKey, str]], frozenset[_ImportKey]
+    ]
+    """The aliases the import alias decision of a module wrote: the aliased imports by identity, the bindings of base
+    classes it kept, and the identities whose alias it made (not one its consumers already carried)."""
 
 __all__ = [
     "ConfigT",
@@ -498,7 +504,8 @@ class _ModuleState(Generic[ConfigT]):
     """The state of one ``_process_single_module`` call.
 
     ``model_list`` is the list of the module's models: after model-level type overrides removed models, the kept
-    list, and ``model_list_before_override_removal`` the list before.
+    list, and ``model_list_before_override_removal`` the list before. ``decided_import_aliases`` holds the aliases the
+    module's import alias decision wrote, if any.
     """
 
     is_init: bool
@@ -514,6 +521,7 @@ class _ModuleState(Generic[ConfigT]):
     unused_models_start: int = dataclasses.field(init=False)
     model_list_before_override_removal: list[DataModel] = dataclasses.field(init=False)
     current_unused_models: Sequence[DataModel] = ()
+    decided_import_aliases: DecidedImportAliases | None = None
 
 
 @final
@@ -522,14 +530,15 @@ class _PreparedModule(Generic[ConfigT]):
     """One output module as ``_process_single_module`` left it, for its render preparation after the decision phase.
 
     ``model_list`` holds the models of the module that render, ``model_list_before_override_removal`` also those a
-    model-level type override replaces, which constructor ordering still orders, and ``current_unused_models`` the
-    unused models the module added.
+    model-level type override replaces, which constructor ordering still orders, ``current_unused_models`` the
+    unused models the module added, and ``decided_import_aliases`` the aliases of its import alias decision.
     """
 
     model_list: list[DataModel]
     model_list_before_override_removal: list[DataModel]
     config: ConfigT
     current_unused_models: Sequence[DataModel]
+    decided_import_aliases: DecidedImportAliases | None
     live_models: list[DataModel] = dataclasses.field(init=False)
 
     @classmethod
@@ -540,6 +549,7 @@ class _PreparedModule(Generic[ConfigT]):
             model_list_before_override_removal=list(state.model_list_before_override_removal),
             config=state.config,
             current_unused_models=state.current_unused_models,
+            decided_import_aliases=state.decided_import_aliases,
         )
 
 

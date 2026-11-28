@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Day": {"type": "string"},
+    "Item": {
+      "type": "object",
+      "properties": {
+        "when": {"$ref": "#/$defs/Day"},
+        "date": {"type": "string"}
+      }
+    },
+    "Plain": {
+      "type": "object",
+      "properties": {"day": {"type": "string", "format": "date"}}
+    }
+  }
+}

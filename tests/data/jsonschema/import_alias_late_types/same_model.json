@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "when": {"type": "string"},
+        "since": {"type": "string", "format": "date"},
+        "date": {"type": "string"}
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "a.Days": {"type": "array", "items": {"type": "string", "format": "date"}},
+    "a.Other": {
+      "type": "object",
+      "properties": {"days": {"$ref": "#/$defs/a.Days"}}
+    },
+    "b.Item": {
+      "type": "object",
+      "properties": {
+        "when": {"$ref": "#/$defs/a.Days"},
+        "date": {"type": "string"},
+        "other": {"$ref": "#/$defs/a.Other"}
+      }
+    },
+    "b.Plain": {
+      "type": "object",
+      "properties": {"day": {"type": "string", "format": "date"}}
+    }
+  }
+}

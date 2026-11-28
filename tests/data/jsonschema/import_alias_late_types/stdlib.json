@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {
+        "amount": {"type": "string"},
+        "Decimal": {"type": "string"},
+        "ident": {"type": "string"},
+        "UUID": {"type": "string"}
+      }
+    },
+    "Plain": {
+      "type": "object",
+      "properties": {
+        "price": {"type": "number", "format": "decimal"},
+        "key": {"type": "string", "format": "uuid"}
+      }
+    }
+  }
+}
