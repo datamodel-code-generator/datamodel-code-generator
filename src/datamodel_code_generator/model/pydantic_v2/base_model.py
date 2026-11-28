@@ -1782,33 +1782,50 @@ def _type_aliases(models: Iterable[DataModel]) -> list[DataModel]:
     return [model for model in models if isinstance(model, TypeAliasBase)]
 
 
-def _holds_arbitrary_type(fields: Iterable[DataModelFieldBase]) -> bool:
-    """Return whether a type of the fields is one a model builds only with ``arbitrary_types_allowed``."""
-    return any(data_type.needs_arbitrary_types for field in fields for data_type in field.data_type.all_data_types)
+def _holds_arbitrary_type(fields: Iterable[DataModelFieldBase], *, text: bool = False) -> bool:
+    """Return whether a type of the fields is one a model builds only with ``arbitrary_types_allowed``.
+
+    A type is one where the parser marked it (``needs_arbitrary_types``: a class of an input model, or a class named
+    by ``customTypePath`` under ``--use-root-model-any-for-custom-type-path``) or, with ``text``, where it is a class
+    named by text (``names_class_by_text``). Both are assumed to need the key, as the class is unknown.
+    """
+    return any(
+        data_type.needs_arbitrary_types or (text and names_class_by_text(data_type))
+        for field in fields
+        for data_type in field.data_type.all_data_types
+    )
 
 
-def _holds_class_named_by_text(fields: Iterable[DataModelFieldBase]) -> bool:
-    """Return whether a type of the fields is a class named by text, which its declaring model gave the key at init."""
-    return any(names_class_by_text(data_type) for field in fields for data_type in field.data_type.all_data_types)
-
-
-def _builds_arbitrary_type(fields: Iterable[DataModelFieldBase], aliases: Collection[int]) -> bool:
+def _builds_arbitrary_type(fields: Iterable[DataModelFieldBase], aliases: Collection[int], *, text: bool) -> bool:
     """Return whether the fields hold an arbitrary type, or name a type alias of ``aliases`` that does."""
     fields = list(fields)
-    return _holds_arbitrary_type(fields) or (
+    return _holds_arbitrary_type(fields, text=text) or (
         bool(aliases) and any(id(reference.source) in aliases for reference in _field_references(fields))
     )
 
 
-def _models_reaching_arbitrary_type_aliases(models: Iterable[DataModel]) -> set[int]:
+def _models_reaching_arbitrary_type_aliases(models: Iterable[DataModel], *, text: bool) -> set[int]:
     """Return the ids of the type aliases that hold an arbitrary type or name another such alias.
 
     A type alias has no config, and Pydantic builds its body with the config of the model that names it, so a model
     needs ``arbitrary_types_allowed`` for the arbitrary types of an alias it names, through any chain of aliases.
+    ``text`` counts the classes named by text too (``_holds_arbitrary_type``).
     """
     aliases = _type_aliases(models)
-    pending = [alias for alias in aliases if _holds_arbitrary_type(alias.fields)]
+    pending = [alias for alias in aliases if _holds_arbitrary_type(alias.fields, text=text)]
     return _reaching_aliases(aliases, pending) if pending else set()
+
+
+def _counts_classes_named_by_text(model: DataModel) -> bool:
+    """Return whether the classes named by text in the types a model builds count as arbitrary types for its config.
+
+    They do for every model but a root model, which Pydantic builds as ``RootModel[<class>]`` before its own config
+    applies. Row ``legacy-custom-type-root-keeps-subscript``: a root model holding such a class keeps
+    ``RootModel[<class>]`` without the key, as in 0.104.0. With ``--use-root-model-any-for-custom-type-path`` the parser
+    marks the class (``needs_arbitrary_types``) and the root takes ``RootModel[Any]``, the key and the class on
+    ``root`` (``_allow_arbitrary_types``).
+    """
+    return not model.IS_ROOT_MODEL
 
 
 def _holds_lone_surrogate(models: Iterable[DataModel]) -> bool:
@@ -2096,16 +2113,18 @@ class _PydanticV2Model(DataModel):
         """Write ``arbitrary_types_allowed`` in the config of each model that builds an arbitrary type, once final.
 
         A model builds the types of its fields (``_fields_built_with_config``) and those of the type aliases it names
-        (``_models_reaching_arbitrary_type_aliases``) with the config it applies. A base decides before its subclasses,
-        and a model that applies a config naming the key, its own or a generated base's, keeps it; so does a model
-        whose config a base class the generator does not read may set (``applied_config``), which no one can tell.
+        (``_models_reaching_arbitrary_type_aliases``) with the config it applies, the classes named by text among them
+        where the model counts them (``_counts_classes_named_by_text``): a dataclass's inherited declarations, a field
+        that takes a root's class once collapsed, a type alias whose body is such a class. A base decides before its
+        subclasses, and a model that applies a config naming the key, its own or a generated base's, keeps it; so
+        does a model whose config a base class the generator does not read may set (``applied_config``), which no one
+        can tell.
         """
-        reached = _models_reaching_arbitrary_type_aliases(models)
+        reached = {text: _models_reaching_arbitrary_type_aliases(models, text=text) for text in (False, True)}
 
         def builds_arbitrary_type(model: _PydanticV2Model) -> bool:
-            return _builds_arbitrary_type(model._fields_built_with_config(), reached) or _holds_class_named_by_text(
-                model._declarations_built_again()
-            )
+            text = _counts_classes_named_by_text(model)
+            return _builds_arbitrary_type(model._fields_built_with_config(), reached[text], text=text)
 
         needing = {
             id(model): model for model in models if isinstance(model, _PydanticV2Model) and builds_arbitrary_type(model)

@@ -1,0 +1,56 @@
+[[change]]
+id = "custom-type-path-holders-allow-arbitrary-types"
+category = "default-fix"
+title = "A model that builds a customTypePath class through a collapsed root, a base, a type alias or a pydantic dataclass writes arbitrary_types_allowed"
+summary = "A Pydantic v2 model that builds a customTypePath class through a collapsed root, a base or a type alias, which only the model that declared it gave arbitrary_types_allowed, now writes the key in its config as the declaring model does; the module imports where Pydantic builds the class only with it. Class names, field names, bases, signatures and parsed values are the same."
+refs = ["#7620", "#7593"]
+decision = ["#7620"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-collapse].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-collapse].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-collapse].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-dataclass].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-dataclass].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-dataclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-default].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-default].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-default].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-type-alias].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-type-alias].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[date_holder-type-alias].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-annotated].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-annotated].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-annotated].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-collapse].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-collapse].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-collapse].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-dataclass].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-dataclass].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-dataclass].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-default].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-default].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-default].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-preset].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-preset].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-preset].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-root-alias].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-root-alias].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-root-alias].outcomes.txt",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-type-alias].default.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-type-alias].option.py",
+    "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[holder-type-alias].outcomes.txt",
+]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/custom_type_path_roots",
+    "tests/data/jsonschema/custom_type_path_roots/**",
+    "tests/data/jsonschema/read_only_write_only_custom_type_path.json",
+    "tests/data/jsonschema/read_only_write_only_custom_type_ref_siblings.json",
+]
+backends = "*"
+aspects = ["config"]
+options = "*"

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Day": {
+      "type": "string",
+      "customTypePath": "datetime.date"
+    },
+    "Amount": {
+      "type": "string",
+      "customTypePath": "decimal.Decimal"
+    },
+    "Entity": {
+      "customTypePath": "pydantic.BaseModel"
+    },
+    "Address": {
+      "type": "string",
+      "customTypePath": "pydantic.networks.IPvAnyAddress"
+    }
+  }
+}

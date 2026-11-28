@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Mapping": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "customTypePath": "queue.Queue"
+      }
+    }
+  }
+}

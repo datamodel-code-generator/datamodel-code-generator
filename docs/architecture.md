@@ -173,16 +173,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 290 | Shared generation options. |
-| `GenerateConfig` | 305 | Public `generate()` configuration. |
-| `ParserConfig` | 242 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 244 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 255 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 258 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 245 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 245 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 244 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 245 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 291 | Shared generation options. |
+| `GenerateConfig` | 306 | Public `generate()` configuration. |
+| `ParserConfig` | 243 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 245 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 256 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 259 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 246 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 246 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 245 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 246 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1879,7 +1879,8 @@ A table or collection of rows, an annotation, and a class or module docstring re
 | `legacy-dataclass-follows-every-reference` | a `pydantic_v2.dataclass` takes Python's `re` for a pattern of any model its fields reach through references (`_own_patterns_select_python`, `_FOLLOWS_PATTERN_REFERENCES`): a model or dataclass with a config of its own and a type alias whose patterns the target compiles count too, where the models that use a type alias read only the string patterns of the aliases they reach (`models_reaching_string_pattern_aliases`) | keep |
 | `legacy-dataclass-own-config-drops-taken-config` | a `pydantic_v2.dataclass` that writes a config of its own (an option such as `--allow-population-by-field-name`, `--extra-template-data`, or `regex_engine` that its own patterns, the type aliases it reaches or a lone surrogate select) writes only its own items, so it stops applying the config of its first dataclass base (`extra`, `--extra-template-data` items); the engine the patterns of its bases select keeps those items of a dataclass without a config of its own (#7452) | #7497 |
 | `legacy-python-engine-marks-every-built-base` | a Pydantic v2 model whose config selects `python-re` marks every base it builds with it, so a base whose own config applies the default engine leaves out a pattern Python's `re` rejects, for its other users too, and the model redeclares none of its fields (`finalize_type_alias_users`, `_config_scopes`) | #7579 |
-| `legacy-custom-type-config-at-init` | a Pydantic v2 model whose fields hold a `customTypePath` type when it is created writes `arbitrary_types_allowed` (`build_base_config_parameters`), whatever the class the path names, and keeps it where `--type-overrides` later replaces the type, and a dataclass that builds the declaration again from a base reads the same flag once the field types are final, so it gets the key in its own config too (`_PydanticV2Model._allow_arbitrary_types`); the classes of an input model decide there too | keep |
+| `legacy-custom-type-config-at-init` | a Pydantic v2 model whose fields hold a `customTypePath` type when it is created writes `arbitrary_types_allowed` (`build_base_config_parameters`), whatever the class the path names, and keeps it where `--type-overrides` later replaces the type; once the field types are final, every model that builds such a class with the config it applies gets the key too (a dataclass from a base, a field that takes a collapsed root's class, a type alias's body; `_PydanticV2Model._allow_arbitrary_types`), a root model excepted (`legacy-custom-type-root-keeps-subscript`); the classes of an input model decide there too | keep |
+| `legacy-custom-type-root-keeps-subscript` | a Pydantic v2 root model whose value is a class that `customTypePath` names is written `RootModel[<class>]` without `arbitrary_types_allowed`, as in 0.104.0, so a class Pydantic builds only with the key fails to import; with the option the root takes `RootModel[Any]`, the key and the class on `root` (`_counts_classes_named_by_text`, `JsonSchemaParser._custom_type`) | #7593 |
 | `legacy-flat-bare-loads` | the check of module imports named like a builtin counts every name node of a rendered model as a bare load of it: stores, and names that a function, lambda or comprehension of a custom template binds itself | keep |
 | `legacy-abstract-containers-as-unions` | the keywords a field's type consumes or enforces itself read a `Sequence` or `Mapping` through to its members, like a union, where every other container is its own leaf | #5821 |
 | `legacy-object-extension-paths` | the paths scope's walk (`OpenAPIParser._process_path_items`) reads a `parameters` or `x-` key of `paths` that holds an object as a path, and so does the recommender (`_recommend/_signals.py`: `_path_operations` for the paths and webhooks scopes, `_count_operations` for the size note of the other scopes), while the api scope's walk and the recommender's reading of it skip it; under `--skip-path-extension-keys` both read row `legacy-object-parameters-path` instead, which skips every `x-` key as the api scope does and reads only a `parameters` key that holds an object as a path | #5746 |

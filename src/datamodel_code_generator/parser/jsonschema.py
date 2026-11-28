@@ -6537,9 +6537,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self._custom_type(site.obj)
 
     def _custom_type(self, obj: JsonSchemaObject) -> DataType:
-        """Return the type of a schema that ``customTypePath`` gives, the class that dotted path names."""
+        """Return the type of a schema that ``customTypePath`` gives, the class that dotted path names.
+
+        The class is unknown without importing it. With ``--use-root-model-any-for-custom-type-path`` the type counts
+        as proved to need ``arbitrary_types_allowed`` (``needs_arbitrary_types``), which gives a root model that holds
+        it ``RootModel[Any]``, the key and the class on ``root``; without it a root keeps ``RootModel[<class>]``
+        (row ``legacy-custom-type-root-keeps-subscript``).
+        """
         self._refuse_untrusted_code("customTypePath", obj.custom_type_path)
-        return self.data_type_manager.get_data_type_from_full_path(
+        data_type = self.data_type_manager.get_data_type_from_full_path(
             _type_overrides.get_emitted_python_type_path(
                 self,
                 _validate_schema_python_import_path(
@@ -6548,6 +6554,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ),
             is_custom_type=True,
         )
+        row: Literal["roots-take-any-for-custom-types", "legacy-custom-type-root-keeps-subscript"] = (
+            "roots-take-any-for-custom-types"
+            if self.config.use_root_model_any_for_custom_type_path
+            else "legacy-custom-type-root-keeps-subscript"
+        )
+        if row == "legacy-custom-type-root-keeps-subscript":
+            return data_type
+        return data_type.model_copy(update={"needs_arbitrary_types": True})
 
     def _record_site_constraints(self, site: _all_of_values.ValueSite, data_type: DataType) -> DataType:
         """Keep on ``data_type`` the constraints the allOf site ``site`` adds to the target of its first ``$ref``.
