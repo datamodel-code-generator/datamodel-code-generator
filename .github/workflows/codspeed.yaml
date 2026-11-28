@@ -32,11 +32,11 @@ jobs:
         with:
           python-version: "3.14.2"
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
       - name: Install dependencies
         run: uv sync --locked --all-extras --group benchmark --group test --no-default-groups
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f # v5.6.3
+        uses: CodSpeedHQ/action@b1f28b5eccf7cb5bfe6a2a89cb3053eb67f1150c # v5.8.0
         with:
           run: .venv/bin/pytest tests/main/test_performance.py --codspeed
           mode: "walltime"
