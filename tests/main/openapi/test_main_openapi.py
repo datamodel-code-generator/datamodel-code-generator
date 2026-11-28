@@ -18467,3 +18467,69 @@ def test_x_python_type_object_component_discriminator_variant(extra_args: list[s
         input_file_type="openapi",
         extra_args=extra_args,
     )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--strict-nullable"], id="strict-nullable"),
+        pytest.param(["--openapi-scopes", "schemas", "paths"], id="scopes-paths"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+        pytest.param(["--preset", "standard-py314-20261127"], id="preset"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+        pytest.param(["--strict-nullable", "--output-model-type", "dataclasses.dataclass"], id="dataclass"),
+    ],
+)
+def test_x_python_type_object_component_allof(extra_args: list[str], output_file: Path) -> None:
+    """Write an allOf component that holds one object x-python-type, or one base that does, as a root (#7618).
+
+    ``LoggerInline``, ``LoggerWrapped``, the nullable wrapper ``LoggerNullable`` and an inline request body over
+    ``LoggerBase`` were empty classes. Each is a root now, a wrapper as a root of its base, which takes the null of a
+    nullable base under ``--strict-nullable`` as an allOf of a ``$ref`` to a nullable value does
+    (``NullableBaseWrapped(RootModel[NullableBase | None])``).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "x_python_type_object_root_allof.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=extra_args,
+    )
+
+
+@pytest.mark.allow_direct_assert("the generated model's values are the payload facts under test")
+def test_x_python_type_object_component_allof_holds_its_value(output_file: Path) -> None:
+    """Hold an instance of the class in the allOf roots of the components (#7618)."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "x_python_type_object_root_allof.json",
+        output_path=output_file,
+        input_file_type="openapi",
+    )
+    logger = logging.getLogger("x_python_type_object_component_allof")
+    handler = logging.Handler()
+    payload = {"inline": logger, "wrapped": logger, "nullable": logger, "handler": handler}
+    with _generated_model(output_file, "_generated_x_python_type_object_component_allof", "Holder") as holder:
+        assert holder.model_validate(payload).model_dump(exclude_none=True) == payload
+        for invalid in ({"wrapped": {}, "handler": handler}, {"wrapped": logger, "handler": logger}):
+            with pytest.raises(pydantic.ValidationError):
+                holder.model_validate(invalid)
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"], id="msgspec-tagged"),
+    ],
+)
+def test_x_python_type_object_component_allof_discriminator_variant(extra_args: list[str], output_file: Path) -> None:
+    """Keep an allOf variant of a discriminated union over a python-type class, and that class (#7618).
+
+    ``CatLogger`` wraps ``LoggerBase`` and the union tags it, so both stay the classes main writes.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "x_python_type_object_root_allof_discriminator.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=extra_args,
+    )

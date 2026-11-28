@@ -29137,11 +29137,12 @@ def test_x_python_type_object_root_template_data(
     ],
 )
 def test_x_python_type_object_root_shapes(schema: str, extra_args: list[str], output_file: Path) -> None:
-    """Keep a fieldless python-type class that a model derives from, and write the others as roots (#7581).
+    """Keep a fieldless python-type class that a model with more than its class derives from, else write roots.
 
-    A class some allOf extends or wraps (``Child``, ``Wrapped``, ``Both``, in this file or another) stays the class
-    main writes, and so does one an allOf builds (``AllOfInline``) or one with a custom base (``customBasePath``).
-    Two equal classes are both roots, and ``--reuse-model`` makes the second a reuse of the first.
+    A class some allOf extends with properties (``Plain`` under ``Child``) stays the class main writes with every
+    class over it (``Wrapped``, ``Both``), and so does one with a custom base (``customBasePath``) (#7581). A wrapper
+    of a class in another file is a root of that class's root, and a class an allOf builds (``AllOfInline``) a root of
+    its class (#7618). Two equal classes are both roots, and ``--reuse-model`` makes the second a reuse of the first.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / schema,
@@ -29224,6 +29225,103 @@ def test_x_python_type_object_root_import_directory(output_dir: Path) -> None:
             a_module.Box(logger)
         with pytest.raises(ValidationError):
             b_module.Other.model_validate({"box": logger})
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+        pytest.param(["--preset", "standard-py314-20261127"], id="preset"),
+        pytest.param(["--use-root-model-type-alias"], id="root-model-type-alias"),
+        pytest.param(["--use-type-alias"], id="type-alias"),
+        pytest.param(["--reuse-model"], id="reuse-model"),
+        pytest.param(["--use-title-as-name"], id="title-as-name"),
+        pytest.param(["--allof-class-hierarchy", "always"], id="allof-class-hierarchy-always"),
+        pytest.param(["--allof-merge-mode", "none"], id="allof-merge-mode-none"),
+        pytest.param(["--intersect-allof-keywords"], id="intersect-allof-keywords"),
+        pytest.param(["--field-constraints"], id="field-constraints"),
+        pytest.param(["--use-annotated"], id="use-annotated"),
+        pytest.param(["--generate-schema-validators"], id="schema-validators"),
+        pytest.param(
+            ["--strip-default-none", "--use-default-factory-for-optional-nested-models"], id="strip-default-none"
+        ),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="pydantic-dataclass"),
+        pytest.param(["--output-model-type", "dataclasses.dataclass"], id="dataclass"),
+        pytest.param(["--output-model-type", "typing.TypedDict"], id="typed-dict"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+        pytest.param(["--input-file-type", "jsonschema"], id="input-file-type"),
+        pytest.param(["--use-schema-description"], id="schema-description"),
+    ],
+)
+def test_x_python_type_object_root_allof(extra_args: list[str], output_file: Path) -> None:
+    """Write an allOf that holds nothing but one object x-python-type, or one base that does, as a root (#7618).
+
+    An inline member (``LoggerInline``, at a property, array items, a map value and an anyOf member too), two equal
+    members, the branches of a union beside the member, and wrappers of such a definition (``LoggerWrapped``, a chain
+    ``HandlerChain`` over ``HandlerMiddle``, wrappers with closing, size, title, type or default keywords, or an
+    object member that adds nothing) were empty classes. Each is a root now: of the class, or of its base as an allOf
+    of a ``$ref`` to a value is written (``LoggerWrapped(RootModel[LoggerBase])``).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root_allof.json",
+        output_path=output_file,
+        input_file_type=None,
+        extra_args=extra_args,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--output-model-type", "dataclasses.dataclass"], id="dataclass"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+    ],
+)
+def test_x_python_type_object_root_allof_kept(extra_args: list[str], output_file: Path) -> None:
+    """Keep the allOf classes over an x-python-type that hold more than one class, or that a class must keep (#7618).
+
+    Two different classes, two bases, a member or base beside properties, value members (a ``Decimal`` string, a
+    compatible ``dict``), a base or wrapper another model extends, a wrapper that keeps keys, requires one, names its
+    own type or adds a typed member beside the reference, and a wrapper of an ordinary model are written as before.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root_allof_kept.json",
+        output_path=output_file,
+        input_file_type=None,
+        extra_args=extra_args,
+    )
+
+
+@pytest.mark.allow_direct_assert("the generated model's values are the payload facts under test")
+def test_x_python_type_object_root_allof_holds_its_value(output_file: Path) -> None:
+    """Hold an instance of the class in an allOf root and its wrappers, which empty classes dropped (#7618)."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root_allof.json",
+        output_path=output_file,
+        input_file_type=None,
+    )
+    logger = logging.getLogger("x_python_type_object_root_allof")
+    handler = logging.Handler()
+    payload = {
+        "inline": logger,
+        "wrapped": logger,
+        "nestedWrapped": logger,
+        "chain": handler,
+        "inlineChain": logger,
+        "closed": logger,
+        "branches": logger,
+        "property": logger,
+        "items": [logger],
+        "values": {"a": logger},
+        "member": logger,
+    }
+    with _generated_model(output_file, "_generated_x_python_type_object_root_allof", "Holder") as holder:
+        assert holder.model_validate(payload).model_dump(exclude_none=True) == payload
+        for invalid in ({"inline": {"a": 1}}, {"wrapped": {}}, {"chain": logger}, {"items": [{}]}):
+            with pytest.raises(ValidationError):
+                holder.model_validate(invalid)
 
 
 def test_x_python_type_custom_fqpath(output_file: Path) -> None:

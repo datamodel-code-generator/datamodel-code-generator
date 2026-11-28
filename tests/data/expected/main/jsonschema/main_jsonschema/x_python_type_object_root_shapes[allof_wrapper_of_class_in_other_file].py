@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from logging import Handler
+from logging import Handler, Logger
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
 class Other(RootModel[Any]):
@@ -17,12 +17,18 @@ class Other(RootModel[Any]):
     root: Handler
 
 
-class Plain(BaseModel):
-    pass
+class Plain(RootModel[Any]):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
+    root: Logger
 
 
-class Wrapped(Plain):
-    pass
+class Wrapped(RootModel[Plain]):
+    root: Plain = Field(
+        ...,
+        description='A definition over a class that another file describes by nothing.',
+    )
 
 
 class Main(BaseModel):

@@ -1,0 +1,60 @@
+[[change]]
+id = "allof-wrapper-of-python-class-root"
+category = "default-fix"
+title = "An allOf wrapper of an x-python-type class is a root of that class"
+summary = "An allOf wrapper whose one member is a definition that holds an x-python-type class (the root of that class, see the x-python-type-object-root record) was written as an empty model that subclassed the base or held nothing. It is now the root of the class under its own name, written through the same form as an allOf wrapper of a value target: a Pydantic RootModel[Base] (with arbitrary_types_allowed=True), or a type alias of the class in dataclass, TypedDict and msgspec output. This covers a wrapper over a base in another file, an inline allOf member, two equal members, chains of wrappers, keywords that do not add properties (closed, unevaluatedProperties, minProperties, a title, a type, a null default) and union branches. Union branches beside the member that main deduplicated into one empty class become one root per branch, so a numbered class is added (Branches2 beside Branches1, and the union names both). The empty wrapper held no value, but some working output changes. A wrapper over an empty base loses its subclass relation to the base: issubclass, the no-argument build, {} and model_json_schema() go, as for the converted roots of the x-python-type-object-root record. Under --reuse-model and --collapse-root-models, a class that equalled such a wrapper reuses it or is inlined like any root model, and a numbered class name of the former empty model is gone with it. A wrapper stays a model where a model extends it, two bases or a property are present, a union names it by a discriminator, or it has a custom base class. The owner decided this under the exception of the x-python-type-object-root record on 2026-11-28, including the lost subclass relation of an empty wrapper over an empty base."
+refs = ["#7627", "#7618"]
+decision = ["#7627", "#7622"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-class-hierarchy-always].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-merge-mode-none].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[collapse-root-models].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[dataclass].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[default].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[field-constraints].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[input-file-type].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[intersect-allof-keywords].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[msgspec].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[preset].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[pydantic-dataclass].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[reuse-model].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[root-model-type-alias].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[schema-description].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[schema-validators].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[strip-default-none].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[title-as-name].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[type-alias].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[typed-dict].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof[use-annotated].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof_holds_its_value.py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof_kept[dataclass].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof_kept[default].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_allof_kept[msgspec].py",
+    "main/openapi/main_openapi/x_python_type_object_component_allof[collapse-root-models].py",
+    "main/openapi/main_openapi/x_python_type_object_component_allof[dataclass].py",
+    "main/openapi/main_openapi/x_python_type_object_component_allof[default].py",
+    "main/openapi/main_openapi/x_python_type_object_component_allof[msgspec].py",
+    "main/openapi/main_openapi/x_python_type_object_component_allof[preset].py",
+    "main/openapi/main_openapi/x_python_type_object_component_allof[scopes-paths].py",
+    "main/openapi/main_openapi/x_python_type_object_component_allof[strict-nullable].py",
+    "main/openapi/main_openapi/x_python_type_object_component_allof_discriminator_variant[default].py",
+    "main/openapi/main_openapi/x_python_type_object_component_allof_discriminator_variant[msgspec-tagged].py",
+    "main/openapi/main_openapi/x_python_type_object_component_allof_holds_its_value.py",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_x_python_typ~680c2d4a.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_x_python_type_ob~d8d0550c.errors.txt",
+]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/x_python_type_object_root_allof.json"]
+backends = "*"
+options = "*"
+aspects = ["config", "constructor-order", "default", "kind", "name-removed", "numbered-name-removed", "probe", "required", "type"]
+
+[[change.cells]]
+input = ["tests/data/openapi/x_python_type_object_root_allof.json"]
+backends = "*"
+options = "*"
+aspects = ["config", "constructor-order", "default", "kind", "name-removed", "numbered-name-removed", "probe", "required", "type"]

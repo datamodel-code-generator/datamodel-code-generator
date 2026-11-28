@@ -16230,6 +16230,33 @@ schema-description-typed-dict	main/jsonschema/main_jsonschema/x_python_type_obje
 schema-validators	main/jsonschema/main_jsonschema/x_python_type_object_root[schema-validators].py	= main/jsonschema/main_jsonschema/x_python_type_object_root[as-written].py
 type-alias	main/jsonschema/main_jsonschema/x_python_type_object_root[type-alias].py
 typed-dict	main/jsonschema/main_jsonschema/x_python_type_object_root[typed-dict].py
+[test_x_python_type_object_root_allof]
+allof-class-hierarchy-always	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-class-hierarchy-always].py
+allof-merge-mode-none	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-merge-mode-none].py	= main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-class-hierarchy-always].py
+collapse-root-models	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[collapse-root-models].py
+dataclass	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[dataclass].py
+default	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[default].py	= main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-class-hierarchy-always].py
+field-constraints	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[field-constraints].py	= main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-class-hierarchy-always].py
+input-file-type	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[input-file-type].py	= main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-class-hierarchy-always].py
+intersect-allof-keywords	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[intersect-allof-keywords].py	= main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-class-hierarchy-always].py
+msgspec	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[msgspec].py
+preset	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[preset].py
+pydantic-dataclass	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[pydantic-dataclass].py
+reuse-model	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[reuse-model].py
+root-model-type-alias	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[root-model-type-alias].py
+schema-description	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[schema-description].py
+schema-validators	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[schema-validators].py	= main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-class-hierarchy-always].py
+strip-default-none	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[strip-default-none].py
+title-as-name	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[title-as-name].py
+type-alias	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[type-alias].py
+typed-dict	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[typed-dict].py
+use-annotated	main/jsonschema/main_jsonschema/x_python_type_object_root_allof[use-annotated].py
+[test_x_python_type_object_root_allof_holds_its_value]
+	main/jsonschema/main_jsonschema/x_python_type_object_root_allof_holds_its_value.py	= main/jsonschema/main_jsonschema/x_python_type_object_root_allof[allof-class-hierarchy-always].py
+[test_x_python_type_object_root_allof_kept]
+dataclass	main/jsonschema/main_jsonschema/x_python_type_object_root_allof_kept[dataclass].py
+default	main/jsonschema/main_jsonschema/x_python_type_object_root_allof_kept[default].py
+msgspec	main/jsonschema/main_jsonschema/x_python_type_object_root_allof_kept[msgspec].py
 [test_x_python_type_object_root_directory]
 	main/jsonschema/main_jsonschema/x_python_type_object_root_directory/
 [test_x_python_type_object_root_holds_its_value]

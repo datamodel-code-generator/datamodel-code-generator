@@ -8,16 +8,13 @@ from dataclasses import dataclass
 from logging import Logger
 from typing import TypeAlias
 
-
-@dataclass
-class AllOfInline:
-    pass
+AllOfInline: TypeAlias = Logger
 
 
-Plain: TypeAlias = Logger
+Plain: TypeAlias = AllOfInline
 
 
-Plain2: TypeAlias = Plain
+Plain2: TypeAlias = AllOfInline
 
 
 @dataclass

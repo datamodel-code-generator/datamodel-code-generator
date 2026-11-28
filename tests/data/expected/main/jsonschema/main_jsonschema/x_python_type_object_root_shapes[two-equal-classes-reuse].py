@@ -10,18 +10,18 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
-class AllOfInline(BaseModel):
-    pass
-
-
-class Plain(RootModel[Any]):
+class AllOfInline(RootModel[Any]):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
     )
     root: Logger
 
 
-class Plain2(Plain):
+class Plain(AllOfInline):
+    pass
+
+
+class Plain2(AllOfInline):
     pass
 
 
