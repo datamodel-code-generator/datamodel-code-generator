@@ -1,0 +1,89 @@
+default
+Two
+extra: valid
+kept: True
+TwoRev
+extra: unexpected_keyword_argument
+ThreeRev
+extra: valid
+kept: False
+PlainClosed
+extra: valid
+kept: False
+OpenChainClosed
+extra: valid
+kept: True
+ClosedChainOpen
+extra: unexpected_keyword_argument
+OwnOpen
+extra: valid
+kept: True
+OwnTyped
+extra: valid
+kept: True
+OwnUnevaluated
+extra: valid
+kept: True
+TypedClosed
+extra: valid
+kept: True
+ClosedTyped
+extra: unexpected_keyword_argument
+PatClosed
+extra: valid
+kept: False
+OpenPlain
+extra: valid
+kept: True
+PlainOpen
+extra: valid
+kept: False
+OpenClosedU
+extra: valid
+kept: True
+ClosedUOpen
+extra: unexpected_keyword_argument
+OpenClosedPat
+extra: valid
+kept: True
+ClosedPatOpen
+extra: unexpected_keyword_argument
+option
+Two
+extra: unexpected_keyword_argument
+TwoRev
+extra: unexpected_keyword_argument
+ThreeRev
+extra: unexpected_keyword_argument
+PlainClosed
+extra: unexpected_keyword_argument
+OpenChainClosed
+extra: unexpected_keyword_argument
+ClosedChainOpen
+extra: unexpected_keyword_argument
+OwnOpen
+extra: unexpected_keyword_argument
+OwnTyped
+extra: unexpected_keyword_argument
+OwnUnevaluated
+extra: unexpected_keyword_argument
+TypedClosed
+extra: unexpected_keyword_argument
+ClosedTyped
+extra: unexpected_keyword_argument
+PatClosed
+extra: unexpected_keyword_argument
+OpenPlain
+extra: valid
+kept: True
+PlainOpen
+extra: valid
+kept: True
+OpenClosedU
+extra: unexpected_keyword_argument
+ClosedUOpen
+extra: unexpected_keyword_argument
+OpenClosedPat
+extra: unexpected_keyword_argument
+ClosedPatOpen
+extra: unexpected_keyword_argument

@@ -264,6 +264,7 @@
 - `--keep-self-referencing-array-items`: Keep the items of an array whose items name the array itself.
 - `--keep-shared-members-on-collapsed-root-models`: Keep each member of a root type that collapse inlined at sev...
 - `--keyword-only`: Generate dataclasses with keyword-only fields (Python 3.10+).
+- `--merge-config-of-generated-bases`: Merge the config of the generated bases of a Pydantic class.
 - `--merge-message-trait-headers`: Give an AsyncAPI message the headers of all its traits, merged in order, and ...
 - `--merge-msgspec-str-like-union-members`: Write one str in place of the str-like members of a msgspec union th...
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
@@ -291,6 +292,7 @@
 - `--no-keep-reference-null-on-merged-models`
 - `--no-keep-self-referencing-array-items`
 - `--no-keep-shared-members-on-collapsed-root-models`
+- `--no-merge-config-of-generated-bases`
 - `--no-merge-message-trait-headers`
 - `--no-merge-msgspec-str-like-union-members`
 - `--no-name-converted-payloads-by-message`

@@ -1,0 +1,104 @@
+default
+Two
+extra: valid
+kept: True
+TwoRev
+extra: valid
+kept: True
+ThreeRev
+extra: valid
+kept: True
+PlainClosed
+extra: valid
+kept: True
+OpenChainClosed
+extra: valid
+kept: True
+ClosedChainOpen
+extra: valid
+kept: True
+OwnOpen
+extra: valid
+kept: True
+OwnTyped
+extra: int_parsing
+OwnUnevaluated
+extra: valid
+kept: True
+TypedClosed
+extra: int_parsing
+ClosedTyped
+extra: int_parsing
+PatClosed
+extra: valid
+kept: True
+OpenPlain
+extra: valid
+kept: True
+PlainOpen
+extra: valid
+kept: True
+OpenClosedU
+extra: valid
+kept: True
+ClosedUOpen
+extra: valid
+kept: True
+OpenClosedPat
+extra: valid
+kept: True
+ClosedPatOpen
+extra: valid
+kept: True
+option
+Two
+extra: valid
+kept: True
+TwoRev
+extra: valid
+kept: True
+ThreeRev
+extra: valid
+kept: True
+PlainClosed
+extra: valid
+kept: True
+OpenChainClosed
+extra: valid
+kept: True
+ClosedChainOpen
+extra: valid
+kept: True
+OwnOpen
+extra: valid
+kept: True
+OwnTyped
+extra: int_parsing
+OwnUnevaluated
+extra: valid
+kept: True
+TypedClosed
+extra: int_parsing
+ClosedTyped
+extra: int_parsing
+PatClosed
+extra: valid
+kept: True
+OpenPlain
+extra: valid
+kept: True
+PlainOpen
+extra: valid
+kept: True
+OpenClosedU
+extra: valid
+kept: True
+ClosedUOpen
+extra: valid
+kept: True
+OpenClosedPat
+extra: valid
+kept: True
+ClosedPatOpen
+extra: valid
+kept: True

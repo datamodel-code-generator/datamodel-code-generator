@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, ClassVar
-from warnings import warn
 
 from typing_extensions import override
 
@@ -24,9 +23,7 @@ from datamodel_code_generator.model._decisions.assignment import (
 from datamodel_code_generator.model._render_plan import FORCED_ASSIGNMENT, CallPlan, Kwarg, Positional, RuleId, Why
 from datamodel_code_generator.model.base import (
     _KEEP_INHERITED_DATACLASS_CONFIG_TEMPLATE_DATA_KEY,
-    _REDECLARED_FIELDS_KEY,
     UNDEFINED,
-    _class_body_fields,
     _classify_field_assignment,
     _find_base_classes,
     _has_opaque_custom_base,
@@ -123,6 +120,7 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = True
     SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = True
     EVALUATES_ANNOTATIONS_IN_BASES: ClassVar[bool] = True
+    _ORDERS_FIELDS_FOR_CONSTRUCTION: ClassVar[bool] = True
     FIELD_ASSIGNMENT_CHECKER = staticmethod(_has_pydantic_dataclass_field_assignment)
     FIELD_DEFAULT_CLASSIFIER = staticmethod(_get_pydantic_dataclass_field_default_info)
     FIELD_PARTICIPATES_IN_CONSTRUCTOR = staticmethod(_pydantic_dataclass_field_participates_in_constructor)
@@ -200,6 +198,7 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
             config_attributes_v2=self._CONFIG_ATTRIBUTES_V2,
             config_attributes_v2_11=self._CONFIG_ATTRIBUTES_V2_11,
         )
+        self._record_template_data_extra()
         if config_items := _config_dict_items(self.extra_template_data.get("config")):
             config_parameters.update(config_items)
 
@@ -363,68 +362,6 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
             DataClass._apply_lookaround_regex_engine(base)
         items, known = self.applied_config()
         return (known is None or "regex_engine" in known) and items.get("regex_engine") != '"python-re"'
-
-    @classmethod
-    @override
-    def _redeclare_rejected_patterns(
-        cls, models: list[DataModel], selected: set[int], built: Mapping[int, DataModel]
-    ) -> None:
-        """Redeclare the inherited fields whose pattern its engine cannot build in each dataclass of ``selected``.
-
-        Each of them selected ``python-re`` for a base (``_select_engines_for_bases``); a base decides before its
-        subclasses.
-        """
-        repairing = {id(model): model for model in models if isinstance(model, DataClass) and id(model) in selected}
-        done: set[int] = set()
-        for model in repairing.values():
-            DataClass._redeclare_inherited_fields(model, built, repairing, done)
-
-    def _redeclare_inherited_fields(
-        self, built: Mapping[int, DataModel], repairing: Mapping[int, DataClass], done: set[int]
-    ) -> None:
-        """Redeclare each inherited field whose pattern the dataclass's engine cannot build, without that pattern.
-
-        The dataclass builds each declaration it inherits (``get_effective_fields``) with its own config, which
-        selects ``python-re`` for a base's pattern (#7452). A declaration of a model the engine builds (``built``)
-        already leaves out a pattern Python's ``re`` rejects (#6593), and so does a copy that a dataclass between it
-        and the declaring base writes, which decides first; for another declaration, of its module or another one,
-        the dataclass writes a copy that leaves the pattern out, so the base keeps its output, and warns as for its
-        own fields. A copy names the models of its type from the module of the dataclass, which imports them
-        (``render_prep.finalize_type_alias_users``).
-        """
-        if id(self) in done:
-            return
-        done.add(id(self))
-        bases = [base for base in _built_bases(self) if base is not self]
-        for base in bases:
-            if (repairer := repairing.get(id(base))) is not None:
-                DataClass._redeclare_inherited_fields(repairer, built, repairing, done)
-        redeclared: list[DataModelFieldBase] = []
-        for field in get_effective_fields(self):
-            owner = field.parent
-            if owner is None or owner is self or id(owner) in built:
-                continue
-            if any(
-                isinstance(base, DataClass)
-                and any(copy.name == field.name for copy in _class_body_fields(base))
-                and any(ancestor is owner for ancestor in _built_bases(base))
-                for base in bases
-                if base is not owner
-            ):
-                continue
-            copy = field.copy_owning(register_references=False, parent=self)
-            if (
-                (message := copy.dropped_constraints_warning) is not None
-                and isinstance(copy, DataModelFieldV2)
-                and copy._python_rejected_patterns()  # noqa: SLF001
-            ):
-                if copy.required and _has_pydantic_dataclass_field_assignment(field):
-                    copy.force_field_assignment()
-                    copy.invalidate_semantic_caches()
-                warn(message, stacklevel=2)
-                redeclared.append(copy)
-        if redeclared:
-            self._set_internal_template_data(_REDECLARED_FIELDS_KEY, redeclared)
 
     @override
     def _takes_engine_of(self, base: DataModel) -> bool:

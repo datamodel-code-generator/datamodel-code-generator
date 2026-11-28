@@ -1,0 +1,9 @@
+[[change]]
+id = "merge-config-of-generated-bases-input-count"
+category = "docs-text"
+title = "Schema files the payload test discovers after the merged config cases"
+summary = "The count of discovered schema files grows by the inputs of the merged generated bases config cases; the package writes the same output."
+refs = ["#1", "#7589", "#7579"]
+covers = [
+    "main/payload_validation/cases_cover_discovered_schema_files.txt",
+]

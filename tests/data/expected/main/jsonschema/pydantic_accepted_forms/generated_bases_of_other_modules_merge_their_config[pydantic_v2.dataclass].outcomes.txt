@@ -1,0 +1,42 @@
+default
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Label is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Lettered.name is generated without this constraint.
+a.Lettered
+valid: valid
+digits: valid
+label: valid
+a.Holder
+digits: valid
+label: valid
+b.Two
+extra: valid
+b.TwoRev
+extra: unexpected_keyword_argument
+b.Guarded
+extra: valid
+lookahead: string_pattern_mismatch
+c.Both
+valid: valid
+color: valid
+lookahead: string_pattern_mismatch
+option
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Both.name is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern=r'^\p{L}+$'; Both.label is generated without this constraint.
+a.Lettered
+valid: valid
+digits: string_pattern_mismatch
+label: dataclass_type, string_pattern_mismatch
+a.Holder
+digits: string_pattern_mismatch
+label: dataclass_type, string_pattern_mismatch
+b.Two
+extra: unexpected_keyword_argument
+b.TwoRev
+extra: unexpected_keyword_argument
+b.Guarded
+extra: unexpected_keyword_argument
+lookahead: string_pattern_mismatch
+c.Both
+valid: valid
+color: valid
+lookahead: string_pattern_mismatch

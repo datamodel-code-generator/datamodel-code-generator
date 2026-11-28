@@ -1,0 +1,31 @@
+default
+Python's regex engine, which the config building it selects, does not compile pattern='^\\p{L}+$'; Lettered.name is generated without this constraint.
+Lettered
+valid: valid
+digits: valid
+Holder
+digits: valid
+Both
+valid: valid
+lookahead: string_pattern_mismatch
+Reversed
+valid: valid
+lookahead: string_pattern_mismatch
+Following
+valid: valid
+option
+Python's regex engine, which the config building it selects, does not compile pattern='^\\p{L}+$'; Both.name is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern='^\\p{L}+$'; Reversed.name is generated without this constraint.
+Lettered
+valid: valid
+digits: string_pattern_mismatch
+Holder
+digits: string_pattern_mismatch
+Both
+valid: valid
+lookahead: string_pattern_mismatch
+Reversed
+valid: valid
+lookahead: string_pattern_mismatch
+Following
+valid: string_pattern_mismatch

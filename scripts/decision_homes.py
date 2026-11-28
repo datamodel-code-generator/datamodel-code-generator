@@ -2381,8 +2381,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "bases select keeps (row `legacy-dataclass-own-config-drops-taken-config`: with "
             "`--keep-inherited-dataclass-config` a dataclass with a config of its own reads and, once every config "
             "is final, writes the items of its first dataclass base it does not set, "
-            "`DataClass._store_inherited_configs`); the config is stored with the items its template writes, which "
-            "the readers take from there inside a parse"
+            "`DataClass._store_inherited_configs`); with `--merge-config-of-generated-bases` a model with generated "
+            "bases writes the strictest `extra` of them (`_PydanticV2Model._merge_extra_of_bases`) and a base "
+            "whose own config applies the default engine keeps its patterns where the model builds it with "
+            "`python-re` (row `legacy-python-engine-marks-every-built-base`: otherwise every base the model "
+            "builds is marked, `_PydanticV2Model._bases_keeping_their_engine`); the config is stored with the "
+            "items its template writes, which the readers take from there inside a parse"
         ),
         homes=(
             Home("model/pydantic_v2/base_model.py", "_PydanticV2Model._select_python_regex_engine"),
@@ -2405,7 +2409,9 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`DataClass._config_owner` (the first dataclass base whose config it applies), `DataClass._taken_config` "
             "(that base's config, which `_select_python_regex_engine` keeps), "
             "`DataClass._store_inherited_configs` (writes the items a dataclass takes from its first base once every "
-            "config is final); the stores of `BaseModel.__init__` and `DataClass.__init__`; the readers "
+            "config is final), `_PydanticV2Model._store_own_config` (the one writer of an item a later step sets: "
+            "`regex_engine`, `arbitrary_types_allowed`, `extra`); the stores of `BaseModel.__init__` and "
+            "`DataClass.__init__`; the readers "
             "`_applied_config_items`, `_pydantic_constructs`, `DataClass._takes_config_of`, "
             "`DataClass._takes_engine_of`, `DataClass._bases_without_inherited_config`; "
             "`model/pydantic_v2/root_model.py`: `RootModel._decide_config_items` stores a root model's items again "

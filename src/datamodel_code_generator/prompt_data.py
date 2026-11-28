@@ -139,6 +139,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--keyword-only": "Generate dataclasses with keyword-only fields (Python 3.10+).",
     "--locked": "Require an existing remote lock and validate each fetched resource against it (experimental).",
     "--lockfile": "Select the remote reference integrity lock file (experimental).",
+    "--merge-config-of-generated-bases": "Merge the config of the generated bases of a Pydantic class.",
     "--merge-message-trait-headers": "Give an AsyncAPI message the headers of all its traits, merged in order, and ...",
     "--merge-msgspec-str-like-union-members": "Write one str in place of the str-like members of a msgspec union th...",
     "--merge-shared-variant-tags": "Give a variant that discriminated unions tag differently every tag they give it.",

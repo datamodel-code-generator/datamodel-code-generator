@@ -133,6 +133,8 @@ keep-string-keywords-beside-formats-practical	main/preset_opt_in_options/preset_
 keep-string-keywords-beside-formats-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-string-keywords-beside-formats-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-string-keywords-beside-formats-practical].model.py
 keep-typed-input-model-root-python-types-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-typed-input-model-root-python-types-practical].model.py
 keep-typed-input-model-root-python-types-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-typed-input-model-root-python-types-standard].model.py
+merge-config-of-generated-bases-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-config-of-generated-bases-practical].model.py
+merge-config-of-generated-bases-standard	main/preset_opt_in_options/preset_sets_opt_in_option[merge-config-of-generated-bases-standard].model.py
 merge-message-trait-headers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-practical].model.py
 merge-message-trait-headers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-practical].model.py
 merge-shared-variant-tags-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].model.py
