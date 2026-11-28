@@ -1,0 +1,10 @@
+[[change]]
+id = "fix-7611"
+category = "harness"
+title = "--debug keeps the static methods of a parser static"
+summary = "datamodel-codegen --debug failed with a TypeError on a schema where an allOf has a member with oneOf or anyOf, because the tracing turned the parser's static methods (_union_chain, _warn_dropped_union) into instance methods. The tracing now wraps a static method as a static method. Only runs with --debug change; the models are the ones a run without --debug writes."
+refs = ["#7611"]
+covers = [
+    "main/error_messages/debug_generates_an_allof_with_a_oneof_member.model.py",
+]
+

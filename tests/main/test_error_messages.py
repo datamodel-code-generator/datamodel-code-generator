@@ -2332,6 +2332,37 @@ def test_pass_warnings_name_the_package_once_traced(
     )
 
 
+def test_debug_generates_an_allof_with_a_oneof_member(
+    monkeypatch: pytest.MonkeyPatch, debug_tracing: ModuleType
+) -> None:
+    """Keep the static methods of a traced parser static, so ``--debug`` writes the models a run without it writes.
+
+    Up to 0.104.0 the decoration made ``JsonSchemaParser._union_chain`` an instance method, and this schema failed with
+    a ``TypeError``.
+    """
+    schema = json.dumps({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Pet",
+        "allOf": [
+            {"type": "object", "properties": {"name": {"type": "string"}}},
+            {
+                "oneOf": [
+                    {"type": "object", "properties": {"cat": {"type": "boolean"}}},
+                    {"type": "object", "properties": {"dog": {"type": "boolean"}}},
+                ]
+            },
+        ],
+    })
+
+    @snooper_to_methods()
+    class TracedParser(JsonSchemaParser):
+        """A parser whose methods run inside the tracing wrappers."""
+
+    monkeypatch.setattr(debug_tracing.tracer, "DISABLED", True)
+    for parser_class in (JsonSchemaParser, TracedParser):
+        assert_output(parser_class(schema, formatters=[Formatter.BUILTIN]).parse(), name="model", suffix=".py")
+
+
 def test_auto_detected_dangling_ref_keeps_source_context_and_generated_output(
     output_file: Path,
     capsys: pytest.CaptureFixture[str],
