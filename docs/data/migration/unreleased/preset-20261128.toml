@@ -2,7 +2,7 @@
 id = "preset-20261128"
 category = "new-surface"
 title = "Dated presets 20261128"
-refs = ["#1"]
+refs = ["#7613"]
 surface = ["preset:20261128"]
 covers = [
     "build_preset_docs_script/preset_metadata_renderers.preset_names.txt",

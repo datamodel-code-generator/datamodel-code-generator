@@ -3,7 +3,7 @@ id = "merge-config-of-generated-bases"
 category = "new-surface"
 title = "Merge the config of generated bases under an option"
 summary = "--merge-config-of-generated-bases makes a Pydantic v2 class with generated bases, such as an allOf of $ref members, apply the strictest extra of them in any base order: extra='forbid' where a base rejects extra keys (also over the class's own additionalProperties: true), else extra='allow' where one keeps them. Without it a model takes the extra of its last base that sets one and a dataclass that of its first base, as before, so the class accepts or drops keys a base rejects; the default output is unchanged. The option also keeps the patterns of a base that a class builds with the python-re regex engine of another base: the class writes the inherited fields whose pattern Python's re rejects again without that pattern, with a warning, where the base left the pattern out for every user. An extra written through --extra-template-data stays. Other output types are not changed."
-refs = ["#1", "#7589", "#7579"]
+refs = ["#7613", "#7589", "#7579"]
 surface = ["--merge-config-of-generated-bases"]
 covers = [
     "main/jsonschema/pydantic_accepted_forms/generated_bases_merge_their_config_under_an_option[base-model].default.py",

@@ -81,6 +81,8 @@ def snooper_to_methods() -> Callable[..., Any]:
         methods = inspect.getmembers(cls, predicate=inspect.isfunction)
         for name, method in methods:
             snooper_method = snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(method)
+            if isinstance(inspect.getattr_static(cls, name), staticmethod):
+                snooper_method = staticmethod(snooper_method)
             setattr(cls, name, snooper_method)
         for module_name, module in [*sys.modules.items()]:
             if not module_name.startswith(_CONCERN_MODULE_PREFIX):
