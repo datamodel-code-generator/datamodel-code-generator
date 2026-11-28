@@ -33,6 +33,9 @@ maps-typed-dict	main/jsonschema/root_model_type_alias_map_roots/constrained_map_
 maps-validate-default	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[maps-validate-default].default.py
 maps-validate-default	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[maps-validate-default].option.py	= main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[maps-alias].option.py
 maps-validate-default	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[maps-validate-default].outcomes.txt
+nullable_object_maps-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[nullable_object_maps-alias].default.py
+nullable_object_maps-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[nullable_object_maps-alias].option.py
+nullable_object_maps-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[nullable_object_maps-alias].outcomes.txt
 openapi-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[openapi-alias].default.py
 openapi-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[openapi-alias].option.py
 openapi-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[openapi-alias].outcomes.txt
@@ -48,6 +51,9 @@ request_response-schema-validators	main/jsonschema/root_model_type_alias_map_roo
 root-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[root-alias].default.py
 root-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[root-alias].option.py
 root-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[root-alias].outcomes.txt
+wrapper-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[wrapper-alias].default.py
+wrapper-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[wrapper-alias].option.py
+wrapper-alias	main/jsonschema/root_model_type_alias_map_roots/constrained_map_roots_as_classes[wrapper-alias].outcomes.txt
 [test_root_model_classes_as_bases]
 generic_base-alias	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[generic_base-alias].model.py
 generic_base-alias	main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[generic_base-alias].outcomes.txt

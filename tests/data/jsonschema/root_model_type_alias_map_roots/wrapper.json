@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {"wrapper": {"$ref": "#/$defs/Wrapper"}},
+  "$defs": {
+    "Labels": {"type": "object", "additionalProperties": {"type": "string"}, "maxProperties": 1},
+    "Wrapper": {"type": "object", "properties": {"name": {"type": "string"}}, "allOf": [{"$ref": "#/$defs/Labels"}]}
+  }
+}

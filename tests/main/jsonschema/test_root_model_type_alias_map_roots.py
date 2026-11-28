@@ -22,6 +22,11 @@ if TYPE_CHECKING:
 KEEP_CONSTRAINED_MAP_ROOTS_AS_CLASSES = "--keep-constrained-map-roots-as-classes"
 USE_ROOT_MODEL_TYPE_ALIAS = "--use-root-model-type-alias"
 MAP_ROOTS_PATH = JSON_SCHEMA_DATA_PATH / "root_model_type_alias_map_roots"
+OPEN_API_INPUTS = {
+    "openapi": "root_model_type_alias_map_roots.yaml",
+    "nullable_object_maps": "nullable_object_maps.yaml",
+}
+"""The OpenAPI documents of the cases, by input name; every other input is a JSON Schema of ``MAP_ROOTS_PATH``."""
 REQUEST_RESPONSE = ("--read-only-write-only-model-type", "request-response")
 SCHEMA_VALIDATORS = "--generate-schema-validators"
 TWO_ITEMS = {"a": {"name": "n"}, "b": {"name": "m"}}
@@ -71,6 +76,13 @@ PAYLOADS: dict[str, dict[str, dict[str, object]]] = {
         },
     },
     "openapi": {"Labels": MAP_PAYLOADS["Labels"]},
+    "wrapper": {
+        "Labels": MAP_PAYLOADS["Labels"],
+        "Wrapper": {"valid string property": {"name": "n"}, "invalid int property": {"name": 1}},
+    },
+    "nullable_object_maps": {
+        "ValueRoot": {"valid one key": {"a": 1}, "valid null": None, "invalid no key": {}},
+    },
 }
 """The payloads each model of an input parses, by model name: the label says whether the schema accepts it."""
 
@@ -201,6 +213,8 @@ max_length=1)`. A map whose root holds no such constraint stays an alias. Pydant
         _case("request_response", "alias", USE_ROOT_MODEL_TYPE_ALIAS, *REQUEST_RESPONSE),
         _case("request_response", "schema-validators", USE_ROOT_MODEL_TYPE_ALIAS, *REQUEST_RESPONSE, SCHEMA_VALIDATORS),
         _case("openapi", "alias", USE_ROOT_MODEL_TYPE_ALIAS),
+        _case("wrapper", "alias", USE_ROOT_MODEL_TYPE_ALIAS),
+        _case("nullable_object_maps", "alias", USE_ROOT_MODEL_TYPE_ALIAS),
     ],
 )
 def test_constrained_map_roots_as_classes(
@@ -222,20 +236,19 @@ def test_constrained_map_roots_as_classes(
     and the maps of ``--use-single-dict-for-object-maps`` (the preset) were classes already, and a patternProperties
     or ``type: [object, null]`` map without that option counts nothing on its root, so stays an alias. A custom
     ``RootModelTypeAlias`` template, ``--use-type-alias``, root model classes and the other output model types are
-    not changed.
+    not changed. An object with a property and an ``allOf`` of such a map (``Wrapper``) keeps its default base beside
+    the class, which Pydantic refuses as its base (#7626), and an OpenAPI ``nullable`` map (``ValueRoot``) is a class
+    with the same root type, which rejects ``null`` as the alias does.
     """
-    input_path = (
-        OPEN_API_DATA_PATH / "root_model_type_alias_map_roots.yaml"
-        if input_name == "openapi"
-        else (MAP_ROOTS_PATH / f"{input_name}.json")
-    )
+    openapi_input = OPEN_API_INPUTS.get(input_name)
+    input_path = OPEN_API_DATA_PATH / openapi_input if openapi_input else MAP_ROOTS_PATH / f"{input_name}.json"
     outcomes = ""
     for name, option_args in (("default", []), ("option", [KEEP_CONSTRAINED_MAP_ROOTS_AS_CLASSES])):
         output_path = tmp_path / f"{name}.py"
         run_main_and_assert(
             input_path=input_path,
             output_path=output_path,
-            input_file_type="openapi" if input_name == "openapi" else "jsonschema",
+            input_file_type="openapi" if openapi_input else "jsonschema",
             extra_args=[
                 *("--output-model-type", "pydantic_v2.BaseModel"),
                 *extra_args,
