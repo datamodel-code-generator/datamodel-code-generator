@@ -472,6 +472,14 @@ EXCLUDED_CASES: dict[str, str] = {
         "a component it references has the pattern ^\\p{L}+$, which Python's re before 3.15 refuses, so the source "
         "validator cannot be built on most supported Pythons",
     ),
+    **dict.fromkeys(
+        (
+            "openapi/merge_config_of_generated_bases_modules.yaml::components.schemas.a.Holder",
+            "openapi/merge_config_of_generated_bases_modules.yaml::components.schemas.c.Both",
+        ),
+        "a component it references has the pattern ^\\p{L}+$, which Python's re before 3.15 refuses, so the source "
+        "validator cannot be built on most supported Pythons",
+    ),
     "jsonschema/collapse_root_models_lookaround_discriminator.json": (
         "discriminator tags come from a referenced pattern rather than an enum, so schema-valid tags miss the mapping; "
         "test_main_jsonschema_collapse_root_models_lookaround checks the generated tags and regex engine"
@@ -719,6 +727,20 @@ INHERITED_DATACLASS_CONFIG_PAYLOAD_CASE_IDS = tuple(
         "b.Worded",
     )
 )
+MERGE_CONFIG_OF_GENERATED_BASES_PAYLOAD_CASE_IDS = tuple(
+    f"openapi/merge_config_of_generated_bases_modules.yaml::components.schemas.{name}"
+    for name in (
+        "a.Closed",
+        "a.Color",
+        "a.Label",
+        "a.Lettered",
+        "a.Open",
+        "b.Coded",
+        "b.Guarded",
+        "b.Two",
+        "b.TwoRev",
+    )
+)
 TYPE_ALIAS_TYPE_PAYLOAD_ARGS = ("--use-type-alias", "--target-python-version", "3.11")
 """Write roots as ``TypeAliasType``: Pydantic before 2.10 cannot build models that use ``type`` statements."""
 PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str, ...]]] = {
@@ -735,6 +757,12 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
     **{
         case_id: {PayloadBackend.PYDANTIC_V2_DATACLASS: ("--keep-inherited-dataclass-config",)}
         for case_id in INHERITED_DATACLASS_CONFIG_PAYLOAD_CASE_IDS
+    },
+    **{
+        case_id: dict.fromkeys(
+            (PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS), ("--merge-config-of-generated-bases",)
+        )
+        for case_id in MERGE_CONFIG_OF_GENERATED_BASES_PAYLOAD_CASE_IDS
     },
     **{
         f"jsonschema/type_alias_lookaround/{name}.json": {PayloadBackend.PYDANTIC_V2: TYPE_ALIAS_TYPE_PAYLOAD_ARGS}

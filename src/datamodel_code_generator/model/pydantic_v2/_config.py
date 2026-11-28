@@ -126,6 +126,13 @@ def with_arbitrary_types_allowed(config_parameters: Mapping[str, object]) -> dic
     return {**dict(items[:index]), ARBITRARY_TYPES_ALLOWED_KEY: True, **dict(items[index:])}
 
 
+def with_extra(config_parameters: Mapping[str, object], extra: str) -> dict[str, object]:
+    """Return the config items with ``extra`` set in place, else first, as ``build_base_config_parameters`` puts it."""
+    if "extra" in config_parameters:
+        return {**config_parameters, "extra": extra}
+    return {"extra": extra, **config_parameters}
+
+
 def build_base_config_parameters(
     *,
     extra_template_data: dict[str, Any],

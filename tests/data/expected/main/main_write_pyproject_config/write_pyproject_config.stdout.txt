@@ -5,7 +5,7 @@ Created pyproject.toml:
   input = "api.yaml"
   input-file-type = "openapi"
   naming-strategy = "enclosing-model"
-  preset = "standard-py310-20261127"
+  preset = "standard-py310-20261128"
   reuse-model = true
   treat-dot-as-module = false
   use-tag-as-union-variant-name = true

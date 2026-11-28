@@ -1,0 +1,4 @@
+option = "--merge-config-of-generated-bases"
+input = "jsonschema/all_of_open_and_closed_bases.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "pydantic_v2.BaseModel"]

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Open": {"type": "object", "properties": {"a": {"type": "string"}}, "additionalProperties": true},
+    "Closed": {"type": "object", "properties": {"b": {"type": "string"}}, "additionalProperties": false},
+    "Plain": {"type": "object", "properties": {"c": {"type": "string"}}},
+    "Typed": {"type": "object", "properties": {"d": {"type": "string"}}, "additionalProperties": {"type": "integer"}},
+    "Pat": {"type": "object", "properties": {"e": {"type": "string"}}, "patternProperties": {"^x-": {"type": "string"}}},
+    "ClosedU": {"type": "object", "properties": {"f": {"type": "string"}}, "unevaluatedProperties": false},
+    "ClosedPat": {
+      "type": "object",
+      "properties": {"g": {"type": "string"}},
+      "patternProperties": {"^y-": {"type": "string"}},
+      "additionalProperties": false
+    },
+    "ClosedChild": {"allOf": [{"$ref": "#/$defs/Closed"}], "properties": {"h": {"type": "string"}}},
+    "Two": {"allOf": [{"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/Closed"}]},
+    "TwoRev": {"allOf": [{"$ref": "#/$defs/Closed"}, {"$ref": "#/$defs/Open"}]},
+    "ThreeRev": {"allOf": [{"$ref": "#/$defs/Plain"}, {"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/Closed"}]},
+    "PlainClosed": {"allOf": [{"$ref": "#/$defs/Plain"}, {"$ref": "#/$defs/Closed"}]},
+    "OpenChainClosed": {"allOf": [{"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/ClosedChild"}]},
+    "ClosedChainOpen": {"allOf": [{"$ref": "#/$defs/ClosedChild"}, {"$ref": "#/$defs/Open"}]},
+    "OwnOpen": {"allOf": [{"$ref": "#/$defs/Closed"}, {"$ref": "#/$defs/Open"}], "additionalProperties": true},
+    "OwnTyped": {
+      "allOf": [{"$ref": "#/$defs/Closed"}, {"$ref": "#/$defs/Open"}],
+      "additionalProperties": {"type": "integer"}
+    },
+    "OwnUnevaluated": {"allOf": [{"$ref": "#/$defs/Closed"}, {"$ref": "#/$defs/Open"}], "unevaluatedProperties": true},
+    "TypedClosed": {"allOf": [{"$ref": "#/$defs/Typed"}, {"$ref": "#/$defs/Closed"}]},
+    "ClosedTyped": {"allOf": [{"$ref": "#/$defs/Closed"}, {"$ref": "#/$defs/Typed"}]},
+    "PatClosed": {"allOf": [{"$ref": "#/$defs/Pat"}, {"$ref": "#/$defs/Closed"}]},
+    "OpenPlain": {"allOf": [{"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/Plain"}]},
+    "PlainOpen": {"allOf": [{"$ref": "#/$defs/Plain"}, {"$ref": "#/$defs/Open"}]},
+    "OpenClosedU": {"allOf": [{"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/ClosedU"}]},
+    "ClosedUOpen": {"allOf": [{"$ref": "#/$defs/ClosedU"}, {"$ref": "#/$defs/Open"}]},
+    "OpenClosedPat": {"allOf": [{"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/ClosedPat"}]},
+    "ClosedPatOpen": {"allOf": [{"$ref": "#/$defs/ClosedPat"}, {"$ref": "#/$defs/Open"}]}
+  }
+}

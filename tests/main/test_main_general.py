@@ -1922,6 +1922,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "keep_bases_beside_generic_base_class",
         "keep_bases_of_typed_dicts_listed_before_their_parents",
         "keep_inherited_dataclass_config",
+        "merge_config_of_generated_bases",
         "use_schema_description",
         "use_title_as_name",
         "infer_union_discriminators",

@@ -71,6 +71,8 @@ from datamodel_code_generator.model._render_plan import (
 )
 from datamodel_code_generator.model.base import (
     _COMPILED_PATTERN_KEY,
+    _MERGE_CONFIG_OF_GENERATED_BASES_TEMPLATE_DATA_KEY,
+    _REDECLARED_FIELDS_KEY,
     ALL_MODEL,
     UNDEFINED,
     BaseClassDataType,
@@ -78,6 +80,7 @@ from datamodel_code_generator.model.base import (
     DataModelFieldBase,
     _base_walk,
     _builtin_renderer,
+    _class_body_fields,
     _default_state,
     _find_base_classes,
     _get_template_with_custom_dir,
@@ -87,6 +90,7 @@ from datamodel_code_generator.model.base import (
     _ModelKeys,
     _uses_original_template_loader,
     _written_name,
+    get_effective_fields,
     overrides_builtin_templates,
 )
 from datamodel_code_generator.model.field_name import PYDANTIC_BASE_MODEL_ATTRIBUTES, PydanticFieldNameResolver
@@ -108,6 +112,7 @@ from datamodel_code_generator.model.pydantic_v2._config import (
     config_attributes,
     names_class_by_text,
     with_arbitrary_types_allowed,
+    with_extra,
 )
 from datamodel_code_generator.model.pydantic_v2._output_context import (
     ANNOTATED_CONSTRAINTS_CONTEXT as _ANNOTATED_CONSTRAINTS_CONTEXT,
@@ -321,6 +326,7 @@ _NO_ALIAS_INTERNAL_KEY = "_no_alias"
 _PIN_ALIASES_INTERNAL_KEY = "_pin_aliases_with_alias_generator"
 _MISSING_SENTINEL = "MISSING"
 _CONFIG_ITEMS_TEMPLATE_DATA_KEY = "config_items"
+_TEMPLATE_DATA_EXTRA_KEY = "template_data_sets_extra"
 _RENDERED_NONE = "None"
 _IMPORT_RE_COMPILE = Import.from_full_path("re.compile")
 _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY = "neutralize_root_model_extra_config"
@@ -1821,28 +1827,54 @@ def _built_bases(model: DataModel) -> Iterator[DataModel]:
         yield walk.node_of[key]
 
 
-def _config_scopes(model: DataModel) -> Iterator[tuple[DataModel, bool]]:
+def _declaring_base(model: DataModel, name: str | None) -> DataModel | None:
+    """Return the class whose declaration of the field ``name`` the model takes, none where no class declares it.
+
+    A model takes the field of the first base that has it (Pydantic copies it from ``parent_fields_lookup``, a
+    dataclass from the nearest class of its method resolution order that holds it), and that base takes it from its
+    own first base that has it, unless the class body of the base declares it again.
+    """
+    if any(field.name == name for field in _class_body_fields(model)):
+        return model
+    for base in _find_base_classes(model):
+        if (declaring := _declaring_base(base, name)) is not None:
+            return declaring
+    return None
+
+
+def _config_scopes(model: DataModel, leaving_out: Collection[int] = ()) -> Iterator[tuple[DataModel, bool]]:
     """Yield the models whose patterns the config a model applies builds, each with whether it is a type alias.
 
     The model and the bases it inherits (``_built_bases``), and the type aliases it reaches through any chain of
-    fields and base classes (``models_reaching_string_pattern_aliases``), whose string patterns it builds.
+    fields and base classes (``models_reaching_string_pattern_aliases``), whose string patterns it builds. The bases
+    of ``leaving_out`` (by ``id``) and what is reached only through them are left out.
     """
     from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
 
     for current in _built_bases(model):
-        yield current, False
+        if id(current) not in leaving_out:
+            yield current, False
     reached = reach(
         (model,),
         lambda current: [
             source
             for reference in _model_references(current, current.base_classes)
-            if isinstance(source := reference.source, DataModel)
+            if isinstance(source := reference.source, DataModel) and id(source) not in leaving_out
         ],
         key=id,
     )
     for alias in reached:
         if isinstance(alias, TypeAliasBase):
             yield alias, True
+
+
+def _merges_config_of_generated_bases(model: DataModel) -> bool:
+    """Return whether a model's template data records ``--merge-config-of-generated-bases``."""
+    return bool(model.extra_template_data.get(_MERGE_CONFIG_OF_GENERATED_BASES_TEMPLATE_DATA_KEY))
+
+
+_EXTRA_STRENGTH: Mapping[str | None, int] = {"'allow'": 1, "'forbid'": 2}
+"""How strict each ``extra`` is: a key a base rejects stays rejected, one it keeps stays kept where none rejects it."""
 
 
 def _config_pattern_engines(model: DataModel) -> Iterator[tuple[str, PatternEngine]]:
@@ -1996,6 +2028,9 @@ class _PydanticV2Model(DataModel):
     _CONFIG_AS_CONFIG_DICT: ClassVar[bool] = True
     _OVERWRITES_REGEX_ENGINE: ClassVar[bool] = False
     _FOLLOWS_PATTERN_REFERENCES: ClassVar[bool] = False
+    SUPPORTS_CONFIG_EXTRA: ClassVar[bool] = True
+    _ORDERS_FIELDS_FOR_CONSTRUCTION: ClassVar[bool] = False
+    """Whether the class body orders its fields for construction, so a required copy of a field keeps its assignment."""
 
     @override
     def assigns_forward_reference_field(
@@ -2018,11 +2053,15 @@ class _PydanticV2Model(DataModel):
         marked once (``PYTHON_ENGINE_BUILDS_KEY``), so its fields leave out a pattern Python's ``re`` rejects (#6593).
         A config that selects the engine only for the patterns of its bases marks the models that apply it alone: they
         redeclare each inherited field whose pattern the engine cannot build (``_redeclare_rejected_patterns``), and the
-        bases keep their output (#7452).
+        bases keep their output (#7452). With ``--merge-config-of-generated-bases`` a base whose own config applies the
+        default engine is not marked either, nor what the model reaches only through it: the model redeclares its
+        fields the same way, and the base keeps its patterns (#7579). Row
+        ``legacy-python-engine-marks-every-built-base``: without it every base is marked.
 
         Then a model whose final field types hold a class that Pydantic builds only with ``arbitrary_types_allowed``
-        allows it (``_allow_arbitrary_types``). Last, once no config changes any more, a config gets the items it
-        applies from a base (``_store_inherited_configs``).
+        allows it (``_allow_arbitrary_types``). With ``--merge-config-of-generated-bases`` a model with generated bases
+        applies the strictest ``extra`` of them (``_merge_extra_of_bases``). Last, once no config changes any more, a
+        config gets the items it applies from a base (``_store_inherited_configs``).
         """
         for model in models:
             if isinstance(model, BaseModel) and model._own_patterns_select_python():  # noqa: SLF001
@@ -2039,14 +2078,17 @@ class _PydanticV2Model(DataModel):
             if isinstance(model, _PydanticV2Model) and model._builds_patterns_with_python_engine():  # noqa: SLF001
                 if id(model) in for_bases:
                     built[id(model)] = model
-                else:
-                    built.update((id(current), current) for current, _ in _config_scopes(model))
+                    continue
+                if keeping := cls._bases_keeping_their_engine(model, merges=_merges_config_of_generated_bases(model)):
+                    for_bases.add(id(model))
+                built.update((id(current), current) for current, _ in _config_scopes(model, keeping))
         for current in built.values():
             current._set_internal_template_data(PYTHON_ENGINE_BUILDS_KEY, value=True)  # noqa: SLF001
             for field in current.fields:
                 field.invalidate_semantic_caches()
         cls._redeclare_rejected_patterns(models, for_bases, built)
         cls._allow_arbitrary_types(models)
+        cls._merge_extra_of_bases(models)
         cls._store_inherited_configs(models)
 
     @classmethod
@@ -2105,10 +2147,140 @@ class _PydanticV2Model(DataModel):
         """
 
     @classmethod
+    def _bases_keeping_their_engine(cls, model: DataModel, *, merges: bool) -> frozenset[int]:
+        """Return the bases a model builds again whose own config applies the default regex engine, by ``id``.
+
+        Under ``--merge-config-of-generated-bases`` (``merges``) they keep their patterns where the model builds them
+        with ``python-re``: the model redeclares the fields whose pattern that engine rejects instead. Row
+        ``legacy-python-engine-marks-every-built-base``: without it no base keeps them, so each one the model builds
+        with ``python-re`` is marked and leaves a pattern that engine rejects out.
+        """
+        row: Literal["bases-keep-their-engine", "legacy-python-engine-marks-every-built-base"] = (
+            "bases-keep-their-engine" if merges else "legacy-python-engine-marks-every-built-base"
+        )
+        if row == "legacy-python-engine-marks-every-built-base":
+            return frozenset()
+
+        def keeps_its_engine(base: _PydanticV2Model) -> bool:
+            return not base._builds_patterns_with_python_engine()
+
+        return frozenset(
+            id(base)
+            for base in _built_bases(model)
+            if base is not model and isinstance(base, _PydanticV2Model) and keeps_its_engine(base)
+        )
+
+    @classmethod
+    def _merge_extra_of_bases(cls, models: list[DataModel]) -> None:
+        """Write in each Pydantic class with generated bases the strictest ``extra`` of them, where it applies another.
+
+        ``--merge-config-of-generated-bases``: allOf requires every member, so a base that rejects extra keys rejects
+        them in the class, whatever the order of its bases, and its own ``additionalProperties: true`` yields to it, as
+        an inline closed member closes the composite; a base that keeps them keeps them where none rejects them.
+        Pydantic merges the configs of the bases of a model in order, the last winning, and a dataclass applies the
+        config of its first base alone (``applied_config``). A base decides before its subclasses. The class writes
+        the ``extra`` in a config of its own that keeps every item it applies (``_config_items_to_keep``), so nothing
+        else changes; an ``extra`` of ``--extra-template-data`` stays, and so does the ``extra='allow'`` of a model
+        whose schema validators read the extra keys (``force_extra_allow``).
+        """
+        decided: set[int] = set()
+
+        def apply_strictest(model: _PydanticV2Model, bases: list[_PydanticV2Model]) -> None:
+            if not _merges_config_of_generated_bases(model) or model._sets_extra_itself():
+                return
+            strictest = max(
+                (
+                    dict(model._rendered_config_items()).get("extra"),
+                    *(base.applied_config()[0].get("extra") for base in bases),
+                ),
+                key=lambda extra: _EXTRA_STRENGTH.get(extra, 0),
+            )
+            if strictest is not None and _EXTRA_STRENGTH.get(strictest, 0) > _EXTRA_STRENGTH.get(
+                model.applied_config()[0].get("extra"), 0
+            ):
+                model._store_own_config(with_extra(model._config_items_to_keep(), strictest))
+
+        def decide(current: DataModel) -> None:
+            if id(current) in decided:
+                return
+            decided.add(id(current))
+            bases = [base for base in _find_base_classes(current) if isinstance(base, _PydanticV2Model)]
+            for base in bases:
+                decide(base)
+            if bases and isinstance(current, _PydanticV2Model):
+                apply_strictest(current, bases)
+
+        for model in models:
+            decide(model)
+
+    @classmethod
     def _redeclare_rejected_patterns(
         cls, models: list[DataModel], selected: set[int], built: Mapping[int, DataModel]
     ) -> None:
-        """Redeclare in each model of ``selected`` the inherited fields whose pattern its engine cannot build."""
+        """Redeclare the inherited fields whose pattern its engine cannot build in each model of ``selected``.
+
+        Each of them builds with ``python-re`` a base that keeps its patterns: a dataclass selected the engine for a
+        base (``_select_engines_for_bases``), or the base applies the default engine
+        (``--merge-config-of-generated-bases``). A base decides before its subclasses.
+        """
+        repairing = {
+            id(model): model for model in models if isinstance(model, _PydanticV2Model) and id(model) in selected
+        }
+        done: set[int] = set()
+        for model in repairing.values():
+            cls._redeclare_inherited_fields(model, built, repairing, done)
+
+    @classmethod
+    def _redeclare_inherited_fields(
+        cls,
+        model: _PydanticV2Model,
+        built: Mapping[int, DataModel],
+        repairing: Mapping[int, _PydanticV2Model],
+        done: set[int],
+    ) -> None:
+        """Redeclare each inherited field whose pattern the model's engine cannot build, without that pattern.
+
+        The model builds each declaration it inherits (``get_effective_fields``) with its own config, which selects
+        ``python-re`` for a base's pattern (#7452). A declaration of a model the engine builds (``built``) already
+        leaves out a pattern Python's ``re`` rejects (#6593), and so does a copy that a model between it and the
+        declaring base writes, which decides first, when the model takes the field from that model
+        (``_declaring_base``: not from its other base that redeclares it, which the first base outranks); for another
+        declaration, of its module or another one, the model
+        writes a copy that leaves the pattern out, so the base keeps its output, and warns as for its own fields. A
+        copy names the models of its type from the module of the model, which imports them
+        (``render_prep.finalize_type_alias_users``).
+        """
+        if id(model) in done:
+            return
+        done.add(id(model))
+        bases = [base for base in _built_bases(model) if base is not model]
+        for base in bases:
+            if (repairer := repairing.get(id(base))) is not None:
+                cls._redeclare_inherited_fields(repairer, built, repairing, done)
+        redeclared: list[DataModelFieldBase] = []
+        for field in get_effective_fields(model):
+            owner = field.parent
+            if owner is None or owner is model or id(owner) in built:
+                continue
+            if (
+                isinstance(declaring := _declaring_base(model, field.name), _PydanticV2Model)
+                and declaring is not owner
+                and any(ancestor is owner for ancestor in _built_bases(declaring))
+            ):
+                continue
+            copy = field.copy_owning(register_references=False, parent=model)
+            if (
+                (message := copy.dropped_constraints_warning) is not None
+                and isinstance(copy, DataModelField)
+                and copy.python_rejected_patterns()
+            ):
+                if copy.required and model._ORDERS_FIELDS_FOR_CONSTRUCTION and model.FIELD_ASSIGNMENT_CHECKER(field):
+                    copy.force_field_assignment()
+                    copy.invalidate_semantic_caches()
+                warn(message, stacklevel=2)
+                redeclared.append(copy)
+        if redeclared:
+            model._set_internal_template_data(_REDECLARED_FIELDS_KEY, redeclared)
 
     @override
     def _builds_patterns_with_python_engine(self) -> bool:
@@ -2197,8 +2369,7 @@ class _PydanticV2Model(DataModel):
         if "regex_engine" in config_parameters and not self._OVERWRITES_REGEX_ENGINE:
             return
         config_parameters["regex_engine"] = '"python-re"'
-        self._store_config(config_parameters)
-        self.invalidate_render_caches()
+        self._store_own_config(config_parameters)
 
     def _allow_arbitrary_types_in_config(self) -> None:
         """Set ``arbitrary_types_allowed`` in the config the model renders, keeping the items it already has.
@@ -2206,8 +2377,36 @@ class _PydanticV2Model(DataModel):
         The model gets a config of its own, as ``_select_python_regex_engine`` does: the one in the template data may
         be shared with every model of the same name (``--extra-template-data``).
         """
-        self._store_config(with_arbitrary_types_allowed(self._config_items_to_keep()))
+        self._store_own_config(with_arbitrary_types_allowed(self._config_items_to_keep()))
+
+    def _store_own_config(self, config_parameters: dict[str, object]) -> None:
+        """Store a config the model sets over the one it has once its fields are built, and render it again.
+
+        The one writer of the items a later step sets (``regex_engine``, ``arbitrary_types_allowed``, ``extra``).
+        """
+        self._store_config(config_parameters)
         self.invalidate_render_caches()
+
+    def _record_template_data_extra(self) -> None:
+        """Record whether the config of ``--extra-template-data`` sets ``extra``, before the model stores its own.
+
+        The stored config holds the schema's ``extra`` too, so only this record tells them apart later
+        (``_sets_extra_itself``).
+        """
+        if "extra" in dict(_config_dict_items(self.extra_template_data.get("config"))):
+            self._set_internal_template_data(_TEMPLATE_DATA_EXTRA_KEY, value=True)
+
+    def _sets_extra_itself(self) -> bool:
+        """Return whether the model keeps the ``extra`` it has whatever its bases apply.
+
+        A RootModel writes none; the user's ``extra`` (``_record_template_data_extra``) stays, and so does the
+        ``extra='allow'`` of a model whose schema validators read the extra keys (``force_extra_allow``).
+        """
+        return (
+            not self.SUPPORTS_CONFIG_EXTRA
+            or bool(self._internal_template_data.get(_TEMPLATE_DATA_EXTRA_KEY))
+            or bool(self.extra_template_data.get("force_extra_allow"))
+        )
 
     def _config_items_to_keep(self) -> dict[str, object]:
         """Return the items of the config the model has, which a config of its own keeps."""
@@ -2297,7 +2496,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     PLAIN_PATTERN_ROOT_CHECKER = staticmethod(_supports_plain_pattern_root_annotations)
     SCHEMA_RUNTIME_VALIDATION_ROOT_MODEL = staticmethod(_get_schema_runtime_validation_root_model)
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
-    SUPPORTS_CONFIG_EXTRA: ClassVar[bool] = True
     SUPPORTS_ARBITRARY_TYPES_ALLOWED: ClassVar[bool] = True
     CUSTOM_TEMPLATE_ADAPTER = staticmethod(_adapt_legacy_pydantic_extra_template)
     _INCLUDE_DICT_KEY_REFERENCE_CLASSES = staticmethod(_includes_dict_key_reference_classes)
@@ -2955,6 +3153,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
             config_parameters[_ALIAS_GENERATOR_TEMPLATE_DATA_KEY] = alias_generator
             self._additional_imports.append(_ALIAS_GENERATOR_IMPORTS[alias_generator])
 
+        self._record_template_data_extra()
         config_parameters.update(_config_dict_items(self.extra_template_data.get("config")))
 
         # Handle json_schema_extra from schema extensions (x-* fields)

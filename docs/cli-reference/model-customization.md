@@ -41,6 +41,7 @@
 | [`--keep-self-referencing-array-items`](#keep-self-referencing-array-items) | Keep the items of an array whose items name the array itself... |
 | [`--keep-shared-members-on-collapsed-root-models`](#keep-shared-members-on-collapsed-root-models) | Keep each member of a root type that collapse inlined at sev... |
 | [`--keyword-only`](#keyword-only) | Generate dataclasses with keyword-only fields (Python 3.10+)... |
+| [`--merge-config-of-generated-bases`](#merge-config-of-generated-bases) | Merge the config of the generated bases of a Pydantic class. |
 | [`--merge-message-trait-headers`](#merge-message-trait-headers) | Give an AsyncAPI message the headers of all its traits, merg... |
 | [`--merge-msgspec-str-like-union-members`](#merge-msgspec-str-like-union-members) | Write one str in place of the str-like members of a msgspec ... |
 | [`--model-extra-keys`](#model-extra-keys) | Add model-level schema extensions to ConfigDict json_schema_... |
@@ -6501,6 +6502,397 @@ positional argument errors.
             @property
             def __typename(self) -> Literal['Vehicle'] | None:
                 return self.typename__
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--merge-config-of-generated-bases` {#merge-config-of-generated-bases}
+
+Merge the config of the generated bases of a Pydantic class.
+
+A class with generated bases, such as an `allOf` of `$ref` members, takes the config that Pydantic applies to its
+bases: a `pydantic_v2.BaseModel` the `extra` of its last base that sets one, a `pydantic_v2.dataclass` the config of
+its first base alone. A member that rejects extra keys then rejects them in the class or not by the order of the
+members, as 0.104.0 writes it. With this option the class applies the strictest `extra` of its bases in any order:
+`extra='forbid'` where a base rejects extra keys, else `extra='allow'` where one keeps them, also over the class's own
+`additionalProperties: true`, as an inline closed `allOf` member closes the composite. The class keeps the other
+items it applies. An `extra` written through `--extra-template-data` stays, and so does the `extra='allow'` of
+`--generate-schema-validators`.
+
+A second base that a class builds with the `python-re` regex engine of another base keeps its own patterns too: the
+class writes again, without the pattern, each inherited field whose pattern Python's `re` rejects, with a warning,
+instead of the base leaving the pattern out for every user. Other output types write the same either way.
+
+**Related:** [`--extra-fields`](field-customization.md#extra-fields), [`--keep-inherited-dataclass-config`](#keep-inherited-dataclass-config), [`--output-model-type`](#output-model-type)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input all_of_open_and_closed_bases.json --output-model-type pydantic_v2.BaseModel --merge-config-of-generated-bases # (1)!
+    ```
+
+    1. :material-arrow-left: `--merge-config-of-generated-bases` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "Open": {"type": "object", "properties": {"a": {"type": "string"}}, "additionalProperties": true},
+        "Closed": {"type": "object", "properties": {"b": {"type": "string"}}, "additionalProperties": false},
+        "Plain": {"type": "object", "properties": {"c": {"type": "string"}}},
+        "Typed": {"type": "object", "properties": {"d": {"type": "string"}}, "additionalProperties": {"type": "integer"}},
+        "Pat": {"type": "object", "properties": {"e": {"type": "string"}}, "patternProperties": {"^x-": {"type": "string"}}},
+        "ClosedU": {"type": "object", "properties": {"f": {"type": "string"}}, "unevaluatedProperties": false},
+        "ClosedPat": {
+          "type": "object",
+          "properties": {"g": {"type": "string"}},
+          "patternProperties": {"^y-": {"type": "string"}},
+          "additionalProperties": false
+        },
+        "ClosedChild": {"allOf": [{"$ref": "#/$defs/Closed"}], "properties": {"h": {"type": "string"}}},
+        "Two": {"allOf": [{"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/Closed"}]},
+        "TwoRev": {"allOf": [{"$ref": "#/$defs/Closed"}, {"$ref": "#/$defs/Open"}]},
+        "ThreeRev": {"allOf": [{"$ref": "#/$defs/Plain"}, {"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/Closed"}]},
+        "PlainClosed": {"allOf": [{"$ref": "#/$defs/Plain"}, {"$ref": "#/$defs/Closed"}]},
+        "OpenChainClosed": {"allOf": [{"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/ClosedChild"}]},
+        "ClosedChainOpen": {"allOf": [{"$ref": "#/$defs/ClosedChild"}, {"$ref": "#/$defs/Open"}]},
+        "OwnOpen": {"allOf": [{"$ref": "#/$defs/Closed"}, {"$ref": "#/$defs/Open"}], "additionalProperties": true},
+        "OwnTyped": {
+          "allOf": [{"$ref": "#/$defs/Closed"}, {"$ref": "#/$defs/Open"}],
+          "additionalProperties": {"type": "integer"}
+        },
+        "OwnUnevaluated": {"allOf": [{"$ref": "#/$defs/Closed"}, {"$ref": "#/$defs/Open"}], "unevaluatedProperties": true},
+        "TypedClosed": {"allOf": [{"$ref": "#/$defs/Typed"}, {"$ref": "#/$defs/Closed"}]},
+        "ClosedTyped": {"allOf": [{"$ref": "#/$defs/Closed"}, {"$ref": "#/$defs/Typed"}]},
+        "PatClosed": {"allOf": [{"$ref": "#/$defs/Pat"}, {"$ref": "#/$defs/Closed"}]},
+        "OpenPlain": {"allOf": [{"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/Plain"}]},
+        "PlainOpen": {"allOf": [{"$ref": "#/$defs/Plain"}, {"$ref": "#/$defs/Open"}]},
+        "OpenClosedU": {"allOf": [{"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/ClosedU"}]},
+        "ClosedUOpen": {"allOf": [{"$ref": "#/$defs/ClosedU"}, {"$ref": "#/$defs/Open"}]},
+        "OpenClosedPat": {"allOf": [{"$ref": "#/$defs/Open"}, {"$ref": "#/$defs/ClosedPat"}]},
+        "ClosedPatOpen": {"allOf": [{"$ref": "#/$defs/ClosedPat"}, {"$ref": "#/$defs/Open"}]}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  all_of_open_and_closed_bases.json
+
+        from __future__ import annotations
+
+        from typing import Any, Dict
+
+        from pydantic import BaseModel, ConfigDict, RootModel
+
+
+        class Model(RootModel[Any]):
+            root: Any
+
+
+        class Open(BaseModel):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+            a: str | None = None
+
+
+        class Closed(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            b: str | None = None
+
+
+        class Plain(BaseModel):
+            c: str | None = None
+
+
+        class Typed(BaseModel):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+            __annotations__ = {
+                '__pydantic_extra__': Dict[str, int],
+            }
+            d: str | None = None
+
+
+        class Pat(BaseModel):
+            e: str | None = None
+
+
+        class ClosedU(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            f: str | None = None
+
+
+        class ClosedPat(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            g: str | None = None
+
+
+        class ClosedChild(Closed):
+            h: str | None = None
+
+
+        class Two(Open, Closed):
+            pass
+
+
+        class TwoRev(Closed, Open):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+
+
+        class ThreeRev(Plain, Open, Closed):
+            pass
+
+
+        class PlainClosed(Plain, Closed):
+            pass
+
+
+        class OpenChainClosed(Open, ClosedChild):
+            pass
+
+
+        class ClosedChainOpen(ClosedChild, Open):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+
+
+        class OwnOpen(Closed, Open):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+
+
+        class OwnTyped(Closed, Open):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            __annotations__ = {
+                '__pydantic_extra__': Dict[str, int],
+            }
+
+
+        class OwnUnevaluated(Closed, Open):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+
+
+        class TypedClosed(Typed, Closed):
+            pass
+
+
+        class ClosedTyped(Closed, Typed):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+
+
+        class PatClosed(Pat, Closed):
+            pass
+
+
+        class OpenPlain(Open, Plain):
+            pass
+
+
+        class PlainOpen(Plain, Open):
+            pass
+
+
+        class OpenClosedU(Open, ClosedU):
+            pass
+
+
+        class ClosedUOpen(ClosedU, Open):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+
+
+        class OpenClosedPat(Open, ClosedPat):
+            pass
+
+
+        class ClosedPatOpen(ClosedPat, Open):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  all_of_open_and_closed_bases.json
+
+        from __future__ import annotations
+
+        from typing import Any, Dict
+
+        from pydantic import BaseModel, ConfigDict, RootModel
+
+
+        class Model(RootModel[Any]):
+            root: Any
+
+
+        class Open(BaseModel):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+            a: str | None = None
+
+
+        class Closed(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            b: str | None = None
+
+
+        class Plain(BaseModel):
+            c: str | None = None
+
+
+        class Typed(BaseModel):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+            __annotations__ = {
+                '__pydantic_extra__': Dict[str, int],
+            }
+            d: str | None = None
+
+
+        class Pat(BaseModel):
+            e: str | None = None
+
+
+        class ClosedU(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            f: str | None = None
+
+
+        class ClosedPat(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            g: str | None = None
+
+
+        class ClosedChild(Closed):
+            h: str | None = None
+
+
+        class Two(Open, Closed):
+            pass
+
+
+        class TwoRev(Closed, Open):
+            pass
+
+
+        class ThreeRev(Plain, Open, Closed):
+            pass
+
+
+        class PlainClosed(Plain, Closed):
+            pass
+
+
+        class OpenChainClosed(Open, ClosedChild):
+            pass
+
+
+        class ClosedChainOpen(ClosedChild, Open):
+            pass
+
+
+        class OwnOpen(Closed, Open):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+
+
+        class OwnTyped(Closed, Open):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+            __annotations__ = {
+                '__pydantic_extra__': Dict[str, int],
+            }
+
+
+        class OwnUnevaluated(Closed, Open):
+            model_config = ConfigDict(
+                extra='allow',
+            )
+
+
+        class TypedClosed(Typed, Closed):
+            pass
+
+
+        class ClosedTyped(Closed, Typed):
+            pass
+
+
+        class PatClosed(Pat, Closed):
+            pass
+
+
+        class OpenPlain(Open, Plain):
+            pass
+
+
+        class PlainOpen(Plain, Open):
+            pass
+
+
+        class OpenClosedU(Open, ClosedU):
+            pass
+
+
+        class ClosedUOpen(ClosedU, Open):
+            pass
+
+
+        class OpenClosedPat(Open, ClosedPat):
+            pass
+
+
+        class ClosedPatOpen(ClosedPat, Open):
+            pass
         ```
 
         <!-- fmt: on -->

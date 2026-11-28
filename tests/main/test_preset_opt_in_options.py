@@ -184,6 +184,9 @@ OPT_IN_OPTIONS_20261125: tuple[str, ...] = _argv(_added_options("20261124", "202
 OPT_IN_OPTIONS_20261127: tuple[str, ...] = _argv(_added_options("20261125", "20261127"))
 """The options the 20261127 presets set beyond the 20261125 presets, from the rows that join them."""
 
+OPT_IN_OPTIONS_20261128: tuple[str, ...] = _argv(_added_options("20261127", "20261128"))
+"""The options the 20261128 presets set beyond the 20261127 presets, from the rows that join them."""
+
 
 class CaseFile(TypedDict):
     """A case file: the option, its input under tests/data and the arguments of the two tests that generate it.
@@ -270,6 +273,7 @@ PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
     "20261124": ("20261123", OPT_IN_OPTIONS_20261124),
     "20261125": ("20261124", OPT_IN_OPTIONS_20261125),
     "20261127": ("20261125", OPT_IN_OPTIONS_20261127),
+    "20261128": ("20261127", OPT_IN_OPTIONS_20261128),
 }
 """The preset before each dated preset and the options it adds to it."""
 

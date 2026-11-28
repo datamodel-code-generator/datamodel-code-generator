@@ -969,6 +969,27 @@ OPTIONS: Final[tuple[Option, ...]] = (
         ),
     ),
     toggle(
+        (Section.MODEL, _G.MODEL_SHAPE),
+        "--merge-config-of-generated-bases",
+        help="pydantic_v2.BaseModel and pydantic_v2.dataclass output: a class with generated bases, such as an allOf "
+        "of $ref members, applies the strictest extra of them in any base order: extra='forbid' where a base rejects "
+        "extra keys, else extra='allow' where one keeps them, also over the class's own additionalProperties true. "
+        "Without it a model takes the extra of its last base that sets one and a dataclass that of its first base, as "
+        "in 0.104.0, so the class accepts or drops keys a base rejects. An extra written through "
+        "--extra-template-data stays. A base the class builds with the python-re regex engine of another base keeps "
+        "its own patterns too: the class writes the inherited fields whose pattern Python's re rejects again without "
+        "that pattern, with a warning, instead of the base leaving the pattern out.",
+        preset=PresetJoin(
+            "20261128",
+            {"merge_config_of_generated_bases": True},
+            title="Merged config of generated bases",
+            description=(
+                "A Pydantic class with generated bases applies the strictest extra of them in any base order, and a "
+                "base built with the python-re engine of another base keeps its own patterns."
+            ),
+        ),
+    ),
+    toggle(
         (Section.MODEL, _C.FIELD), "--use-schema-description", help="Use schema description to populate class docstring"
     ),
     toggle((Section.MODEL, _C.FIELD), "--use-title-as-name", help="use titles as class names of models"),

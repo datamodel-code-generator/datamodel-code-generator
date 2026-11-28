@@ -3616,6 +3616,27 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--keep-inherited-dataclass-config",
     ),
     LegacyRow(
+        "legacy-python-engine-marks-every-built-base",
+        (
+            "a Pydantic v2 model whose config selects `python-re` marks every base it builds with it, so a base whose "
+            "own config applies the default engine leaves out a pattern Python's `re` rejects, for its other users "
+            "too, and the model redeclares none of its fields (`finalize_type_alias_users`, `_config_scopes`)"
+        ),
+        fix=7579,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/second_base_own_engine.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--merge-config-of-generated-bases",
+    ),
+    LegacyRow(
         "legacy-custom-type-config-at-init",
         (
             "a Pydantic v2 model whose fields hold a `customTypePath` type when it is created writes "

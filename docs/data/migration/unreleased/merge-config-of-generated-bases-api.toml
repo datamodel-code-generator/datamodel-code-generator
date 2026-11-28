@@ -1,0 +1,14 @@
+[[change]]
+id = "merge-config-of-generated-bases-api"
+category = "api"
+title = "Public names for --merge-config-of-generated-bases"
+summary = "The option adds its config field. Two public names change: DataModelField.python_rejected_patterns, which the option's class code calls from the class that owns the generated field, is now public (it was the private _python_rejected_patterns), and the SUPPORTS_CONFIG_EXTRA class variable moved from the pydantic v2 BaseModel class to the shared pydantic v2 base class, so the pydantic v2 dataclass model class now has it too. Nothing else is removed or changed."
+refs = ["#7613", "#7589", "#7579"]
+decision = ["#7613"]
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig", "datamodel_code_generator.model.pydantic_base.DataModelField"] }
+source = "release-note"
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

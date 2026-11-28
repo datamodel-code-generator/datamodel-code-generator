@@ -325,7 +325,7 @@ class DirectoryChangedFile(NamedTuple)
     diff_lines: list[str]
 EXCLUDED_CONFIG_OPTIONS: frozenset[str] = COMMAND_DESTS | {'check', 'diff_against', 'debug', 'disable_warnings', 'list_deprecations', 'list_experimental', 'watch', 'watch_delay'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 325>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 326>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -448,6 +448,7 @@ class BaseGenerateConfig(BaseModel)
     keep_bases_beside_generic_base_class: bool = False
     keep_bases_of_typed_dicts_listed_before_their_parents: bool = False
     keep_inherited_dataclass_config: bool = False
+    merge_config_of_generated_bases: bool = False
     class_name: str | None = None
     allow_leading_underscore_class_name: bool = False
     class_name_prefix: str | None = None
@@ -739,7 +740,7 @@ class CLIOptionMeta
     requires: tuple[CLIOptionRelation, ...] = ()
     conflicts: tuple[CLIOptionRelation, ...] = ()
 CLI_OPTION_META: dict[str, CLIOptionMeta] = _with_relation_rows(_documented_options(OPTIONS))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 325>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 326>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -885,6 +886,7 @@ class ParserConfig(BaseModel)
     keep_bases_beside_generic_base_class: bool = False
     keep_bases_of_typed_dicts_listed_before_their_parents: bool = False
     keep_inherited_dataclass_config: bool = False
+    merge_config_of_generated_bases: bool = False
     force_optional_for_required_fields: bool = False
     class_name: str | None = None
     allow_leading_underscore_class_name: bool = False
@@ -2474,6 +2476,7 @@ class DataModelField(DataModelFieldBase)
     @property
     @override
     def field(self) -> str | None
+    def python_rejected_patterns(self) -> list[object]
     @override
     def enable_structured_default_validation(self) -> bool
     @property
@@ -2565,7 +2568,6 @@ class BaseModel(_PydanticV2Model, BaseModelBase)
     SCHEMA_RUNTIME_VALIDATION_ROOT_MODEL = staticmethod(_get_schema_runtime_validation_root_model)
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
         uses ANNOTATED_CONSTRAINTS_CONTEXT: object = Sentinel('ANNOTATED_CONSTRAINTS_CONTEXT')
-    SUPPORTS_CONFIG_EXTRA: ClassVar[bool] = True
     SUPPORTS_ARBITRARY_TYPES_ALLOWED: ClassVar[bool] = True
     CUSTOM_TEMPLATE_ADAPTER = staticmethod(_adapt_legacy_pydantic_extra_template)
     TYPED_EXTRA_FIELD_NAME: ClassVar[str | None] = '__pydantic_extra__'
@@ -5038,6 +5040,18 @@ class PresetName(str, Enum)
     PracticalPy31320261127 = 'practical-py313-20261127'
     PracticalPy31420261127 = 'practical-py314-20261127'
     PracticalPy31520261127 = 'practical-py315-20261127'
+    StandardPy31020261128 = 'standard-py310-20261128'
+    StandardPy31120261128 = 'standard-py311-20261128'
+    StandardPy31220261128 = 'standard-py312-20261128'
+    StandardPy31320261128 = 'standard-py313-20261128'
+    StandardPy31420261128 = 'standard-py314-20261128'
+    StandardPy31520261128 = 'standard-py315-20261128'
+    PracticalPy31020261128 = 'practical-py310-20261128'
+    PracticalPy31120261128 = 'practical-py311-20261128'
+    PracticalPy31220261128 = 'practical-py312-20261128'
+    PracticalPy31320261128 = 'practical-py313-20261128'
+    PracticalPy31420261128 = 'practical-py314-20261128'
+    PracticalPy31520261128 = 'practical-py315-20261128'
 @dataclass(frozen=True, slots=True)
 class PresetOptionGroup
     title: str
@@ -5072,7 +5086,7 @@ def resolve_preset_config_updates(preset: PresetName | str, *, context: PresetCo
 
 [datamodel_code_generator.preset_names]
 PRESET_NAMES: Final[tuple[PresetName, ...]] = get_args(PresetName)
-PresetName: TypeAlias = Literal['standard-py310-20260619', 'standard-py311-20260619', 'standard-py312-20260619', 'standard-py313-20260619', 'standard-py314-20260619', 'practical-py310-20260619', 'practical-py311-20260619', 'practical-py312-20260619', 'practical-py313-20260619', 'practical-py314-20260619', 'standard-py310-20260826', 'standard-py311-20260826', 'standard-py312-20260826', 'standard-py313-20260826', 'standard-py314-20260826', 'practical-py310-20260826', 'practical-py311-20260826', 'practical-py312-20260826', 'practical-py313-20260826', 'practical-py314-20260826', 'standard-py310-20260909', 'standard-py311-20260909', 'standard-py312-20260909', 'standard-py313-20260909', 'standard-py314-20260909', 'practical-py310-20260909', 'practical-py311-20260909', 'practical-py312-20260909', 'practical-py313-20260909', 'practical-py314-20260909', 'standard-py310-20261015', 'standard-py311-20261015', 'standard-py312-20261015', 'standard-py313-20261015', 'standard-py314-20261015', 'standard-py315-20261015', 'practical-py310-20261015', 'practical-py311-20261015', 'practical-py312-20261015', 'practical-py313-20261015', 'practical-py314-20261015', 'practical-py315-20261015', 'standard-py310-20261017', 'standard-py311-20261017', 'standard-py312-20261017', 'standard-py313-20261017', 'standard-py314-20261017', 'standard-py315-20261017', 'practical-py310-20261017', 'practical-py311-20261017', 'practical-py312-20261017', 'practical-py313-20261017', 'practical-py314-20261017', 'practical-py315-20261017', 'standard-py310-20261027', 'standard-py311-20261027', 'standard-py312-20261027', 'standard-py313-20261027', 'standard-py314-20261027', 'standard-py315-20261027', 'practical-py310-20261027', 'practical-py311-20261027', 'practical-py312-20261027', 'practical-py313-20261027', 'practical-py314-20261027', 'practical-py315-20261027', 'standard-py310-20261104', 'standard-py311-20261104', 'standard-py312-20261104', 'standard-py313-20261104', 'standard-py314-20261104', 'standard-py315-20261104', 'practical-py310-20261104', 'practical-py311-20261104', 'practical-py312-20261104', 'practical-py313-20261104', 'practical-py314-20261104', 'practical-py315-20261104', 'standard-py310-20261106', 'standard-py311-20261106', 'standard-py312-20261106', 'standard-py313-20261106', 'standard-py314-20261106', 'standard-py315-20261106', 'practical-py310-20261106', 'practical-py311-20261106', 'practical-py312-20261106', 'practical-py313-20261106', 'practical-py314-20261106', 'practical-py315-20261106', 'standard-py310-20261111', 'standard-py311-20261111', 'standard-py312-20261111', 'standard-py313-20261111', 'standard-py314-20261111', 'standard-py315-20261111', 'practical-py310-20261111', 'practical-py311-20261111', 'practical-py312-20261111', 'practical-py313-20261111', 'practical-py314-20261111', 'practical-py315-20261111', 'standard-py310-20261112', 'standard-py311-20261112', 'standard-py312-20261112', 'standard-py313-20261112', 'standard-py314-20261112', 'standard-py315-20261112', 'practical-py310-20261112', 'practical-py311-20261112', 'practical-py312-20261112', 'practical-py313-20261112', 'practical-py314-20261112', 'practical-py315-20261112', 'standard-py310-20261113', 'standard-py311-20261113', 'standard-py312-20261113', 'standard-py313-20261113', 'standard-py314-20261113', 'standard-py315-20261113', 'practical-py310-20261113', 'practical-py311-20261113', 'practical-py312-20261113', 'practical-py313-20261113', 'practical-py314-20261113', 'practical-py315-20261113', 'standard-py310-20261118', 'standard-py311-20261118', 'standard-py312-20261118', 'standard-py313-20261118', 'standard-py314-20261118', 'standard-py315-20261118', 'practical-py310-20261118', 'practical-py311-20261118', 'practical-py312-20261118', 'practical-py313-20261118', 'practical-py314-20261118', 'practical-py315-20261118', 'standard-py310-20261120', 'standard-py311-20261120', 'standard-py312-20261120', 'standard-py313-20261120', 'standard-py314-20261120', 'standard-py315-20261120', 'practical-py310-20261120', 'practical-py311-20261120', 'practical-py312-20261120', 'practical-py313-20261120', 'practical-py314-20261120', 'practical-py315-20261120', 'standard-py310-20261123', 'standard-py311-20261123', 'standard-py312-20261123', 'standard-py313-20261123', 'standard-py314-20261123', 'standard-py315-20261123', 'practical-py310-20261123', 'practical-py311-20261123', 'practical-py312-20261123', 'practical-py313-20261123', 'practical-py314-20261123', 'practical-py315-20261123', 'standard-py310-20261124', 'standard-py311-20261124', 'standard-py312-20261124', 'standard-py313-20261124', 'standard-py314-20261124', 'standard-py315-20261124', 'practical-py310-20261124', 'practical-py311-20261124', 'practical-py312-20261124', 'practical-py313-20261124', 'practical-py314-20261124', 'practical-py315-20261124', 'standard-py310-20261125', 'standard-py311-20261125', 'standard-py312-20261125', 'standard-py313-20261125', 'standard-py314-20261125', 'standard-py315-20261125', 'practical-py310-20261125', 'practical-py311-20261125', 'practical-py312-20261125', 'practical-py313-20261125', 'practical-py314-20261125', 'practical-py315-20261125', 'standard-py310-20261127', 'standard-py311-20261127', 'standard-py312-20261127', 'standard-py313-20261127', 'standard-py314-20261127', 'standard-py315-20261127', 'practical-py310-20261127', 'practical-py311-20261127', 'practical-py312-20261127', 'practical-py313-20261127', 'practical-py314-20261127', 'practical-py315-20261127']
+PresetName: TypeAlias = Literal['standard-py310-20260619', 'standard-py311-20260619', 'standard-py312-20260619', 'standard-py313-20260619', 'standard-py314-20260619', 'practical-py310-20260619', 'practical-py311-20260619', 'practical-py312-20260619', 'practical-py313-20260619', 'practical-py314-20260619', 'standard-py310-20260826', 'standard-py311-20260826', 'standard-py312-20260826', 'standard-py313-20260826', 'standard-py314-20260826', 'practical-py310-20260826', 'practical-py311-20260826', 'practical-py312-20260826', 'practical-py313-20260826', 'practical-py314-20260826', 'standard-py310-20260909', 'standard-py311-20260909', 'standard-py312-20260909', 'standard-py313-20260909', 'standard-py314-20260909', 'practical-py310-20260909', 'practical-py311-20260909', 'practical-py312-20260909', 'practical-py313-20260909', 'practical-py314-20260909', 'standard-py310-20261015', 'standard-py311-20261015', 'standard-py312-20261015', 'standard-py313-20261015', 'standard-py314-20261015', 'standard-py315-20261015', 'practical-py310-20261015', 'practical-py311-20261015', 'practical-py312-20261015', 'practical-py313-20261015', 'practical-py314-20261015', 'practical-py315-20261015', 'standard-py310-20261017', 'standard-py311-20261017', 'standard-py312-20261017', 'standard-py313-20261017', 'standard-py314-20261017', 'standard-py315-20261017', 'practical-py310-20261017', 'practical-py311-20261017', 'practical-py312-20261017', 'practical-py313-20261017', 'practical-py314-20261017', 'practical-py315-20261017', 'standard-py310-20261027', 'standard-py311-20261027', 'standard-py312-20261027', 'standard-py313-20261027', 'standard-py314-20261027', 'standard-py315-20261027', 'practical-py310-20261027', 'practical-py311-20261027', 'practical-py312-20261027', 'practical-py313-20261027', 'practical-py314-20261027', 'practical-py315-20261027', 'standard-py310-20261104', 'standard-py311-20261104', 'standard-py312-20261104', 'standard-py313-20261104', 'standard-py314-20261104', 'standard-py315-20261104', 'practical-py310-20261104', 'practical-py311-20261104', 'practical-py312-20261104', 'practical-py313-20261104', 'practical-py314-20261104', 'practical-py315-20261104', 'standard-py310-20261106', 'standard-py311-20261106', 'standard-py312-20261106', 'standard-py313-20261106', 'standard-py314-20261106', 'standard-py315-20261106', 'practical-py310-20261106', 'practical-py311-20261106', 'practical-py312-20261106', 'practical-py313-20261106', 'practical-py314-20261106', 'practical-py315-20261106', 'standard-py310-20261111', 'standard-py311-20261111', 'standard-py312-20261111', 'standard-py313-20261111', 'standard-py314-20261111', 'standard-py315-20261111', 'practical-py310-20261111', 'practical-py311-20261111', 'practical-py312-20261111', 'practical-py313-20261111', 'practical-py314-20261111', 'practical-py315-20261111', 'standard-py310-20261112', 'standard-py311-20261112', 'standard-py312-20261112', 'standard-py313-20261112', 'standard-py314-20261112', 'standard-py315-20261112', 'practical-py310-20261112', 'practical-py311-20261112', 'practical-py312-20261112', 'practical-py313-20261112', 'practical-py314-20261112', 'practical-py315-20261112', 'standard-py310-20261113', 'standard-py311-20261113', 'standard-py312-20261113', 'standard-py313-20261113', 'standard-py314-20261113', 'standard-py315-20261113', 'practical-py310-20261113', 'practical-py311-20261113', 'practical-py312-20261113', 'practical-py313-20261113', 'practical-py314-20261113', 'practical-py315-20261113', 'standard-py310-20261118', 'standard-py311-20261118', 'standard-py312-20261118', 'standard-py313-20261118', 'standard-py314-20261118', 'standard-py315-20261118', 'practical-py310-20261118', 'practical-py311-20261118', 'practical-py312-20261118', 'practical-py313-20261118', 'practical-py314-20261118', 'practical-py315-20261118', 'standard-py310-20261120', 'standard-py311-20261120', 'standard-py312-20261120', 'standard-py313-20261120', 'standard-py314-20261120', 'standard-py315-20261120', 'practical-py310-20261120', 'practical-py311-20261120', 'practical-py312-20261120', 'practical-py313-20261120', 'practical-py314-20261120', 'practical-py315-20261120', 'standard-py310-20261123', 'standard-py311-20261123', 'standard-py312-20261123', 'standard-py313-20261123', 'standard-py314-20261123', 'standard-py315-20261123', 'practical-py310-20261123', 'practical-py311-20261123', 'practical-py312-20261123', 'practical-py313-20261123', 'practical-py314-20261123', 'practical-py315-20261123', 'standard-py310-20261124', 'standard-py311-20261124', 'standard-py312-20261124', 'standard-py313-20261124', 'standard-py314-20261124', 'standard-py315-20261124', 'practical-py310-20261124', 'practical-py311-20261124', 'practical-py312-20261124', 'practical-py313-20261124', 'practical-py314-20261124', 'practical-py315-20261124', 'standard-py310-20261125', 'standard-py311-20261125', 'standard-py312-20261125', 'standard-py313-20261125', 'standard-py314-20261125', 'standard-py315-20261125', 'practical-py310-20261125', 'practical-py311-20261125', 'practical-py312-20261125', 'practical-py313-20261125', 'practical-py314-20261125', 'practical-py315-20261125', 'standard-py310-20261127', 'standard-py311-20261127', 'standard-py312-20261127', 'standard-py313-20261127', 'standard-py314-20261127', 'standard-py315-20261127', 'practical-py310-20261127', 'practical-py311-20261127', 'practical-py312-20261127', 'practical-py313-20261127', 'practical-py314-20261127', 'practical-py315-20261127', 'standard-py310-20261128', 'standard-py311-20261128', 'standard-py312-20261128', 'standard-py313-20261128', 'standard-py314-20261128', 'standard-py315-20261128', 'practical-py310-20261128', 'practical-py311-20261128', 'practical-py312-20261128', 'practical-py313-20261128', 'practical-py314-20261128', 'practical-py315-20261128']
 
 [datamodel_code_generator.prompt]
 ANSI_ESCAPE_RE = re.compile('\\x1b\\[[0-?]*[ -/]*[@-~]')
@@ -5099,7 +5113,7 @@ class OptionMetadataPayload(_Payload)
     deprecated_message: str | None
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = COMMAND_DESTS - {'profile', 'job', 'all_jobs', 'ignore_pyproject', 'fail_on_multi_module_stdout'}
     uses COMMAND_DESTS: Final = frozenset((option.dest for option in OPTIONS if not option.config))
-    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 325>
+    uses OPTIONS: Final[tuple[Option, ...]] = <tuple of 326>
     uses JSON_SCHEMA_NAMES: Final = tuple(_JSON_SCHEMAS)
     uses DEFAULT_WATCH_DELAY: Final = 0.5
     uses _JSON_SCHEMAS: Final[Mapping[str, _JsonSchemaSource]] = MappingProxyType({'config': _JsonSchemaSource('json_config', 'json_config_json_schema', 'argv'), 'generate-prompt': _JsonSchemaSource('prompt', 'generate_prompt_json_schema', 'parsed'), 'generation': _JsonSchemaSource('_structured_output', 'generation_output_json_schema', 'argv'), 'model-metadata': _JsonSchemaSource('model_metadata', 'model_metadata_json_schema', 'argv'), 'recommend-options': _JsonSchemaSource('_structured_output', 'recommend_options_json_schema', 'main'), 'structured-output': _JsonSchemaSource('_structured_output', 'structured_output_json_schema', 'argv')})
@@ -5121,7 +5135,7 @@ def option_arguments(field: str, value: object, *, negative: Callable[[str], str
     # identity datamodel_code_generator._option_names.option_arguments
 
 [datamodel_code_generator.prompt_data]
-OPTION_DESCRIPTIONS: dict[str, str] = <dict of 321>
+OPTION_DESCRIPTIONS: dict[str, str] = <dict of 322>
 
 [datamodel_code_generator.python_literal]
 class PythonCode(str)
@@ -5955,6 +5969,7 @@ class Constraints(ConstraintsBase)
 # a base of datamodel_code_generator.model.pydantic_v2.base_model.BaseModel
 class _PydanticV2Model(DataModel)
     WRITES_CLOSED_ADDITIONAL_PROPERTIES: ClassVar[bool] = True
+    SUPPORTS_CONFIG_EXTRA: ClassVar[bool] = True
     @override
     def assigns_forward_reference_field(self, field: DataModelFieldBase, positions: Mapping[str, int], index: int) -> bool
     @classmethod
@@ -6029,6 +6044,7 @@ class ParserConfigDict(TypedDict)
     keep_bases_beside_generic_base_class: NotRequired[bool]
     keep_bases_of_typed_dicts_listed_before_their_parents: NotRequired[bool]
     keep_inherited_dataclass_config: NotRequired[bool]
+    merge_config_of_generated_bases: NotRequired[bool]
     force_optional_for_required_fields: NotRequired[bool]
     class_name: NotRequired[str | None]
     allow_leading_underscore_class_name: NotRequired[bool]
@@ -6422,6 +6438,7 @@ class BaseGenerateConfig(TypedDict)
     keep_bases_beside_generic_base_class: NotRequired[bool]
     keep_bases_of_typed_dicts_listed_before_their_parents: NotRequired[bool]
     keep_inherited_dataclass_config: NotRequired[bool]
+    merge_config_of_generated_bases: NotRequired[bool]
     class_name: NotRequired[str | None]
     allow_leading_underscore_class_name: NotRequired[bool]
     class_name_prefix: NotRequired[str | None]

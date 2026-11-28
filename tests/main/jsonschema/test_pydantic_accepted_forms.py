@@ -1595,3 +1595,294 @@ def test_dataclass_allows_the_custom_types_of_a_later_base(
             model = getattr(generated, model_name) if is_package else generated
             outcomes += f"{model_name}\n{_outcomes(model, cases)}"
     assert_output(outcomes, name="outcomes")
+
+
+MERGE_CONFIG_OF_GENERATED_BASES = "--merge-config-of-generated-bases"
+ALL_OF_OPEN_AND_CLOSED_BASES = (
+    "Two",
+    "TwoRev",
+    "ThreeRev",
+    "PlainClosed",
+    "OpenChainClosed",
+    "ClosedChainOpen",
+    "OwnOpen",
+    "OwnTyped",
+    "OwnUnevaluated",
+    "TypedClosed",
+    "ClosedTyped",
+    "PatClosed",
+    "OpenPlain",
+    "PlainOpen",
+    "OpenClosedU",
+    "ClosedUOpen",
+    "OpenClosedPat",
+    "ClosedPatOpen",
+)
+
+
+@pytest.mark.cli_doc(
+    options=[MERGE_CONFIG_OF_GENERATED_BASES],
+    option_description="""Merge the config of the generated bases of a Pydantic class.
+
+A class with generated bases, such as an `allOf` of `$ref` members, takes the config that Pydantic applies to its
+bases: a `pydantic_v2.BaseModel` the `extra` of its last base that sets one, a `pydantic_v2.dataclass` the config of
+its first base alone. A member that rejects extra keys then rejects them in the class or not by the order of the
+members, as 0.104.0 writes it. With this option the class applies the strictest `extra` of its bases in any order:
+`extra='forbid'` where a base rejects extra keys, else `extra='allow'` where one keeps them, also over the class's own
+`additionalProperties: true`, as an inline closed `allOf` member closes the composite. The class keeps the other
+items it applies. An `extra` written through `--extra-template-data` stays, and so does the `extra='allow'` of
+`--generate-schema-validators`.
+
+A second base that a class builds with the `python-re` regex engine of another base keeps its own patterns too: the
+class writes again, without the pattern, each inherited field whose pattern Python's `re` rejects, with a warning,
+instead of the base leaving the pattern out for every user. Other output types write the same either way.""",
+    input_schema="jsonschema/all_of_open_and_closed_bases.json",
+    cli_args=["--output-model-type", "pydantic_v2.BaseModel", MERGE_CONFIG_OF_GENERATED_BASES],
+    golden_output="main/jsonschema/pydantic_accepted_forms/generated_bases_merge_their_config_under_an_option[base-model].option.py",
+    comparison_output="main/jsonschema/pydantic_accepted_forms/generated_bases_merge_their_config_under_an_option[base-model].default.py",
+    related_options=["--output-model-type", "--extra-fields", "--keep-inherited-dataclass-config"],
+)
+@pytest.mark.parametrize(
+    ("input_name", "output_model_type", "extra_args", "template_data"),
+    [
+        pytest.param("all_of_open_and_closed_bases", "pydantic_v2.BaseModel", [], {}, id="base-model"),
+        pytest.param("all_of_open_and_closed_bases", "pydantic_v2.dataclass", [], {}, id="dataclass"),
+        pytest.param(
+            "all_of_open_and_closed_bases",
+            "pydantic_v2.dataclass",
+            ["--keep-inherited-dataclass-config", "--allow-population-by-field-name"],
+            {},
+            id="keep-inherited",
+        ),
+        pytest.param(
+            "all_of_open_and_closed_bases",
+            "pydantic_v2.BaseModel",
+            ["--use-generic-base-class", "--allow-population-by-field-name"],
+            {},
+            id="generic-base-model",
+        ),
+        pytest.param(
+            "all_of_open_and_closed_bases",
+            "pydantic_v2.dataclass",
+            ["--use-generic-base-class", "--allow-population-by-field-name"],
+            {},
+            id="generic-dataclass",
+        ),
+        pytest.param(
+            "all_of_open_and_closed_bases", "pydantic_v2.dataclass", ["--extra-fields", "forbid"], {}, id="extra-forbid"
+        ),
+        pytest.param(
+            "all_of_open_and_closed_bases", "pydantic_v2.BaseModel", ["--extra-fields", "allow"], {}, id="extra-allow"
+        ),
+        pytest.param(
+            "all_of_open_and_closed_bases",
+            "pydantic_v2.BaseModel",
+            [],
+            {"TwoRev": {"extra": "'allow'"}, "PlainClosed": {"extra": "'ignore'"}},
+            id="template-data-extra",
+        ),
+        pytest.param(
+            "all_of_open_and_closed_bases",
+            "pydantic_v2.BaseModel",
+            ["--generate-schema-validators"],
+            {},
+            id="schema-validators",
+        ),
+        pytest.param("second_base_own_engine", "pydantic_v2.BaseModel", [], {}, id="engine-base-model"),
+        pytest.param("second_base_own_engine", "pydantic_v2.dataclass", [], {}, id="engine-dataclass"),
+        pytest.param(
+            "second_base_own_engine",
+            "pydantic_v2.dataclass",
+            ["--keep-inherited-dataclass-config"],
+            {},
+            id="engine-keep-inherited",
+        ),
+        pytest.param(
+            "second_base_own_engine",
+            "pydantic_v2.BaseModel",
+            ["--use-generic-base-class"],
+            {},
+            id="engine-generic-base-model",
+        ),
+        pytest.param("second_base_own_engine", "pydantic_v2.dataclass", ["--use-annotated"], {}, id="engine-annotated"),
+        pytest.param(
+            "second_base_own_engine",
+            "pydantic_v2.BaseModel",
+            ["--field-constraints"],
+            {},
+            id="engine-field-constraints",
+        ),
+    ],
+)
+def test_generated_bases_merge_their_config_under_an_option(
+    tmp_path: Path,
+    recwarn: pytest.WarningsRecorder,
+    monkeypatch: pytest.MonkeyPatch,
+    input_name: str,
+    output_model_type: str,
+    extra_args: list[str],
+    template_data: dict[str, dict[str, str]],
+) -> None:
+    r"""Apply the strictest ``extra`` of the generated bases and keep a second base's patterns (#7589, #7579).
+
+    Each case generates without ``--merge-config-of-generated-bases`` (``default``) and with it (``option``). In
+    ``all_of_open_and_closed_bases`` a model takes the ``extra`` of its last base that sets one and a dataclass that
+    of its first, so ``TwoRev`` (model) and ``Two`` (dataclass) accept a key ``Closed`` rejects by default; with the
+    option every class with a closed base rejects it in any order, also over its own ``additionalProperties`` (true
+    or a schema) and ``unevaluatedProperties: true``, and ``PlainOpen`` keeps the key as ``OpenPlain`` does.
+    ``--extra-fields`` gives every class the same ``extra``, an ``extra`` of ``--extra-template-data`` stays, and so
+    does the ``extra='allow'`` that ``--generate-schema-validators`` writes for a pattern validator. In
+    ``second_base_own_engine`` ``Both`` builds the ``\p{L}`` of ``Lettered`` with the ``python-re`` of ``Coded``: by
+    default ``Lettered`` leaves it out, also for ``Holder.lettered``; with the option ``Lettered`` keeps it and
+    ``Both`` and ``Following`` write ``name`` again without it, with a warning. ``Diamond`` takes ``name`` from its
+    first base ``Tagged``, which inherits the pattern, so it writes ``name`` again though its second base
+    ``Redeclaring`` does too; ``DiamondMirror`` takes the copy of ``Redeclaring`` and writes none.
+    """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    if template_data:
+        template_data_path = tmp_path / "extra-template-data.json"
+        template_data_path.write_text(
+            json.dumps({name: {"config": config} for name, config in template_data.items()}), encoding="utf-8"
+        )
+        extra_args = [*extra_args, "--extra-template-data", str(template_data_path)]
+    payloads: dict[str, dict[str, object]] = (
+        {name: {"extra": {"unknown": "z"}} for name in ALL_OF_OPEN_AND_CLOSED_BASES}
+        if input_name == "all_of_open_and_closed_bases"
+        else {
+            "Lettered": {"valid": {"name": "Zoë"}, "digits": {"name": "12"}},
+            "Holder": {"digits": {"lettered": {"name": "12"}}},
+            "Both": {"valid": {"name": "12", "code": "ab"}, "lookahead": {"code": "xa"}},
+            "Reversed": {"valid": {"name": "Zoë", "code": "ab"}, "lookahead": {"code": "xa"}},
+            "Following": {"valid": {"name": "12", "coded": {"code": "ab"}}},
+            "Diamond": {"valid": {"name": "12", "code": "ab"}, "lookahead": {"code": "xa"}},
+            "DiamondMirror": {"valid": {"name": "12", "code": "ab"}, "lookahead": {"code": "xa"}},
+        }
+    )
+    outcomes = ""
+    for name, option_args in (("default", []), ("option", [MERGE_CONFIG_OF_GENERATED_BASES])):
+        output_path = tmp_path / f"{name}.py"
+        recwarn.clear()
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{input_name}.json",
+            output_path=output_path,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                *extra_args,
+                *option_args,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+            name=name,
+        )
+        outcomes += f"{name}\n"
+        outcomes += "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(warning.message) for warning in recwarn)
+            if "regex" in message
+        )
+        for model_name, cases in payloads.items():
+            with _generated_model(output_path, name, model_name) as model:
+                outcomes += f"{model_name}\n{_outcomes(model, cases)}"
+                if "extra" in cases and _outcome(_model_json_validator(model), cases["extra"]) == "valid":
+                    parsed = _model_json_validator(model)(json.dumps(cases["extra"]))
+                    outcomes += f"kept: {hasattr(parsed, 'unknown')}\n"
+    assert_output(outcomes, name="outcomes")
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("msgspec.Struct", [], id="msgspec"),
+        pytest.param("msgspec.Struct", ["--use-msgspec-forbid-unknown-fields"], id="msgspec-forbid"),
+        pytest.param("dataclasses.dataclass", [], id="dataclasses"),
+        pytest.param("typing.TypedDict", [], id="typeddict"),
+    ],
+)
+def test_generated_bases_of_other_outputs_ignore_the_merge_option(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Write the same output with and without ``--merge-config-of-generated-bases`` outside Pydantic (#7589)."""
+    for option_args in ([], [MERGE_CONFIG_OF_GENERATED_BASES]):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "all_of_open_and_closed_bases.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                *extra_args,
+                *option_args,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+            name="model",
+        )
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_generated_bases_of_other_modules_merge_their_config(
+    tmp_path: Path,
+    recwarn: pytest.WarningsRecorder,
+    monkeypatch: pytest.MonkeyPatch,
+    output_model_type: str,
+) -> None:
+    r"""Merge the config of bases of other modules, in the module of the class that has them (#7589, #7579).
+
+    ``b.Two`` and ``b.TwoRev`` have ``a.Open`` and ``a.Closed`` as bases and ``b.Guarded`` has a lookahead pattern of
+    its own beside them (a config with ``regex_engine``): with the option each rejects the key ``a.Closed`` rejects and
+    only ``b`` changes. ``c.Both`` builds the ``\p{L}`` of ``a.Lettered`` with the ``python-re`` of ``b.Coded``: by
+    default ``a.Lettered`` and its users in ``a`` leave the pattern out, also through the alias ``a.Label``; with the
+    option they keep it and ``c.Both`` writes ``name`` and ``label`` again without it, with a warning, importing the
+    models of the alias from ``a``.
+    """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    extra = {"extra": {"unknown": "z"}}
+    payloads = {
+        "a": {
+            "Lettered": {"valid": {"name": "Zoë"}, "digits": {"name": "12"}, "label": {"label": "12"}},
+            "Holder": {"digits": {"lettered": {"name": "12"}}, "label": {"label": "12"}},
+        },
+        "b": {"Two": extra, "TwoRev": extra, "Guarded": {**extra, "lookahead": {"tag": "ya"}}},
+        "c": {
+            "Both": {
+                "valid": {"name": "12", "code": "ab", "label": "12"},
+                "color": {"label": {"hex": "1"}},
+                "lookahead": {"code": "xa"},
+            }
+        },
+    }
+    outcomes = ""
+    for name, option_args in (("default", []), ("option", [MERGE_CONFIG_OF_GENERATED_BASES])):
+        package = tmp_path / f"{name}_models"
+        recwarn.clear()
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "merge_config_of_generated_bases_modules.yaml",
+            output_path=package,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                *option_args,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+            name=name,
+        )
+        outcomes += f"{name}\n"
+        outcomes += "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(warning.message) for warning in recwarn)
+            if "regex" in message
+        )
+        for module, models in payloads.items():
+            with _generated_package_module(package, module) as generated:
+                for model_name, cases in models.items():
+                    outcomes += f"{module}.{model_name}\n{_outcomes(getattr(generated, model_name), cases)}"
+    assert_output(outcomes, name="outcomes")

@@ -1,0 +1,87 @@
+default
+Two
+extra: extra_forbidden
+TwoRev
+extra: valid
+kept: True
+ThreeRev
+extra: extra_forbidden
+PlainClosed
+extra: valid
+kept: False
+OpenChainClosed
+extra: extra_forbidden
+ClosedChainOpen
+extra: valid
+kept: True
+OwnOpen
+extra: valid
+kept: True
+OwnTyped
+extra: int_parsing
+OwnUnevaluated
+extra: valid
+kept: True
+TypedClosed
+extra: extra_forbidden
+ClosedTyped
+extra: int_parsing
+PatClosed
+extra: extra_forbidden
+OpenPlain
+extra: valid
+kept: True
+PlainOpen
+extra: valid
+kept: True
+OpenClosedU
+extra: extra_forbidden
+ClosedUOpen
+extra: valid
+kept: True
+OpenClosedPat
+extra: extra_forbidden
+ClosedPatOpen
+extra: valid
+kept: True
+option
+Two
+extra: extra_forbidden
+TwoRev
+extra: valid
+kept: True
+ThreeRev
+extra: extra_forbidden
+PlainClosed
+extra: valid
+kept: False
+OpenChainClosed
+extra: extra_forbidden
+ClosedChainOpen
+extra: extra_forbidden
+OwnOpen
+extra: extra_forbidden
+OwnTyped
+extra: extra_forbidden
+OwnUnevaluated
+extra: extra_forbidden
+TypedClosed
+extra: extra_forbidden
+ClosedTyped
+extra: extra_forbidden
+PatClosed
+extra: extra_forbidden
+OpenPlain
+extra: valid
+kept: True
+PlainOpen
+extra: valid
+kept: True
+OpenClosedU
+extra: extra_forbidden
+ClosedUOpen
+extra: extra_forbidden
+OpenClosedPat
+extra: extra_forbidden
+ClosedPatOpen
+extra: extra_forbidden

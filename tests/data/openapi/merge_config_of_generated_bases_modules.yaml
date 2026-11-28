@@ -1,0 +1,71 @@
+openapi: 3.0.3
+info:
+  title: Classes whose generated bases are in other modules
+  version: '1'
+paths: {}
+components:
+  schemas:
+    a.Open:
+      type: object
+      additionalProperties: true
+      properties:
+        x:
+          type: string
+    a.Closed:
+      type: object
+      additionalProperties: false
+      properties:
+        y:
+          type: string
+    a.Color:
+      type: object
+      properties:
+        hex:
+          type: string
+    a.Label:
+      anyOf:
+        - type: string
+          pattern: '^\p{L}+$'
+        - $ref: '#/components/schemas/a.Color'
+    a.Lettered:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: '^\p{L}+$'
+        label:
+          $ref: '#/components/schemas/a.Label'
+    a.Holder:
+      type: object
+      properties:
+        lettered:
+          $ref: '#/components/schemas/a.Lettered'
+        label:
+          $ref: '#/components/schemas/a.Label'
+    b.Coded:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^(?!x)[a-z]+$'
+    b.Two:
+      allOf:
+        - $ref: '#/components/schemas/a.Open'
+        - $ref: '#/components/schemas/a.Closed'
+    b.TwoRev:
+      allOf:
+        - $ref: '#/components/schemas/a.Closed'
+        - $ref: '#/components/schemas/a.Open'
+    b.Guarded:
+      allOf:
+        - $ref: '#/components/schemas/a.Open'
+        - $ref: '#/components/schemas/a.Closed'
+        - type: object
+          properties:
+            tag:
+              type: string
+              pattern: '^(?!y)[a-z]+$'
+    c.Both:
+      allOf:
+        - $ref: '#/components/schemas/b.Coded'
+        - $ref: '#/components/schemas/a.Lettered'

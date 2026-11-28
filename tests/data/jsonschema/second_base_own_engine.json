@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Coded": {"type": "object", "properties": {"code": {"type": "string", "pattern": "^(?!x)[a-z]+$"}}},
+    "Referring": {"type": "object", "properties": {"coded": {"$ref": "#/$defs/Coded"}}},
+    "Lettered": {"type": "object", "properties": {"name": {"type": "string", "pattern": "^\\p{L}+$"}}},
+    "Both": {"allOf": [{"$ref": "#/$defs/Coded"}, {"$ref": "#/$defs/Lettered"}]},
+    "Reversed": {"allOf": [{"$ref": "#/$defs/Lettered"}, {"$ref": "#/$defs/Coded"}]},
+    "Following": {"allOf": [{"$ref": "#/$defs/Referring"}, {"$ref": "#/$defs/Lettered"}]},
+    "Holder": {"type": "object", "properties": {"lettered": {"$ref": "#/$defs/Lettered"}}},
+    "Tagged": {"allOf": [{"$ref": "#/$defs/Lettered"}, {"type": "object", "properties": {"tag": {"type": "string"}}}]},
+    "Redeclaring": {
+      "allOf": [
+        {"$ref": "#/$defs/Lettered"},
+        {"type": "object", "properties": {"code": {"type": "string", "pattern": "^(?!x)[a-z]+$"}}}
+      ]
+    },
+    "Diamond": {"allOf": [{"$ref": "#/$defs/Tagged"}, {"$ref": "#/$defs/Redeclaring"}]},
+    "DiamondMirror": {"allOf": [{"$ref": "#/$defs/Redeclaring"}, {"$ref": "#/$defs/Tagged"}]}
+  }
+}
