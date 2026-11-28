@@ -45,3 +45,24 @@ class Following(Referring, Lettered):
 @dataclass
 class Holder:
     lettered: Lettered | None = None
+
+
+@dataclass
+class Tagged(Lettered):
+    tag: str | None = None
+
+
+@dataclass(config=ConfigDict(regex_engine="python-re"))
+class Redeclaring(Lettered):
+    name: str | None = None
+    code: constr(pattern=r'^(?!x)[a-z]+$') | None = None
+
+
+@dataclass(config=ConfigDict(regex_engine="python-re"))
+class Diamond(Tagged, Redeclaring):
+    name: str | None = None
+
+
+@dataclass
+class DiamondMirror(Redeclaring, Tagged):
+    pass

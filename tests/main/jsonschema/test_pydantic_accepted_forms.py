@@ -1734,7 +1734,9 @@ def test_generated_bases_merge_their_config_under_an_option(
     does the ``extra='allow'`` that ``--generate-schema-validators`` writes for a pattern validator. In
     ``second_base_own_engine`` ``Both`` builds the ``\p{L}`` of ``Lettered`` with the ``python-re`` of ``Coded``: by
     default ``Lettered`` leaves it out, also for ``Holder.lettered``; with the option ``Lettered`` keeps it and
-    ``Both`` and ``Following`` write ``name`` again without it, with a warning.
+    ``Both`` and ``Following`` write ``name`` again without it, with a warning. ``Diamond`` takes ``name`` from its
+    first base ``Tagged``, which inherits the pattern, so it writes ``name`` again though its second base
+    ``Redeclaring`` does too; ``DiamondMirror`` takes the copy of ``Redeclaring`` and writes none.
     """
     monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
     if template_data:
@@ -1752,6 +1754,8 @@ def test_generated_bases_merge_their_config_under_an_option(
             "Both": {"valid": {"name": "12", "code": "ab"}, "lookahead": {"code": "xa"}},
             "Reversed": {"valid": {"name": "Zoë", "code": "ab"}, "lookahead": {"code": "xa"}},
             "Following": {"valid": {"name": "12", "coded": {"code": "ab"}}},
+            "Diamond": {"valid": {"name": "12", "code": "ab"}, "lookahead": {"code": "xa"}},
+            "DiamondMirror": {"valid": {"name": "12", "code": "ab"}, "lookahead": {"code": "xa"}},
         }
     )
     outcomes = ""

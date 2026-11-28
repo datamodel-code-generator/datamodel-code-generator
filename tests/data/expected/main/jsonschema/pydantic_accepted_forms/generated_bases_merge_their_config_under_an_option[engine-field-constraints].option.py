@@ -41,3 +41,23 @@ class Following(Referring, Lettered):
 
 class Holder(BaseModel):
     lettered: Lettered | None = None
+
+
+class Tagged(Lettered):
+    tag: str | None = None
+
+
+class Redeclaring(Lettered):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    name: str | None = None
+    code: str | None = Field(None, pattern='^(?!x)[a-z]+$')
+
+
+class Diamond(Tagged, Redeclaring):
+    name: str | None = None
+
+
+class DiamondMirror(Redeclaring, Tagged):
+    pass

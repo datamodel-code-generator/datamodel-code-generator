@@ -13,9 +13,17 @@ valid: valid
 lookahead: string_pattern_mismatch
 Following
 valid: valid
+Diamond
+valid: valid
+lookahead: string_pattern_mismatch
+DiamondMirror
+valid: valid
+lookahead: string_pattern_mismatch
 option
 Python's regex engine, which the config building it selects, does not compile pattern='^\\p{L}+$'; Both.name is generated without this constraint.
 Python's regex engine, which the config building it selects, does not compile pattern='^\\p{L}+$'; Reversed.name is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern='^\\p{L}+$'; Redeclaring.name is generated without this constraint.
+Python's regex engine, which the config building it selects, does not compile pattern='^\\p{L}+$'; Diamond.name is generated without this constraint.
 Lettered
 valid: valid
 digits: string_pattern_mismatch
@@ -29,3 +37,9 @@ valid: valid
 lookahead: string_pattern_mismatch
 Following
 valid: string_pattern_mismatch
+Diamond
+valid: valid
+lookahead: string_pattern_mismatch
+DiamondMirror
+valid: valid
+lookahead: string_pattern_mismatch

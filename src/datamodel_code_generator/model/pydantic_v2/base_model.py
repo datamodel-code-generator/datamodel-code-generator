@@ -1827,6 +1827,21 @@ def _built_bases(model: DataModel) -> Iterator[DataModel]:
         yield walk.node_of[key]
 
 
+def _declaring_base(model: DataModel, name: str | None) -> DataModel | None:
+    """Return the class whose declaration of the field ``name`` the model takes, none where no class declares it.
+
+    A model takes the field of the first base that has it (Pydantic copies it from ``parent_fields_lookup``, a
+    dataclass from the nearest class of its method resolution order that holds it), and that base takes it from its
+    own first base that has it, unless the class body of the base declares it again.
+    """
+    if any(field.name == name for field in _class_body_fields(model)):
+        return model
+    for base in _find_base_classes(model):
+        if (declaring := _declaring_base(base, name)) is not None:
+            return declaring
+    return None
+
+
 def _config_scopes(model: DataModel, leaving_out: Collection[int] = ()) -> Iterator[tuple[DataModel, bool]]:
     """Yield the models whose patterns the config a model applies builds, each with whether it is a type alias.
 
@@ -2228,7 +2243,9 @@ class _PydanticV2Model(DataModel):
         The model builds each declaration it inherits (``get_effective_fields``) with its own config, which selects
         ``python-re`` for a base's pattern (#7452). A declaration of a model the engine builds (``built``) already
         leaves out a pattern Python's ``re`` rejects (#6593), and so does a copy that a model between it and the
-        declaring base writes, which decides first; for another declaration, of its module or another one, the model
+        declaring base writes, which decides first, when the model takes the field from that model
+        (``_declaring_base``: not from its other base that redeclares it, which the first base outranks); for another
+        declaration, of its module or another one, the model
         writes a copy that leaves the pattern out, so the base keeps its output, and warns as for its own fields. A
         copy names the models of its type from the module of the model, which imports them
         (``render_prep.finalize_type_alias_users``).
@@ -2245,12 +2262,10 @@ class _PydanticV2Model(DataModel):
             owner = field.parent
             if owner is None or owner is model or id(owner) in built:
                 continue
-            if any(
-                isinstance(base, _PydanticV2Model)
-                and any(copy.name == field.name for copy in _class_body_fields(base))
-                and any(ancestor is owner for ancestor in _built_bases(base))
-                for base in bases
-                if base is not owner
+            if (
+                isinstance(declaring := _declaring_base(model, field.name), _PydanticV2Model)
+                and declaring is not owner
+                and any(ancestor is owner for ancestor in _built_bases(declaring))
             ):
                 continue
             copy = field.copy_owning(register_references=False, parent=model)
