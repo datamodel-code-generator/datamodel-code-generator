@@ -287,6 +287,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-operation-id-as-name": "Use OpenAPI operationId as the generated function/class name.",
     "--use-pendulum": "Use pendulum types for date, time, and duration fields.",
     "--use-plain-alias-for-recursive-models": "Write the type alias of a model that names itself as a plain alias i...",
+    "--use-root-model-any-for-custom-type-path": "Write a customTypePath root as RootModel[Any] with the class on r...",
     "--use-root-model-sequence-interface": "Make non-null sequence-like Pydantic v2 RootModel classes implement col...",
     "--use-root-model-type-alias": "Generate RootModel as type alias format for better mypy support.",
     "--use-root-types-for-mixed-union-map-keys": "Type the RootModel members of a union map key with a non-RootMode...",

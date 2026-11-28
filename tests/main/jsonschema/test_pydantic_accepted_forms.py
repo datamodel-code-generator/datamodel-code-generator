@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import re
+from queue import Queue
 from typing import TYPE_CHECKING
 
 import msgspec
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import PydanticSchemaGenerationError, RootModel, TypeAdapter, ValidationError
 
 from tests.capabilities import needs
 from tests.conftest import assert_output
@@ -24,6 +27,8 @@ from tests.main.conftest import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
     from pathlib import Path
+
+    from _typeshed import DataclassInstance
 
 VERBOSE_PAYLOADS = {
     "Backreference": ("aa", "ab"),
@@ -1886,3 +1891,182 @@ def test_generated_bases_of_other_modules_merge_their_config(
                 for model_name, cases in models.items():
                     outcomes += f"{module}.{model_name}\n{_outcomes(getattr(generated, model_name), cases)}"
     assert_output(outcomes, name="outcomes")
+
+
+USE_ROOT_MODEL_ANY_FOR_CUSTOM_TYPE_PATH = "--use-root-model-any-for-custom-type-path"
+CUSTOM_TYPE_PATH_ROOTS_PATH = JSON_SCHEMA_DATA_PATH / "custom_type_path_roots"
+QUEUE = Queue()
+"""The ``queue.Queue`` the payloads hold: a class Pydantic builds only with ``arbitrary_types_allowed``."""
+CUSTOM_TYPE_PATH_ROOT_PAYLOADS: dict[str, dict[str, dict[str, object]]] = {
+    "root": {"Handle": {"queue": QUEUE, "object": {}}},
+    "definitions": {
+        "Plain": {"queue": QUEUE, "object": {}},
+        "Text": {"queue": QUEUE, "text": "x"},
+        "Number": {"queue": QUEUE, "number": 3},
+        "Items": {"queues": [QUEUE], "texts": ["x"]},
+        "Nullable": {"queue": QUEUE, "null": None},
+        "Either": {"queue": QUEUE, "number": 3, "digits": "3", "text": "x"},
+        "Renamed": {"queue": QUEUE, "text": "x"},
+    },
+    "mapping": {"Mapping": {"queues": {"k": QUEUE}, "texts": {"k": "x"}}},
+    "controls": {
+        "Day": {"date": "2024-01-02", "text": "x"},
+        "Amount": {"decimal": "1.5", "text": "x"},
+        "Entity": {"object": {}, "text": "x"},
+        "Address": {"address": "127.0.0.1", "text": "x"},
+    },
+    "holder": {
+        "Holder": {
+            "queues": {"text": QUEUE, "items": [QUEUE], "either": QUEUE},
+            "number": {"text": QUEUE, "either": 3},
+            "text": {"text": "x"},
+            "missing": {},
+        }
+    },
+    "date_holder": {"DateHolder": {"date": {"day": "2024-01-02"}, "text": {"day": "x"}, "missing": {}}},
+}
+
+
+def _shown(value: object) -> str:
+    """Return a value as the outcomes write it: the payload's ``queue.Queue`` as ``QUEUE``, models by their values."""
+    if value is QUEUE:
+        return "QUEUE"
+    if isinstance(value, list):
+        return f"[{', '.join(map(_shown, value))}]"
+    if isinstance(value, dict):
+        return f"{{{', '.join(f'{key!r}: {_shown(item)}' for key, item in value.items())}}}"
+    if isinstance(value, (RootModel, PydanticBaseModel)) or (
+        dataclasses.is_dataclass(value) and not isinstance(value, type)
+    ):
+        return _shown(_model_values(value))
+    return repr(value)
+
+
+def _model_values(value: RootModel[object] | PydanticBaseModel | DataclassInstance) -> object:
+    """Return the root of a root model, else the values of a model or dataclass by field name."""
+    if isinstance(value, RootModel):
+        return value.root
+    if isinstance(value, PydanticBaseModel):
+        return dict(value)
+    return {field.name: getattr(value, field.name) for field in dataclasses.fields(value)}
+
+
+def _python_outcome(model: type[object], payload: object) -> str:
+    """Return the value a Python payload parses to, or the types of the errors that Pydantic reports for it."""
+    try:
+        parsed = TypeAdapter(model).validate_python(payload)
+    except ValidationError as error:
+        return ", ".join(sorted({item["type"] for item in error.errors()}))
+    except PydanticSchemaGenerationError:
+        return "PydanticSchemaGenerationError"
+    return f"valid {_shown(parsed)}"
+
+
+def _custom_type_path_root_case(input_name: str, case_id: str, *extra_args: str) -> object:
+    """Return a case of ``test_custom_type_path_roots_import_under_an_option``."""
+    return pytest.param(input_name, list(extra_args), id=f"{input_name}-{case_id}")
+
+
+COLLAPSE_ROOT_MODELS = "--collapse-root-models"
+USE_ROOT_MODEL_TYPE_ALIAS = "--use-root-model-type-alias"
+PYDANTIC_DATACLASS = ("--output-model-type", "pydantic_v2.dataclass")
+RELEASED_PRESET = ("--preset", "standard-py311-20261127")
+
+
+@pytest.mark.cli_doc(
+    options=[USE_ROOT_MODEL_ANY_FOR_CUSTOM_TYPE_PATH],
+    option_description="""Write a customTypePath root as RootModel[Any] with the class on root.
+
+A `pydantic_v2.BaseModel` root model whose root holds a class named by `customTypePath` is written as
+`RootModel[<class>]`, as 0.104.0 writes it. Pydantic builds the type in the brackets with the default config, before
+the model's own config applies, so a module whose class Pydantic cannot build, such as `queue.Queue` or a plain class
+of the project, fails at import with `PydanticSchemaGenerationError`. With this option such a root is written as
+`RootModel[Any]` with `arbitrary_types_allowed=True` and the class on `root`, the form a root of an `--input-model`
+class takes, so the module imports and the root accepts an instance of the class. A class Pydantic builds anyway,
+such as `datetime.date`, takes the same form and parses the same values. A model that builds the class itself writes
+`arbitrary_types_allowed=True` with or without the option: through a type alias of the class
+(`--use-type-alias`), as a pydantic dataclass, whose roots are type aliases, or through a root that
+`--collapse-root-models` inlines. A model that names a root model gets no key.""",
+    input_schema="jsonschema/custom_type_path_roots/root.json",
+    cli_args=[USE_ROOT_MODEL_ANY_FOR_CUSTOM_TYPE_PATH],
+    golden_output="main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[root-default].option.py",
+    comparison_output="main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[root-default].default.py",
+    related_options=["--collapse-root-models", "--use-root-model-type-alias", "--input-model"],
+)
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        _custom_type_path_root_case("root", "default"),
+        _custom_type_path_root_case("root", "annotated", "--use-annotated"),
+        _custom_type_path_root_case("root", "collapse", COLLAPSE_ROOT_MODELS),
+        _custom_type_path_root_case("root", "root-alias", USE_ROOT_MODEL_TYPE_ALIAS),
+        _custom_type_path_root_case("root", "type-alias", "--use-type-alias"),
+        _custom_type_path_root_case("root", "preset", *RELEASED_PRESET),
+        _custom_type_path_root_case("definitions", "default"),
+        _custom_type_path_root_case("definitions", "annotated", "--use-annotated"),
+        _custom_type_path_root_case("definitions", "root-alias", USE_ROOT_MODEL_TYPE_ALIAS),
+        _custom_type_path_root_case(
+            "definitions", "collapse-root-alias", COLLAPSE_ROOT_MODELS, USE_ROOT_MODEL_TYPE_ALIAS
+        ),
+        _custom_type_path_root_case("definitions", "dataclass", *PYDANTIC_DATACLASS),
+        _custom_type_path_root_case("mapping", "default"),
+        _custom_type_path_root_case("controls", "default"),
+        _custom_type_path_root_case("controls", "root-alias", USE_ROOT_MODEL_TYPE_ALIAS),
+        _custom_type_path_root_case("controls", "preset", *RELEASED_PRESET),
+        _custom_type_path_root_case("holder", "default"),
+        _custom_type_path_root_case("holder", "annotated", "--use-annotated"),
+        _custom_type_path_root_case("holder", "collapse", COLLAPSE_ROOT_MODELS),
+        _custom_type_path_root_case("holder", "root-alias", USE_ROOT_MODEL_TYPE_ALIAS),
+        _custom_type_path_root_case("holder", "type-alias", "--use-type-alias"),
+        _custom_type_path_root_case("holder", "dataclass", *PYDANTIC_DATACLASS),
+        _custom_type_path_root_case("holder", "preset", *RELEASED_PRESET),
+        _custom_type_path_root_case("date_holder", "default"),
+        _custom_type_path_root_case("date_holder", "collapse", COLLAPSE_ROOT_MODELS),
+        _custom_type_path_root_case("date_holder", "type-alias", "--use-type-alias"),
+        _custom_type_path_root_case("date_holder", "dataclass", *PYDANTIC_DATACLASS),
+    ],
+)
+def test_custom_type_path_roots_import_under_an_option(tmp_path: Path, input_name: str, extra_args: list[str]) -> None:
+    """Import the roots of a ``customTypePath`` class and the models that hold them (#7593).
+
+    Each case generates without ``--use-root-model-any-for-custom-type-path`` (``default``) and with it (``option``),
+    imports the module and parses Python payloads, a ``queue.Queue`` among them. By default a root of the class
+    (``root``, every root of ``definitions``, ``Holder``'s roots) is ``RootModel[Queue]`` and the module fails at
+    import, as in 0.104.0; with the option each is ``RootModel[Any]`` with the key and ``root: Queue``, accepts the
+    queue and rejects other values, a union keeps coercing its ``int`` member. ``controls`` holds roots of classes
+    Pydantic builds anyway (``date``, ``Decimal``, a ``BaseModel``, a class with a core-schema hook): they import
+    in both runs and parse the same values. Under ``--use-root-model-type-alias`` the option writes the roots as
+    classes, and ``Renamed`` names the class ``Text``. The map root of ``mapping`` fails at import by default and
+    imports with the option; it is not run with ``--use-root-model-type-alias``, which keeps such a root an alias.
+    A holder that builds the class itself, inlined by ``--collapse-root-models`` (and the released preset), through a
+    type alias or as a pydantic dataclass, writes the key in both runs: ``Holder`` imported in none of them before,
+    ``DateHolder`` imported before and parses the same values. Type aliases and pydantic dataclass roots write no
+    root model and stay as they are.
+    """
+    outcomes = ""
+    for name, option_args in (("default", []), ("option", [USE_ROOT_MODEL_ANY_FOR_CUSTOM_TYPE_PATH])):
+        output_path = tmp_path / f"{name}.py"
+        run_main_and_assert(
+            input_path=CUSTOM_TYPE_PATH_ROOTS_PATH / f"{input_name}.json",
+            output_path=output_path,
+            input_file_type="jsonschema",
+            extra_args=[*extra_args, *option_args, "--formatters", "builtin", "--disable-timestamp"],
+            name=name,
+        )
+        outcomes += f"{name}\n"
+        outcomes += "".join(
+            _imported_model_outcomes(output_path, name, model_name, cases)
+            for model_name, cases in CUSTOM_TYPE_PATH_ROOT_PAYLOADS[input_name].items()
+        )
+    assert_output(outcomes, name="outcomes")
+
+
+def _imported_model_outcomes(output_path: Path, name: str, model_name: str, cases: Mapping[str, object]) -> str:
+    """Return the outcomes of a generated model's Python payloads, or that its module fails at import."""
+    try:
+        with _generated_model(output_path, name, model_name) as model:
+            return f"{model_name}\n" + "".join(
+                f"{label}: {_python_outcome(model, payload)}\n" for label, payload in cases.items()
+            )
+    except PydanticSchemaGenerationError:
+        return f"{model_name}: import fails with PydanticSchemaGenerationError\n"

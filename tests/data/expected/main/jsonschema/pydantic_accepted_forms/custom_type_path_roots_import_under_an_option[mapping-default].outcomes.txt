@@ -1,0 +1,6 @@
+default
+Mapping: import fails with PydanticSchemaGenerationError
+option
+Mapping
+queues: valid {'k': QUEUE}
+texts: is_instance_of

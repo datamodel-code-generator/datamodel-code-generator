@@ -1,0 +1,14 @@
+[[change]]
+id = "use-root-model-any-for-custom-type-path-api"
+category = "api"
+title = "Config field for --use-root-model-any-for-custom-type-path"
+summary = "The option adds its config field use_root_model_any_for_custom_type_path (default False) to the generate config. Nothing is removed or changed."
+refs = ["#7620"]
+decision = ["#7620"]
+source = "release-note"
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]

@@ -1,0 +1,7 @@
+[[change]]
+id = "use-root-model-any-for-custom-type-path-listings"
+extends = "use-root-model-any-for-custom-type-path"
+covers = [
+    "input_model/config_class.txt",
+    "parser/builtin_formatter_contract/generated_formatter_parser_config_contract.txt",
+]

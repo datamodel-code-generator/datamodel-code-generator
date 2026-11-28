@@ -3641,9 +3641,11 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         (
             "a Pydantic v2 model whose fields hold a `customTypePath` type when it is created writes "
             "`arbitrary_types_allowed` (`build_base_config_parameters`), whatever the class the path names, and "
-            "keeps it where `--type-overrides` later replaces the type, and a dataclass that builds the declaration "
-            "again from a base reads the same flag once the field types are final, so it gets the key in its own "
-            "config too (`_PydanticV2Model._allow_arbitrary_types`); the classes of an input model decide there too"
+            "keeps it where `--type-overrides` later replaces the type; once the field types are final, every model "
+            "that builds such a class with the config it applies gets the key too (a dataclass from a base, a field "
+            "that takes a collapsed root's class, a type alias's body; `_PydanticV2Model._allow_arbitrary_types`), a "
+            "root model excepted (`legacy-custom-type-root-keeps-subscript`); the classes of an input model decide "
+            "there too"
         ),
         fix=KEEP,
         witness=(
@@ -3659,6 +3661,28 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
             "--formatters",
             "builtin",
         ),
+    ),
+    LegacyRow(
+        "legacy-custom-type-root-keeps-subscript",
+        (
+            "a Pydantic v2 root model whose value is a class that `customTypePath` names is written "
+            "`RootModel[<class>]` without `arbitrary_types_allowed`, as in 0.104.0, so a class Pydantic builds only "
+            "with the key fails to import; with the option the root takes `RootModel[Any]`, the key and the class on "
+            "`root` (`_counts_classes_named_by_text`, `JsonSchemaParser._custom_type`)"
+        ),
+        fix=7593,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/custom_type_path_roots/root.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
+        option="--use-root-model-any-for-custom-type-path",
     ),
     LegacyRow(
         "legacy-flat-bare-loads",

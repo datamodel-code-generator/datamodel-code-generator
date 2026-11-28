@@ -762,7 +762,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
     given_container: Optional[GivenContainerName] = None
     is_custom_type: bool = False
     needs_arbitrary_types: bool = False
-    """Whether the type names a class that Pydantic builds only with ``arbitrary_types_allowed`` (an input model's)."""
+    """Whether the type names a class that Pydantic is assumed to build only with ``arbitrary_types_allowed``.
+
+    An input model's class, or with ``--use-root-model-any-for-custom-type-path`` a class named by ``customTypePath``.
+    """
     literals: list[Union[StrictBool, StrictInt, StrictStr]] = Field(default_factory=list)
     enum_member_literals: list[tuple[str, str]] = Field(default_factory=list)  # [(EnumClassName, member_name), ...]
     enum_member_tag_values: tuple[Union[StrictBool, StrictInt, StrictStr], ...] = ()

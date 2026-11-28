@@ -312,6 +312,7 @@
 - `--no-use-frozen-field`
 - `--no-use-msgspec-forbid-unknown-fields`
 - `--no-use-msgspec-meta-for-map-keys`
+- `--no-use-root-model-any-for-custom-type-path`
 - `--no-use-serialize-as-any-for-every-subclass`
 - `--no-use-subclass-enum`
 - `--omit-incomplete-model-defaults`: Write a property whose object default lacks required fields of its model w...
@@ -345,6 +346,7 @@
 - `--use-msgspec-nullable-enum-alias`: Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
 - `--use-msgspec-tagged-unions`: Write a msgspec.Struct discriminated union as tagged structs as a whole.
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
+- `--use-root-model-any-for-custom-type-path`: Write a customTypePath root as RootModel[Any] with the class on r...
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement col...
 - `--use-serialize-as-any`: Wrap fields with subtypes in Pydantic's SerializeAsAny.
 - `--use-serialize-as-any-for-every-subclass`: Wrap a field in SerializeAsAny when any subclass of its model add...
@@ -2061,6 +2063,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         variant whose discriminator is a single literal and
                         keeps the other discriminators as Literal fields.
   --use-pendulum        use pendulum instead of datetime
+  --use-root-model-any-for-custom-type-path, --no-use-root-model-any-for-custom-type-path
+                        pydantic_v2.BaseModel output: write a RootModel whose
+                        root holds a class named by customTypePath as
+                        RootModel[Any] with arbitrary_types_allowed=True and
+                        the class on root, so a module whose class Pydantic
+                        cannot build imports. Without it the root is
+                        RootModel[<class>], as in 0.104.0, and a module naming
+                        such a class fails at import
   --use-root-model-sequence-interface
                         Make non-null sequence-like Pydantic v2 RootModel
                         classes implement collections.abc.Sequence by adding

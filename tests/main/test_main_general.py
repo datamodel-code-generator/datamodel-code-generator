@@ -1910,6 +1910,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "remove_unused_models_beside_type_overrides",
         "keep_self_referencing_array_items",
         "collapse_reuse_models",
+        "use_root_model_any_for_custom_type_path",
         "singularize_last_word_of_item_names",
         "disable_timestamp",
         "keep_false_dataclass_arguments",

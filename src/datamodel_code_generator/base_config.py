@@ -388,6 +388,7 @@ class BaseGenerateConfig(BaseModel):
     keep_bases_of_typed_dicts_listed_before_their_parents: bool = False
     keep_inherited_dataclass_config: bool = False
     merge_config_of_generated_bases: bool = False
+    use_root_model_any_for_custom_type_path: bool = False
     class_name: str | None = None
     allow_leading_underscore_class_name: bool = False
     class_name_prefix: str | None = None

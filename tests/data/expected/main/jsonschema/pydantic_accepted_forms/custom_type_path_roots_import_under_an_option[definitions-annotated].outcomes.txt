@@ -1,0 +1,32 @@
+default
+Plain: import fails with PydanticSchemaGenerationError
+Text: import fails with PydanticSchemaGenerationError
+Number: import fails with PydanticSchemaGenerationError
+Items: import fails with PydanticSchemaGenerationError
+Nullable: import fails with PydanticSchemaGenerationError
+Either: import fails with PydanticSchemaGenerationError
+Renamed: import fails with PydanticSchemaGenerationError
+option
+Plain
+queue: valid QUEUE
+object: is_instance_of
+Text
+queue: valid QUEUE
+text: is_instance_of
+Number
+queue: valid QUEUE
+number: is_instance_of
+Items
+queues: valid [QUEUE]
+texts: is_instance_of
+Nullable
+queue: valid QUEUE
+null: is_instance_of
+Either
+queue: valid QUEUE
+number: valid 3
+digits: valid 3
+text: int_parsing, is_instance_of
+Renamed
+queue: valid QUEUE
+text: is_instance_of
