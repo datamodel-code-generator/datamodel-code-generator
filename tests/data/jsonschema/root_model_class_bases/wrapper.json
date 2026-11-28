@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "wrapper": {"$ref": "#/$defs/Wrapper"}
+  },
+  "$defs": {
+    "KeyPatternCount": {
+      "type": "object",
+      "additionalProperties": {"type": "string"},
+      "propertyNames": {"maxLength": 3},
+      "maxProperties": 2
+    },
+    "Wrapper": {"type": "object", "properties": {"xa": {"type": "string"}}, "allOf": [{"$ref": "#/$defs/KeyPatternCount"}]}
+  }
+}

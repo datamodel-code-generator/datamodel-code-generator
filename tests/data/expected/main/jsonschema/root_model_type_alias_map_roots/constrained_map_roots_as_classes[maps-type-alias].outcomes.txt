@@ -1,0 +1,48 @@
+default
+Labels valid one key: accepted {'a': 'x'} as dict
+Labels invalid two keys: rejected: too_long
+MinLabels valid one key: accepted {'a': 'x'} as dict
+MinLabels invalid no key: rejected: too_short
+ItemMap valid two items: accepted {'a': {'name': 'n'}, 'b': {'name': 'm'}} as dict
+ItemMap invalid three items: rejected: too_long
+CountOnly valid one key: accepted {'a': 1} as dict
+CountOnly invalid two keys: rejected: too_long
+AnyValues valid one key: accepted {'a': [1]} as dict
+AnyValues invalid two keys: rejected: too_long
+LookaroundValues valid y value: accepted {'a': 'y'} as dict
+LookaroundValues invalid x value: rejected: string_pattern_mismatch
+RefLabels valid one key: accepted {'a': 'x'} as dict
+RefLabels invalid two keys: rejected: too_long
+PlainMap valid two keys: accepted {'a': 'x', 'b': 'y'} as dict
+KeyPatternCount valid two keys: accepted {'a': 'x', 'b': 'y'} as dict
+KeyPatternCount invalid three keys: rejected: too_long
+PatternKeys valid two keys: accepted {'x1': 'a', 'x2': 'b'} as dict
+PatternKeys invalid three keys: accepted {'x1': 'a', 'x2': 'b', 'x3': 'c'} as dict
+PatternKeys invalid other key: rejected: string_pattern_mismatch
+NullableMap valid null: accepted None as NoneType
+NullableMap invalid two keys: accepted {'a': 'x', 'b': 'y'} as dict
+Model() field types: ['dict', 'list']
+option
+Labels valid one key: accepted {'a': 'x'} as dict
+Labels invalid two keys: rejected: too_long
+MinLabels valid one key: accepted {'a': 'x'} as dict
+MinLabels invalid no key: rejected: too_short
+ItemMap valid two items: accepted {'a': {'name': 'n'}, 'b': {'name': 'm'}} as dict
+ItemMap invalid three items: rejected: too_long
+CountOnly valid one key: accepted {'a': 1} as dict
+CountOnly invalid two keys: rejected: too_long
+AnyValues valid one key: accepted {'a': [1]} as dict
+AnyValues invalid two keys: rejected: too_long
+LookaroundValues valid y value: accepted {'a': 'y'} as dict
+LookaroundValues invalid x value: rejected: string_pattern_mismatch
+RefLabels valid one key: accepted {'a': 'x'} as dict
+RefLabels invalid two keys: rejected: too_long
+PlainMap valid two keys: accepted {'a': 'x', 'b': 'y'} as dict
+KeyPatternCount valid two keys: accepted {'a': 'x', 'b': 'y'} as dict
+KeyPatternCount invalid three keys: rejected: too_long
+PatternKeys valid two keys: accepted {'x1': 'a', 'x2': 'b'} as dict
+PatternKeys invalid three keys: accepted {'x1': 'a', 'x2': 'b', 'x3': 'c'} as dict
+PatternKeys invalid other key: rejected: string_pattern_mismatch
+NullableMap valid null: accepted None as NoneType
+NullableMap invalid two keys: accepted {'a': 'x', 'b': 'y'} as dict
+Model() field types: ['dict', 'list']

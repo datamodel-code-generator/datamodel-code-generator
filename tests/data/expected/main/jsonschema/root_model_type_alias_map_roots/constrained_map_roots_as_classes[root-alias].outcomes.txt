@@ -1,0 +1,6 @@
+default
+Settings valid two keys: accepted {'a': 1, 'b': 2} as alias
+Settings invalid three keys: accepted {'a': 1, 'b': 2, 'c': 3} as alias
+option
+Settings valid two keys: accepted {'a': 1, 'b': 2} as Settings
+Settings invalid three keys: rejected: too_long

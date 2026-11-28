@@ -1,0 +1,3 @@
+[
+  "/labels maxProperties {\"neighbour0\": \"a\", \"neighbour1\": \"a\", \"neighbour2\": \"a\"}: invalid, model accepts"
+]

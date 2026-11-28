@@ -1,0 +1,5 @@
+option = "--keep-constrained-map-roots-as-classes"
+input = "jsonschema/root_model_type_alias_map_roots/root.json"
+input_file_type = "jsonschema"
+args = ["--output-model-type", "pydantic_v2.BaseModel", "--use-root-model-type-alias"]
+off_args = ["--use-root-model-type-alias"]

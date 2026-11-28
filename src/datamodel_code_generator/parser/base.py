@@ -1445,6 +1445,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_typed_nullable_map_values = config.use_typed_nullable_map_values
         self.use_typed_map_values_beside_other_types = config.use_typed_map_values_beside_other_types
         self.use_single_dict_for_object_maps = config.use_single_dict_for_object_maps
+        self.keep_constrained_map_roots_as_classes = config.keep_constrained_map_roots_as_classes
         self.read_unevaluated_properties = config.read_unevaluated_properties
         self.read_kubernetes_extensions = config.read_kubernetes_extensions
         self.read_yaml_1_1_numbers_as_text = config.read_yaml_1_1_numbers_as_text
@@ -2860,6 +2861,35 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _is_root_model(self, model: DataModel) -> bool:
         """Return whether model uses the configured root model representation."""
         return isinstance(model, self.data_model_root_type)
+
+    def _root_model_form(self, model: DataModel) -> _shared.RootModelForm | None:
+        """Return how model is a root model: in the configured representation, as a root model class, or not at all.
+
+        A root the configured representation cannot write, such as a constrained root under
+        ``--use-root-model-type-alias``, is written as a root model class instead (``_concrete_root_model_type``,
+        ``write_rule_aliases_as_classes``). A model that keeps a root model class as its base and adds nothing to it
+        (``keeps_root_model_base``) is one to Pydantic too, so a chain of such models is read through its bases. The
+        readers that keep a root model out of a role only an object model takes, a base of a model Pydantic refuses as
+        its subclass or the user of a generated base class, read both forms. A chain that comes back to a model it
+        passed (an inheritance cycle) reaches no root model class.
+        """
+        if self._is_root_model(model):
+            return "configured"
+        passed: set[int] = set()
+        while id(model) not in passed:
+            passed.add(id(model))
+            if model.IS_ROOT_MODEL:
+                return "class"
+            reference = next((base.reference for base in model.base_classes if base.reference is not None), None)
+            if (
+                reference is None
+                or not _shared.keeps_root_model_base(model, reference)
+                or not isinstance(base_model := reference.source, DataModel)
+                or self._is_root_model(base_model)
+            ):
+                return None
+            model = base_model
+        return None
 
     def _reset_local_source_cache(self) -> None:
         self._cache_local_sources = False

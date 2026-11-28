@@ -1,0 +1,4 @@
+Model valid maps and property: accepted {'mid': {'a': 'x'}, 'leaf': {'x': 's'}, 'tagged': {'a': 'x'}} as Model
+Model invalid three keys: rejected: too_long
+Model invalid three keys two levels down: rejected: too_long
+Model invalid int property: rejected: string_type

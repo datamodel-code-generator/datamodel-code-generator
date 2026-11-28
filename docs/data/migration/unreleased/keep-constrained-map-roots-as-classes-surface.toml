@@ -1,0 +1,14 @@
+[[change]]
+id = "keep-constrained-map-roots-as-classes-surface"
+extends = "keep-constrained-map-roots-as-classes"
+covers = [
+    "main/main_general/show_help[False].txt",
+    "main/main_general/show_help[True].txt",
+    "main_kr/generate_prompt_basic.stdout.txt",
+    "main_kr/generate_prompt_json.stdout.txt",
+    "main_kr/generate_prompt_with_list_options.stdout.txt",
+    "main_kr/generate_prompt_with_options.stdout.txt",
+    "main_kr/generate_prompt_with_question.stdout.txt",
+    "main_kr/help_shows_new_options.txt",
+    "prompt/generate_prompt_uses_default_parser_for_text_output.txt",
+]

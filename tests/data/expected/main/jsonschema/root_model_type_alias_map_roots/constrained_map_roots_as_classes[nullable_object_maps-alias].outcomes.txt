@@ -1,0 +1,8 @@
+default
+ValueRoot valid one key: accepted {'a': 1} as alias
+ValueRoot valid null: rejected: dict_type
+ValueRoot invalid no key: accepted {} as alias
+option
+ValueRoot valid one key: accepted {'a': 1} as ValueRoot
+ValueRoot valid null: rejected: dict_type
+ValueRoot invalid no key: rejected: too_short

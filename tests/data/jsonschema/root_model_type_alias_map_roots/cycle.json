@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forest",
+  "type": "object",
+  "properties": {
+    "trees": {"type": "array", "items": {"$ref": "#/$defs/Tree"}},
+    "branch": {"$ref": "#/$defs/Branch"}
+  },
+  "$defs": {
+    "Tree": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Branch"}, "maxProperties": 3},
+    "Branch": {"type": "object", "properties": {"tree": {"$ref": "#/$defs/Tree"}}}
+  }
+}

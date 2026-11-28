@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {"labels": {"$ref": "#/$defs/PodLabels"}},
+  "$defs": {
+    "Labels": {"type": "object", "additionalProperties": {"type": "string"}, "propertyNames": {"maxLength": 63}, "maxProperties": 2},
+    "PodLabels": {"description": "Labels of a pod.", "allOf": [{"$ref": "#/$defs/Labels"}]}
+  }
+}

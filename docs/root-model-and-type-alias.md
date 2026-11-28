@@ -23,6 +23,14 @@ in the alias type keep the alias form. This does not change `--use-type-alias`.
 An existing custom `pydantic_v2/RootModelTypeAlias.jinja2` remains selected;
 that template is responsible for preserving its root constraints.
 
+The root model of an object map, an object without properties whose
+`additionalProperties` is a schema or that sets only `minProperties`,
+`maxProperties` or `propertyNames`, stays an alias anyway, as in 0.104.0:
+`Labels = RootModel[dict[str, str]]` drops `maxProperties: 1`, a value pattern
+that needs Python's regex engine and the rules of `--generate-schema-validators`.
+Add `--keep-constrained-map-roots-as-classes` to make such a map root a class as
+every other constrained root is; the dated presets from 20261128 set it.
+
 ## API scope parameters
 
 !!! note "Changed in 0.84.0"

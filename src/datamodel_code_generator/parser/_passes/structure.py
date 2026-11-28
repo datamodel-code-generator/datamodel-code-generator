@@ -12,7 +12,7 @@ from collections import defaultdict
 from itertools import count, groupby
 from keyword import iskeyword
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol
 
@@ -42,6 +42,7 @@ from datamodel_code_generator.parser._passes._shared import (
     TargetPythonVersionHost,
     _sort_models_by_class_body_references,
     compared_models,
+    keeps_root_model_base,
     merge_duplicate,
     removes_reuse_duplicate,
     require_update_action,
@@ -64,6 +65,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._model_shapes import ModelShapes
     from datamodel_code_generator.parser._naming import NamingPlan
     from datamodel_code_generator.parser._passes._import_edges import ImportCycleSeeds
+    from datamodel_code_generator.parser._passes._shared import RootModelForm
     from datamodel_code_generator.parser._passes._state import (
         ConfigT,
         ForwarderMap,
@@ -303,9 +305,24 @@ def renders_as_duplicate(
     )
 
 
-def _drop_root_model_bases(parser: StructureHost, model: DataModel) -> None:
-    """Remove a root model from the bases of the models that inherit it, which then keep their default base."""
+RootModelBasesRow: TypeAlias = Literal["refused-subclasses", "legacy-configured-root-model-leaves-every-child"]
+
+
+def _drop_root_model_bases(parser: StructureHost, model: DataModel, form: RootModelForm) -> None:
+    """Remove a root model from the bases of the models Pydantic refuses as its subclass, which keep their default base.
+
+    Pydantic refuses a subclass of a root model that declares its own fields or takes another base, so a root model
+    class (``form`` ``class``, ``Parser._root_model_form``) leaves the bases of such a child and stays the base of a
+    child that adds nothing (``keeps_root_model_base``), which is then a root model class too. Row
+    ``legacy-configured-root-model-leaves-every-child``: a root model in the configured representation leaves the bases
+    of every child, also of one that adds nothing, which then has no field and parses none of the root's values.
+    """
+    row: RootModelBasesRow = (
+        "legacy-configured-root-model-leaves-every-child" if form == "configured" else "refused-subclasses"
+    )
     for child in model.reference.iter_data_model_children():
+        if row != "legacy-configured-root-model-leaves-every-child" and keeps_root_model_base(child, model.reference):
+            continue
         parser._graph_builder.set_base_classes(
             child,
             [bc for bc in child.base_classes if bc.reference is not model.reference],
@@ -327,7 +344,7 @@ def _drop_duplicate_root_model(parser: StructureHost, model: DataModel, root_ref
     parser._graph_builder.detach_model_data_type_refs(model)
     if root_reference is model.reference:
         parser._self_named_root_models.append(model)
-        _drop_root_model_bases(parser, model)
+        _drop_root_model_bases(parser, model, "configured")
     parser._graph_builder.retire_model(model)
 
 
@@ -346,18 +363,22 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
     )
     for model in parser._reuse_groups.site_models_last(models):
         reuse_allowed = reuse_constraint is None or reuse_constraint(model)
-        if parser._is_root_model(model) and (model_key_of(model.reference) not in parser._declared_class_stand_ins):
-            root_data_type = model.fields[0].data_type
-
+        if (form := parser._root_model_form(model)) is not None and (
+            model_key_of(model.reference) not in parser._declared_class_stand_ins
+        ):
             # backward compatible
             # Remove duplicated root model
-            if reuse_allowed and (
-                root_reference := parser._get_duplicate_root_reference(model, root_data_type, models_set)
+            if (
+                reuse_allowed
+                and form == "configured"
+                and (
+                    root_reference := parser._get_duplicate_root_reference(model, model.fields[0].data_type, models_set)
+                )
             ):
                 _drop_duplicate_root_model(parser, model, root_reference)
                 models_to_remove.add(model)
                 continue
-            _drop_root_model_bases(parser, model)
+            _drop_root_model_bases(parser, model, form)
 
         class_name = shapes.source.own_class_name(model) or model.class_name
         if (

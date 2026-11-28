@@ -82,6 +82,10 @@ class ObjectMapsHost(AllOfValuesHost, Protocol):
         """Whether an object map is one dict (``--use-single-dict-for-object-maps``)."""
 
     @property
+    def keep_constrained_map_roots_as_classes(self) -> bool:
+        """Whether a map root the alias form cannot write is a class (``--keep-constrained-map-roots-as-classes``)."""
+
+    @property
     def use_typed_map_values_beside_other_types(self) -> bool:
         """Whether a map beside other types of its type array types its values."""
 
@@ -363,13 +367,17 @@ def legacy_object_maps(parser: ObjectMapsHost) -> frozenset[str]:
     takes neither the null nor the property counts of its type array or ``nullable``). Without
     ``--check-pattern-maps-strictly``: ``legacy-validated-pattern-maps`` (a map the patternProperties validator
     checks keys its root dict ``str`` and counts no pattern, a declared key witnesses the check, and its model
-    joins no other type of its type array).
+    joins no other type of its type array). Without ``--keep-constrained-map-roots-as-classes``:
+    ``legacy-map-roots-keep-alias`` (the root model of an object map keeps the model type it is given, so under
+    ``--use-root-model-type-alias`` it stays an alias that drops what the alias form cannot write).
     """
     rows: set[str] = set()
     if not parser.use_single_dict_for_object_maps:
         rows |= {"legacy-map-union-of-dicts", "legacy-map-pattern-keys-only", "legacy-map-null-left-to-field"}
     if not parser.check_pattern_maps_strictly:
         rows.add("legacy-validated-pattern-maps")
+    if not parser.keep_constrained_map_roots_as_classes:
+        rows.add("legacy-map-roots-keep-alias")
     return frozenset(rows)
 
 

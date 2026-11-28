@@ -1,0 +1,7 @@
+[[change]]
+id = "keep-constrained-map-roots-as-classes-listings"
+extends = "keep-constrained-map-roots-as-classes"
+covers = [
+    "input_model/config_class.txt",
+    "parser/builtin_formatter_contract/generated_formatter_parser_config_contract.txt",
+]

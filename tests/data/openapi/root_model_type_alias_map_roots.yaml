@@ -1,0 +1,17 @@
+openapi: 3.0.3
+info:
+  title: Map roots
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Labels:
+      type: object
+      additionalProperties:
+        type: string
+      maxProperties: 1
+    Tags:
+      type: array
+      items:
+        type: string
+      maxItems: 1

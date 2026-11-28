@@ -1,0 +1,10 @@
+default
+Labels valid one key: accepted {'a': 'x'} as alias
+Labels invalid two keys: accepted {'a': 'x', 'b': 'y'} as alias
+Wrapper valid string property: accepted {'name': 'n'} as Wrapper
+Wrapper invalid int property: rejected: string_type
+option
+Labels valid one key: accepted {'a': 'x'} as Labels
+Labels invalid two keys: rejected: too_long
+Wrapper valid string property: accepted {'name': 'n'} as Wrapper
+Wrapper invalid int property: rejected: string_type

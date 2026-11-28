@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Item": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}, "id": {"type": "integer", "readOnly": true}}
+    },
+    "ItemMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Item"}, "maxProperties": 2},
+    "PatternItems": {
+      "type": "object",
+      "patternProperties": {"^x": {"$ref": "#/$defs/Item"}},
+      "maxProperties": 2
+    }
+  }
+}

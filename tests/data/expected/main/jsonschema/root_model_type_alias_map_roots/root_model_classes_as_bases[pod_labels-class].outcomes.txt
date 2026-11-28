@@ -1,0 +1,2 @@
+Model valid one key: accepted {'labels': {}} as Model
+Model invalid three keys: accepted {'labels': {}} as Model

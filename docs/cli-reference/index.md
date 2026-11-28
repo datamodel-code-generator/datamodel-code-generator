@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 25 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 68 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 69 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 47 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 81 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 40 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 44 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 45 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -37,6 +37,7 @@ These links are generated from CLI option metadata and summarize options that im
 | Source | Kind | Condition | Target | Note |
 |--------|------|-----------|--------|------|
 | [`--intersect-combined-schema-keywords`](typing-customization.md#intersect-combined-schema-keywords) | Implies | Always | [`--intersect-allof-keywords`](typing-customization.md#intersect-allof-keywords) enabled | - |
+| [`--keep-constrained-map-roots-as-classes`](typing-customization.md#keep-constrained-map-roots-as-classes) | Requires | Always | [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias) enabled | `--keep-constrained-map-roots-as-classes` acts only with `--use-root-model-type-alias`. |
 | [`--use-annotated`](typing-customization.md#use-annotated) | Implies | Always | [`--field-constraints`](field-customization.md#field-constraints) enabled | - |
 | [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) | Requires | Always | [`--target-python-version`](model-customization.md#target-python-version) = `3.11+` | `--use-specialized-enum` requires `--target-python-version` 3.11 or higher. |
 | [`--use-type-alias-type`](typing-customization.md#use-type-alias-type) | Implies | Always | [`--use-type-alias`](typing-customization.md#use-type-alias) enabled | - |
@@ -263,6 +264,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 - [`--keep-bases-beside-generic-base-class`](model-customization.md#keep-bases-beside-generic-base-class)
 - [`--keep-bases-of-typed-dicts-listed-before-their-parents`](model-customization.md#keep-bases-of-typed-dicts-listed-before-their-parents)
+- [`--keep-constrained-map-roots-as-classes`](typing-customization.md#keep-constrained-map-roots-as-classes)
 - [`--keep-constrained-root-models-in-every-container`](model-customization.md#keep-constrained-root-models-in-every-container)
 - [`--keep-content-parameter-refs`](openapi-only-options.md#keep-content-parameter-refs)
 - [`--keep-defaults-of-inherited-required-fields`](model-customization.md#keep-defaults-of-inherited-required-fields)
