@@ -29,6 +29,9 @@ LoggerBase: TypeAlias = Logger
 LoggerWrapped: TypeAlias = LoggerBase
 
 
+NestedWrapped: TypeAlias = LoggerBase
+
+
 HandlerBase: TypeAlias = Handler
 
 
@@ -75,6 +78,7 @@ Branches: TypeAlias = Branches1
 class Holder:
     inline: LoggerInline | None = None
     wrapped: LoggerWrapped | None = None
+    nestedWrapped: NestedWrapped | None = None
     chain: HandlerChain | None = None
     inlineChain: InlineChain | None = None
     twoSame: TwoSame | None = None

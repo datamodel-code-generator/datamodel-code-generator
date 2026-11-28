@@ -15,6 +15,7 @@ class Holder(BaseModel):
     )
     inline: Logger | None = None
     wrapped: Logger | None = Field(None, description='A logger.')
+    nestedWrapped: Logger | None = None
     chain: Handler | None = Field(None, description='A handler over two wrappers.')
     inlineChain: Logger | None = None
     twoSame: Logger | None = None

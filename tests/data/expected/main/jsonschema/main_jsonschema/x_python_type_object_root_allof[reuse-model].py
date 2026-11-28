@@ -41,6 +41,10 @@ class LoggerWrapped(RootModel[LoggerBase]):
     root: LoggerBase = Field(..., description='A logger.')
 
 
+class NestedWrapped(RootModel[LoggerBase]):
+    root: LoggerBase
+
+
 class HandlerBase(RootModel[Any]):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -64,15 +68,15 @@ class TwoSame(Property):
     pass
 
 
-class Closed(RootModel[LoggerBase]):
-    root: LoggerBase
-
-
-class Unevaluated(Closed):
+class Closed(NestedWrapped):
     pass
 
 
-class MinProperties(Closed):
+class Unevaluated(NestedWrapped):
+    pass
+
+
+class MinProperties(NestedWrapped):
     pass
 
 
@@ -80,7 +84,7 @@ class Titled(RootModel[LoggerBase]):
     root: LoggerBase = Field(..., title='Titled logger')
 
 
-class Typed(Closed):
+class Typed(NestedWrapped):
     pass
 
 
@@ -115,6 +119,7 @@ class Branches(RootModel[Branches1 | Branches2]):
 class Holder(BaseModel):
     inline: LoggerInline | None = None
     wrapped: LoggerWrapped | None = None
+    nestedWrapped: NestedWrapped | None = None
     chain: HandlerChain | None = None
     inlineChain: InlineChain | None = None
     twoSame: TwoSame | None = None

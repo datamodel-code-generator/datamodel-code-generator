@@ -56,6 +56,10 @@ class LoggerWrapped(RootModel[LoggerBase]):
     root: LoggerBase = Field(..., description='A logger.')
 
 
+class NestedWrapped(RootModel[LoggerBase]):
+    root: LoggerBase
+
+
 class HandlerBase(RootModel[Any]):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -133,6 +137,7 @@ class Branches(RootModel[Branches1 | Branches2]):
 class Holder(BaseModel):
     inline: LoggerInline | None
     wrapped: LoggerWrapped | None
+    nestedWrapped: NestedWrapped | None
     chain: HandlerChain | None
     inlineChain: InlineChain | None
     twoSame: TwoSame | None

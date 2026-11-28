@@ -14,6 +14,7 @@ class Holder(BaseModel):
     )
     inline: Logger | None = None
     wrapped: Annotated[Logger | None, Field(description='A logger.')] = None
+    nested_wrapped: Annotated[Logger | None, Field(alias='nestedWrapped')] = None
     chain: Annotated[
         Handler | None, Field(description='A handler over two wrappers.')
     ] = None

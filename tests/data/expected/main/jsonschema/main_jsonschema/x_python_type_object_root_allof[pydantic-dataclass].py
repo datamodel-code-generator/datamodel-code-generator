@@ -34,6 +34,9 @@ LoggerWrapped = TypeAliasType(
 )
 
 
+NestedWrapped = TypeAliasType("NestedWrapped", LoggerBase)
+
+
 HandlerBase = TypeAliasType("HandlerBase", Handler)
 
 
@@ -94,6 +97,7 @@ Branches = TypeAliasType("Branches", Branches1 | Branches2)
 class Holder:
     inline: LoggerInline | None = None
     wrapped: LoggerWrapped | None = None
+    nestedWrapped: NestedWrapped | None = None
     chain: HandlerChain | None = None
     inlineChain: InlineChain | None = None
     twoSame: TwoSame | None = None

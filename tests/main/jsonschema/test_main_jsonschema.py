@@ -29307,6 +29307,7 @@ def test_x_python_type_object_root_allof_holds_its_value(output_file: Path) -> N
     payload = {
         "inline": logger,
         "wrapped": logger,
+        "nestedWrapped": logger,
         "chain": handler,
         "inlineChain": logger,
         "closed": logger,

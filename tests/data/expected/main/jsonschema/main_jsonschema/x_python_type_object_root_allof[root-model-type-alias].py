@@ -55,6 +55,9 @@ class LoggerBase(RootModel[Any]):
 LoggerWrapped = RootModel[LoggerBase]
 
 
+NestedWrapped = RootModel[LoggerBase]
+
+
 class HandlerBase(RootModel[Any]):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -119,6 +122,7 @@ Branches = RootModel[Branches1 | Branches2]
 class Holder(BaseModel):
     inline: LoggerInline | None = None
     wrapped: LoggerWrapped | None = None
+    nestedWrapped: NestedWrapped | None = None
     chain: HandlerChain | None = None
     inlineChain: InlineChain | None = None
     twoSame: TwoSame | None = None

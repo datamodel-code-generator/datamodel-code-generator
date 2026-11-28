@@ -30,6 +30,9 @@ LoggerBase: TypeAlias = Logger
 LoggerWrapped: TypeAlias = Annotated[LoggerBase, Meta(description='A logger.')]
 
 
+NestedWrapped: TypeAlias = LoggerBase
+
+
 HandlerBase: TypeAlias = Handler
 
 
@@ -82,6 +85,7 @@ Branches: TypeAlias = Branches1 | Branches2
 class Holder(Struct):
     inline: LoggerInline | UnsetType = UNSET
     wrapped: LoggerWrapped | UnsetType = UNSET
+    nestedWrapped: NestedWrapped | UnsetType = UNSET
     chain: HandlerChain | UnsetType = UNSET
     inlineChain: InlineChain | UnsetType = UNSET
     twoSame: TwoSame | UnsetType = UNSET

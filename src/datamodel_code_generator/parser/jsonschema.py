@@ -3098,28 +3098,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         the one model of its Reference, is built from a schema of a loaded document (its ``SchemaLocation`` names the
         document the root is built in), takes the default base and no schema validators, and holds exactly one class:
         the overriding x-python-type of the schema or of its inline allOf members where they are typed ``object``, or
-        its one base, named by its one ``$ref`` member. Any other class is no candidate and stays as it is.
+        its one base, named by its one ``$ref`` member, directly or inside its inline allOf members. Any other class is
+        no candidate and stays as it is.
         """
         if model is None or model.fields or (location := obj.schema_location) is None:
             return
         if _has_opaque_custom_base(model, model.BASE_CLASS) or self._should_parse_object_with_schema_validators(obj):
             return
         typed: dict[PythonTypeExpr, JsonSchemaObject] = {}
+        refs: list[str] = []
         pending: list[JsonSchemaObject] = [obj]
         while pending:
             schema = pending.pop(0)
             if schema.type == "object" and (python_type := self._overriding_python_type(schema)) is not None:
                 typed.setdefault(python_type, schema)
-            pending.extend(
+            members = [
                 member
                 for member in (_inherited_schemas.all_of_members(self, schema) if schema.allOf else ())
-                if isinstance(member, JsonSchemaObject) and not member.ref
-            )
+                if isinstance(member, JsonSchemaObject)
+            ]
+            refs.extend(ref for member in members if (ref := member.ref))
+            pending.extend(member for member in members if not member.ref)
         if len(typed) + len(base_classes) != 1:
             return
         held: _HeldBase | _HeldType
         if base_classes:
-            refs = [ref for item in obj.allOf if isinstance(item, JsonSchemaObject) and (ref := item.ref)]
             if len(refs) != 1 or self._ref_path(refs[0]) != base_classes[0].path:
                 return
             held = _HeldBase(base_classes[0], refs[0])

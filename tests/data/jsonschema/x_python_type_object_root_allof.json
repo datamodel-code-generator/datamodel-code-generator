@@ -5,6 +5,7 @@
   "properties": {
     "inline": {"$ref": "#/$defs/LoggerInline"},
     "wrapped": {"$ref": "#/$defs/LoggerWrapped"},
+    "nestedWrapped": {"$ref": "#/$defs/NestedWrapped"},
     "chain": {"$ref": "#/$defs/HandlerChain"},
     "inlineChain": {"$ref": "#/$defs/InlineChain"},
     "twoSame": {"$ref": "#/$defs/TwoSame"},
@@ -28,6 +29,7 @@
     "LoggerInline": {"allOf": [{"type": "object", "x-python-type": "logging.Logger"}]},
     "LoggerBase": {"type": "object", "x-python-type": "logging.Logger"},
     "LoggerWrapped": {"allOf": [{"$ref": "#/$defs/LoggerBase"}], "description": "A logger."},
+    "NestedWrapped": {"allOf": [{"allOf": [{"$ref": "#/$defs/LoggerBase"}]}]},
     "HandlerBase": {"type": "object", "x-python-type": "logging.Handler"},
     "HandlerMiddle": {"allOf": [{"$ref": "#/$defs/HandlerBase"}]},
     "HandlerChain": {"allOf": [{"$ref": "#/$defs/HandlerMiddle"}], "description": "A handler over two wrappers."},

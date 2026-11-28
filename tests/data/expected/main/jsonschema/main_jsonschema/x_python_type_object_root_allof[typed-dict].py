@@ -30,6 +30,9 @@ LoggerBase: TypeAlias = Logger
 LoggerWrapped: TypeAlias = LoggerBase
 
 
+NestedWrapped: TypeAlias = LoggerBase
+
+
 HandlerBase: TypeAlias = Handler
 
 
@@ -75,6 +78,7 @@ Branches: TypeAlias = Branches1
 class Holder(TypedDict):
     inline: NotRequired[LoggerInline]
     wrapped: NotRequired[LoggerWrapped]
+    nestedWrapped: NotRequired[NestedWrapped]
     chain: NotRequired[HandlerChain]
     inlineChain: NotRequired[InlineChain]
     twoSame: NotRequired[TwoSame]
