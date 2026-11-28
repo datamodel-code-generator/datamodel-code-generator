@@ -2870,18 +2870,25 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ``write_rule_aliases_as_classes``). A model that keeps a root model class as its base and adds nothing to it
         (``keeps_root_model_base``) is one to Pydantic too, so a chain of such models is read through its bases. The
         readers that keep a root model out of a role only an object model takes, a base of a model Pydantic refuses as
-        its subclass or the user of a generated base class, read both forms.
+        its subclass or the user of a generated base class, read both forms. A chain that comes back to a model it
+        passed (an inheritance cycle) reaches no root model class.
         """
         if self._is_root_model(model):
             return "configured"
-        if model.IS_ROOT_MODEL or any(
-            _shared.keeps_root_model_base(model, reference)
-            and isinstance(base_model := reference.source, DataModel)
-            and self._root_model_form(base_model) == "class"
-            for base in model.base_classes
-            if (reference := base.reference) is not None
-        ):
-            return "class"
+        passed: set[int] = set()
+        while id(model) not in passed:
+            passed.add(id(model))
+            if model.IS_ROOT_MODEL:
+                return "class"
+            reference = next((base.reference for base in model.base_classes if base.reference is not None), None)
+            if (
+                reference is None
+                or not _shared.keeps_root_model_base(model, reference)
+                or not isinstance(base_model := reference.source, DataModel)
+                or self._is_root_model(base_model)
+            ):
+                return None
+            model = base_model
         return None
 
     def _reset_local_source_cache(self) -> None:
