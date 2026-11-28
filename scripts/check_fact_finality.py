@@ -1,16 +1,14 @@
-"""Check the pass declarations, and that the known finality violations still happen, so that ``KNOWN_WRITES`` shrinks.
+"""Check that the known finality violations still happen, so that ``KNOWN_WRITES`` shrinks.
 
-Every run checks ``PASS_DECLS`` in ``scripts/pass_decls.py``: names are unique, phases never go back in execution
-order, a repair names the change that removes it, and setup, check and bookkeeping passes write no fact (a check pass
-may write ``STDERR``, the warnings it emits). ``KNOWN_WRITES`` in
-``tests/checks/finality.py`` lists the violations of today's pipeline that
+``KNOWN_WRITES`` in ``tests/checks/finality.py`` lists the violations of today's pipeline that
 ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` reports but never raises. Each entry names a
-witness, the arguments of one ``datamodel-codegen`` run that makes it. ``--witnesses`` runs every witness with the check
+witness, the arguments of one ``datamodel-codegen`` run that makes it. The script runs every witness with the check
 reporting and lists the entries whose witness no longer makes their violation: the change that removed it removes the
-entry too.
+entry too. The pass declarations (``scripts/pass_decls.py``) refuse their own contradictions when they are built, so
+importing this script checks them.
 
 Usage:
-    python scripts/check_fact_finality.py [--witnesses]
+    python scripts/check_fact_finality.py
 """
 
 from __future__ import annotations
@@ -32,19 +30,12 @@ for path in (SRC, ROOT):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from scripts.fact_tables import RenderFact  # noqa: E402
-from scripts.pass_decls import PASS_DECLS, PassKind  # noqa: E402
 from tests.checks.finality import KNOWN_WRITES  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from scripts.pass_decls import PassDecl
     from tests.checks.finality import KnownWrite
-
-NO_WRITE_KINDS = frozenset({PassKind.SETUP, PassKind.CHECK, PassKind.BOOKKEEPING})
-CHECK_WRITES = frozenset({RenderFact.STDERR})
-"""What a check pass may write: the warnings it emits."""
 
 WITNESS_RUNNER = """\
 import json, os, shlex, sys
@@ -57,25 +48,6 @@ for witness, output, report in json.loads(sys.argv[1]):
         raise SystemExit(f"witness {witness!r} fails")
 """
 """Runs every witness in one interpreter, each with its own output and report file."""
-
-
-def declaration_problems(declarations: Iterable[PassDecl] = PASS_DECLS) -> list[str]:
-    """Return what is wrong with the pass declarations, in execution order."""
-    problems: list[str] = []
-    seen: set[str] = set()
-    previous = None
-    for decl in declarations:
-        if decl.name in seen:
-            problems.append(f"{decl.name} is declared twice")
-        seen.add(decl.name)
-        if previous is not None and decl.phase.value < previous.phase.value:
-            problems.append(f"{decl.name} runs in {decl.phase.name}, before {previous.name} in {previous.phase.name}")
-        previous = decl
-        if decl.kind is PassKind.REPAIR and not decl.removed_by:
-            problems.append(f"repair pass {decl.name} must name the change that removes it")
-        if decl.kind in NO_WRITE_KINDS and decl.writes - (CHECK_WRITES if decl.kind is PassKind.CHECK else frozenset()):
-            problems.append(f"{decl.kind.value} pass {decl.name} must not write facts")
-    return problems
 
 
 def witness_problems(known: Iterable[KnownWrite] = KNOWN_WRITES) -> list[str]:
@@ -121,9 +93,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="check_fact_finality.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--witnesses", action="store_true", help="also run the witness of every known violation")
-    args = parser.parse_args(argv)
-    problems = [*declaration_problems(), *(witness_problems() if args.witnesses else ())]
+    parser.parse_args(argv)
+    problems = witness_problems()
     for problem in problems:
         print(problem, file=sys.stderr)
     return 1 if problems else 0

@@ -2,8 +2,9 @@
 
 ``ATTRIBUTE_FACTS`` has one row per owner class and attribute, ``__dict__`` key, dict entry or cached property.
 ``scripts/check_generation_store_usage.py`` reads this module with ``ast`` (it never imports the package), so every
-row is a literal ``AttributeFact(...)`` call whose arguments are strings, tuples, ``None`` or members of the enums
-below and of ``Phase``, which the generation store enters and ``parser/_facts.py`` defines. Later readers: heki's
+row is a literal ``AttributeFact(...)`` call whose arguments are strings, tuples or members of the enums below and of
+``Phase``, which the generation store enters and ``parser/_facts.py`` defines. Building a row refuses a kind its facts
+contradict, so a bad row fails at import of this module. Later readers: heki's
 contracts (``scripts/build_heki_contracts.py``, among them the render facts no decision reads), the write guards of the
 finality check (which attributes to guard per class), the finality fingerprints (the ``fact`` rows) and the Fact
 Finality table of ``docs/architecture.md``.
@@ -28,16 +29,18 @@ Columns of a row:
   (``plans.flatten_base_layouts``, ``override_required_field``). The phase is shared, so ``apply_generic_base_class``,
   which declares the bases too, may also write these rows without a heki report; it writes none of them. These rows go
   back to ``MODULES`` once no output keeps that row.
-* ``frozen_at``: the latest freeze point among the row's facts (every ``Fact`` freezes at B1, every ``RenderFact`` at
-  its ``RENDER_FACT_FREEZE_POINTS`` entry; B1 for a row without facts), after which no pass may write the attribute
-  in the target pipeline. The finality checks still check each ``Fact`` at B1 unless a pass declares an exception.
-  ``None`` for caches and bookkeeping.
+* ``frozen_at``: not an argument, derived when the row is built: the latest freeze point among the row's facts (every
+  ``Fact`` freezes at B1, every ``RenderFact`` at its ``RENDER_FACT_FREEZE_POINTS`` entry; B1 for a row without facts),
+  after which no pass may write the attribute in the target pipeline. The finality checks still check each ``Fact`` at
+  B1 unless a pass declares an exception. ``None`` for caches and bookkeeping.
 * ``store_ops``: the ``GenerationStore`` operations allowed to write it (``scripts/build_heki_contracts.py`` makes them
   the writers of a heki contract); every other write is recorded in ``scripts/heki_baseline.toml`` until a later
   change routes it. Bookkeeping rows name none: holder edges are enforced separately.
 
-The checker enforces the kind rules: a fact row names a ``Fact``, a presentation row names only ``RenderFact``
-members, a cache row names no ``Fact``. Three exceptions are allowed: plan rows (``Parser`` snapshots that later
+The row enforces the kind rules when it is built: a fact row names a ``Fact``, a presentation row names only
+``RenderFact`` members, a cache row names no ``Fact``, a bookkeeping row names no facts and no store operations, and
+a row of one dict entry (``name["key"]``) has ``access=Access.ITEM`` and no other row does. Three exceptions are
+allowed: plan rows (``Parser`` snapshots that later
 passes read) are fact rows that name only ``RenderFact.PLANS``; rows holding rendered nullability (``is_optional``
 and the record of where a type's None comes from) name ``Fact.NULLABLE`` and freeze at B2: render preparation writes
 rendered nullability once, and only the null a msgspec field strips from its copied types is written at L7; the
@@ -61,12 +64,18 @@ may write.
 
 from __future__ import annotations
 
+import re
+from dataclasses import field
 from enum import Enum, unique
+from typing import TYPE_CHECKING, Final
 
 from typing_extensions import final
 
 from datamodel_code_generator._records import record  # noqa: PLC2701
 from datamodel_code_generator.parser._facts import Phase  # noqa: PLC2701
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 __all__ = [
     "ATTRIBUTE_FACTS",
@@ -87,6 +96,7 @@ __all__ = [
     "StoreMember",
     "freeze_point",
     "holds_render_facts",
+    "require_freeze_points",
 ]
 
 
@@ -198,19 +208,66 @@ RENDER_FACT_FREEZE_POINTS: dict[RenderFact, FreezePoint] = {
 """Where each render fact freezes: render preparation ends at B2; names, imports, quoting and module code at render."""
 
 
+def require_freeze_points(points: Mapping[RenderFact, FreezePoint]) -> None:
+    """Refuse a table that gives a render fact no freeze point: readers look up every member."""
+    if missing := sorted(member.name for member in set(RenderFact) - points.keys()):
+        msg = f"RENDER_FACT_FREEZE_POINTS misses {', '.join(missing)}"
+        raise ValueError(msg)
+
+
+require_freeze_points(RENDER_FACT_FREEZE_POINTS)
+
+_WRITE_KINDS: Final = frozenset({FactKind.FACT, FactKind.PRESENTATION})
+_PLAN_FACTS: Final = (RenderFact.PLANS,)
+_RENDERED_NULLABILITY: Final = (Fact.NULLABLE,)
+_ITEM_ATTRIBUTE: Final = re.compile(r'(\w+)\["([^"]+)"\]')
+
+
 @final
 @record
 class AttributeFact:
-    """One row of the attribute-to-fact table."""
+    """One row of the attribute-to-fact table; building a row refuses a kind its facts contradict."""
 
     owner: str
     attribute: str
     kind: FactKind
     facts: tuple[Fact | RenderFact, ...]
     final_after: Phase
-    frozen_at: FreezePoint | None
+    frozen_at: FreezePoint | None = field(init=False)
+    """Derived from ``kind``, ``facts`` and ``final_after``: the latest freeze point among the facts."""
     store_ops: tuple[str, ...] = ()
     access: Access = Access.ATTRIBUTE
+
+    def __post_init__(self) -> None:
+        """Refuse a row its kind, facts or access contradict, and derive ``frozen_at``."""
+        has_fact = any(isinstance(fact, Fact) for fact in self.facts)
+        problem = None
+        if self.kind is FactKind.BOOKKEEPING and (self.facts or self.store_ops):
+            problem = "bookkeeping rows name no facts and no store operations"
+        elif self.kind is FactKind.FACT and not has_fact and self.facts != _PLAN_FACTS:
+            problem = "fact rows name a Fact; only plan rows name RenderFact.PLANS alone"
+        elif self.kind is FactKind.PRESENTATION and has_fact and self.facts != _RENDERED_NULLABILITY:
+            problem = "presentation rows name RenderFacts; only rendered nullability names Fact.NULLABLE"
+        elif self.kind is FactKind.CACHE and has_fact:
+            problem = "cache rows name no Fact"
+        if problem is not None:
+            msg = f"row {self.owner}.{self.attribute}: {problem}"
+            raise ValueError(msg)
+        if (self.access is Access.ITEM) != (_ITEM_ATTRIBUTE.fullmatch(self.attribute) is not None):
+            msg = f'row {self.owner}.{self.attribute}: write a dict entry as name["key"] with access=Access.ITEM'
+            raise ValueError(msg)
+        object.__setattr__(self, "frozen_at", self._frozen_at())
+
+    def _frozen_at(self) -> FreezePoint | None:
+        """Return the latest freeze point among the facts; rendered nullability is written at B2."""
+        if self.kind not in _WRITE_KINDS:
+            return None
+        points = [
+            RENDER_FACT_FREEZE_POINTS[fact] if isinstance(fact, RenderFact) else FreezePoint.B1 for fact in self.facts
+        ] or [FreezePoint.B1]
+        if self.facts == _RENDERED_NULLABILITY and self.final_after in {Phase.RENDER_PREPARATION, Phase.RENDER}:
+            points.append(FreezePoint.B2)
+        return max(points, key=list(FreezePoint).index)
 
 
 ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
@@ -220,7 +277,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("set_type_expressions",),
     ),
     AttributeFact(
@@ -229,7 +285,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=(
             "collapse_root_data_type",
             "detach_data_type_ref",
@@ -245,7 +300,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES, RenderFact.TYPE_ALIAS_BODY),
         Phase.RENDER_PREPARATION,
-        FreezePoint.B2,
         store_ops=(
             "drop_union_member_constraints",
             "replace_nested_data_type",
@@ -260,17 +314,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("replace_nested_data_type",),
     ),
-    AttributeFact("DataType", "is_func", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataType", "is_func", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE),
     AttributeFact(
         "DataType",
         "kwargs",
         FactKind.FACT,
         (Fact.CONSTRAINTS, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("set_type_expressions",),
         access=Access.CONTAINER,
     ),
@@ -280,7 +332,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
         Phase.RENDER,
-        FreezePoint.RENDER,
         store_ops=("override_type_import", "set_type_expressions"),
     ),
     AttributeFact(
@@ -289,39 +340,34 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("set_type_expressions",),
     ),
-    AttributeFact("DataType", "python_version", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataType", "python_version", FactKind.PRESENTATION, (), Phase.PARSE),
     AttributeFact(
         "DataType",
         "is_optional",
         FactKind.FACT,
         (Fact.NULLABLE,),
         Phase.RENDER_PREPARATION,
-        FreezePoint.B2,
         store_ops=("drop_held_null", "write_rendered_null"),
     ),
-    AttributeFact("DataType", "is_dict", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
-    AttributeFact("DataType", "is_list", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
-    AttributeFact("DataType", "is_set", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
-    AttributeFact("DataType", "is_frozen_set", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
-    AttributeFact("DataType", "is_mapping", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
-    AttributeFact("DataType", "is_sequence", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
-    AttributeFact("DataType", "is_tuple", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1),
-    AttributeFact(
-        "DataType", "tuple_item_count", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE, FreezePoint.B1
-    ),
-    AttributeFact("DataType", "given_container", FactKind.FACT, (Fact.CONTAINERS,), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataType", "is_custom_type", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataType", "needs_arbitrary_types", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataType", "is_dict", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE),
+    AttributeFact("DataType", "is_list", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE),
+    AttributeFact("DataType", "is_set", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE),
+    AttributeFact("DataType", "is_frozen_set", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE),
+    AttributeFact("DataType", "is_mapping", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE),
+    AttributeFact("DataType", "is_sequence", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE),
+    AttributeFact("DataType", "is_tuple", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE),
+    AttributeFact("DataType", "tuple_item_count", FactKind.FACT, (Fact.CONTAINERS,), Phase.CROSS_MODULE),
+    AttributeFact("DataType", "given_container", FactKind.FACT, (Fact.CONTAINERS,), Phase.PARSE),
+    AttributeFact("DataType", "is_custom_type", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE),
+    AttributeFact("DataType", "needs_arbitrary_types", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE),
     AttributeFact(
         "DataType",
         "literals",
         FactKind.FACT,
         (Fact.FIELD_TYPES,),
         Phase.MODULES,
-        FreezePoint.B1,
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -330,7 +376,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("name_enum_member_literal_class",),
         access=Access.CONTAINER,
     ),
@@ -340,7 +385,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES,),
         Phase.MODULES,
-        FreezePoint.B1,
     ),
     AttributeFact(
         "DataType",
@@ -348,7 +392,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.QUOTING,),
         Phase.MODULES,
-        FreezePoint.RENDER,
         store_ops=("use_typing_generics",),
     ),
     AttributeFact(
@@ -357,27 +400,24 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.IMPORT_ALIASES,),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("name_enum_member",),
     ),
-    AttributeFact("DataType", "use_generic_container", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataType", "use_generic_container", FactKind.PRESENTATION, (), Phase.PARSE),
     AttributeFact(
         "DataType",
         "use_union_operator",
         FactKind.PRESENTATION,
         (RenderFact.QUOTING,),
         Phase.MODULES,
-        FreezePoint.RENDER,
         store_ops=("drop_union_operator",),
     ),
-    AttributeFact("DataType", "preserve_union_member_order", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataType", "preserve_union_member_order", FactKind.PRESENTATION, (), Phase.PARSE),
     AttributeFact(
         "DataType",
         "alias",
         FactKind.PRESENTATION,
         (RenderFact.IMPORT_ALIASES, RenderFact.QUOTING),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("name_reference",),
     ),
     AttributeFact(
@@ -386,19 +426,17 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.BOOKKEEPING,
         (),
         Phase.RENDER_PREPARATION,
-        None,
     ),
-    AttributeFact("DataType", "children", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.CONTAINER),
-    AttributeFact("DataType", "strict", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataType", "treat_dot_as_module", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataType", "use_serialize_as_any", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataType", "children", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.CONTAINER),
+    AttributeFact("DataType", "strict", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE),
+    AttributeFact("DataType", "treat_dot_as_module", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataType", "use_serialize_as_any", FactKind.PRESENTATION, (), Phase.PARSE),
     AttributeFact(
         "DataType",
         "discriminator",
         FactKind.FACT,
         (Fact.DISCRIMINATOR_TAGS,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("drop_field_discriminator", "set_type_discriminator"),
     ),
     AttributeFact(
@@ -407,7 +445,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.MODULE_IMPORTS,),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -416,7 +453,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.IMPORT_ALIASES,),
         Phase.MODULES,
-        FreezePoint.RENDER,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -425,7 +461,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.QUOTING,),
         Phase.MODULES,
-        FreezePoint.RENDER,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -434,7 +469,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES,),
         Phase.MODULES,
-        FreezePoint.B1,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -443,40 +477,31 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("record_site_constraints",),
         access=Access.DICT_KEY,
     ),
-    AttributeFact("DataType", "TYPE_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
-    AttributeFact(
-        "DataType", "BINARY_CONTENT_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
-    ),
-    AttributeFact("DataType", "_JSON_NUMBER_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
-    AttributeFact("DataType", "UNIQUE_ITEMS_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
-    AttributeFact(
-        "DataType", "_UNIQUE_ITEMS_SET_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
-    ),
-    AttributeFact(
-        "DataType", "_INLINED_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
-    ),
-    AttributeFact("DataType", "ENUM_LITERAL_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
+    AttributeFact("DataType", "TYPE_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
+    AttributeFact("DataType", "BINARY_CONTENT_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
+    AttributeFact("DataType", "_JSON_NUMBER_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
+    AttributeFact("DataType", "UNIQUE_ITEMS_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
+    AttributeFact("DataType", "_UNIQUE_ITEMS_SET_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, access=Access.DICT_KEY),
+    AttributeFact("DataType", "_INLINED_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, access=Access.DICT_KEY),
+    AttributeFact("DataType", "ENUM_LITERAL_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
     AttributeFact(
         "DataType",
         "_UNTYPED_VALUE_DATA_TYPE_KEY",
         FactKind.BOOKKEEPING,
         (),
         Phase.PARSE,
-        None,
         access=Access.DICT_KEY,
     ),
-    AttributeFact("DataType", "SUBTYPE_REF_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
+    AttributeFact("DataType", "SUBTYPE_REF_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
     AttributeFact(
         "DataType",
         "_TYPE_NULL_DATA_TYPE_KEY",
         FactKind.PRESENTATION,
         (Fact.NULLABLE,),
         Phase.RENDER,
-        FreezePoint.B2,
         store_ops=(
             "clear_target_null",
             "drop_held_null",
@@ -493,7 +518,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES,),
         Phase.PARSE,
-        FreezePoint.B1,
     ),
     AttributeFact(
         "_MetaAnnotatedType",
@@ -501,7 +525,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.PARSE,
-        FreezePoint.B1,
     ),
     AttributeFact(
         "_MetaType",
@@ -509,7 +532,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.PARSE,
-        FreezePoint.B1,
     ),
     AttributeFact(
         "DataModelFieldBase",
@@ -517,7 +539,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_NAMES,),
         Phase.CROSS_MODULE,
-        FreezePoint.B1,
         store_ops=("rename_field", "set_field_identity"),
     ),
     AttributeFact(
@@ -526,7 +547,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION),
         Phase.IMPORTS,
-        FreezePoint.B2,
         store_ops=("set_field_default", "set_field_runtime_default", "apply_literal_default", "omit_field_default"),
     ),
     AttributeFact(
@@ -535,7 +555,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.REQUIRED,),
         Phase.CROSS_MODULE,
-        FreezePoint.B1,
         store_ops=("require_field", "apply_literal_default"),
     ),
     AttributeFact(
@@ -544,7 +563,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_ALIASES,),
         Phase.CROSS_MODULE,
-        FreezePoint.B1,
         store_ops=("rename_field", "set_field_identity"),
     ),
     AttributeFact(
@@ -553,7 +571,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_ALIASES,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("set_field_identity",),
         access=Access.CONTAINER,
     ),
@@ -563,7 +580,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_ALIASES,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("set_field_identity",),
     ),
     AttributeFact(
@@ -572,7 +588,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_TYPES, RenderFact.TYPE_ALIAS_BODY),
         Phase.RENDER_PREPARATION,
-        FreezePoint.B2,
         store_ops=("apply_const", "replace_field_type", "swap_data_type"),
     ),
     AttributeFact(
@@ -581,17 +596,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("set_field_constraints",),
     ),
-    AttributeFact("DataModelFieldBase", "strip_default_none", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataModelFieldBase", "strip_default_none", FactKind.PRESENTATION, (), Phase.PARSE),
     AttributeFact(
         "DataModelFieldBase",
         "order_constructor_fields_by_written_defaults",
         FactKind.PRESENTATION,
         (),
         Phase.PARSE,
-        FreezePoint.B1,
     ),
     AttributeFact(
         "DataModelFieldBase",
@@ -599,7 +612,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.NULLABLE,),
         Phase.CROSS_MODULE,
-        FreezePoint.B1,
         store_ops=("apply_literal_default", "omit_field_default"),
     ),
     AttributeFact(
@@ -608,7 +620,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.BOOKKEEPING,
         (),
         Phase.MODULES,
-        None,
     ),
     AttributeFact(
         "DataModelFieldBase",
@@ -616,7 +627,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.METADATA, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("drop_field_discriminator", "drop_field_extra", "set_field_extra", "set_field_extras"),
         access=Access.CONTAINER,
     ),
@@ -626,7 +636,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.DISCRIMINATOR_TAGS,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("drop_field_discriminator", "set_field_extra"),
         access=Access.ITEM,
     ),
@@ -636,7 +645,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.DEFAULTS,),
         Phase.MODULES,
-        FreezePoint.B1,
         access=Access.ITEM,
     ),
     AttributeFact(
@@ -645,7 +653,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.REQUIRED,),
         Phase.MODULES,
-        FreezePoint.B1,
         access=Access.ITEM,
     ),
     AttributeFact(
@@ -654,7 +661,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_SET, Fact.DISCRIMINATOR_TAGS),
         Phase.CROSS_MODULE,
-        FreezePoint.B1,
         store_ops=("drop_field_extra", "set_field_extra"),
         access=Access.ITEM,
     ),
@@ -664,7 +670,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.IMPORT_ALIASES,),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("set_field_extra",),
         access=Access.ITEM,
     ),
@@ -674,7 +679,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.KEYWORD_ONLY,),
         Phase.MODULES,
-        FreezePoint.B2,
         access=Access.ITEM,
     ),
     AttributeFact(
@@ -683,7 +687,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.DEFAULT_VALIDATION,),
         Phase.MODULES,
-        FreezePoint.B2,
         access=Access.ITEM,
     ),
     AttributeFact(
@@ -692,53 +695,36 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.ASSIGNMENT_FORM,),
         Phase.MODULES,
-        FreezePoint.B2,
         store_ops=("write_field_call_in_annotated",),
     ),
-    AttributeFact("DataModelFieldBase", "use_serialize_as_any", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
-    AttributeFact(
-        "DataModelFieldBase", "has_default", FactKind.FACT, (Fact.DEFAULTS,), Phase.CROSS_MODULE, FreezePoint.B1
-    ),
-    AttributeFact(
-        "DataModelFieldBase", "use_field_description", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1
-    ),
-    AttributeFact(
-        "DataModelFieldBase", "use_field_description_example", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1
-    ),
-    AttributeFact(
-        "DataModelFieldBase", "use_inline_field_description", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1
-    ),
-    AttributeFact("DataModelFieldBase", "const", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.MODULES, FreezePoint.B1),
+    AttributeFact("DataModelFieldBase", "use_serialize_as_any", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataModelFieldBase", "has_default", FactKind.FACT, (Fact.DEFAULTS,), Phase.CROSS_MODULE),
+    AttributeFact("DataModelFieldBase", "use_field_description", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataModelFieldBase", "use_field_description_example", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataModelFieldBase", "use_inline_field_description", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataModelFieldBase", "const", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.MODULES),
     AttributeFact(
         "DataModelFieldBase",
         "original_name",
         FactKind.FACT,
         (Fact.FIELD_NAMES,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("set_field_identity",),
     ),
-    AttributeFact("DataModelFieldBase", "use_default_kwarg", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataModelFieldBase", "use_missing_sentinel", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
-    AttributeFact(
-        "DataModelFieldBase", "use_one_literal_as_default", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1
-    ),
-    AttributeFact(
-        "DataModelFieldBase", "target_python_version", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1
-    ),
-    AttributeFact(
-        "DataModelFieldBase", "type_has_null", FactKind.FACT, (Fact.NULLABLE,), Phase.MODULES, FreezePoint.B1
-    ),
-    AttributeFact("DataModelFieldBase", "read_only", FactKind.FACT, (Fact.METADATA,), Phase.MODULES, FreezePoint.B1),
-    AttributeFact("DataModelFieldBase", "write_only", FactKind.FACT, (Fact.METADATA,), Phase.MODULES, FreezePoint.B1),
-    AttributeFact("DataModelFieldBase", "use_frozen_field", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataModelFieldBase", "use_default_kwarg", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataModelFieldBase", "use_missing_sentinel", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataModelFieldBase", "use_one_literal_as_default", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataModelFieldBase", "target_python_version", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataModelFieldBase", "type_has_null", FactKind.FACT, (Fact.NULLABLE,), Phase.MODULES),
+    AttributeFact("DataModelFieldBase", "read_only", FactKind.FACT, (Fact.METADATA,), Phase.MODULES),
+    AttributeFact("DataModelFieldBase", "write_only", FactKind.FACT, (Fact.METADATA,), Phase.MODULES),
+    AttributeFact("DataModelFieldBase", "use_frozen_field", FactKind.PRESENTATION, (), Phase.PARSE),
     AttributeFact(
         "DataModelFieldBase",
         "use_serialization_alias",
         FactKind.PRESENTATION,
         (),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("set_field_identity",),
     ),
     AttributeFact(
@@ -747,7 +733,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (),
         Phase.PARSE,
-        FreezePoint.B1,
     ),
     AttributeFact(
         "DataModelFieldBase",
@@ -755,7 +740,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.REQUIRED,),
         Phase.CROSS_MODULE,
-        FreezePoint.B1,
         store_ops=("require_field",),
     ),
     AttributeFact(
@@ -764,7 +748,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.MODULES,
-        FreezePoint.B1,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -773,7 +756,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.MODULES,
-        FreezePoint.B1,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -782,7 +764,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.MODULES,
-        FreezePoint.B1,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -791,7 +772,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("set_field_constraints",),
         access=Access.DICT_KEY,
     ),
@@ -801,7 +781,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("set_field_constraints",),
         access=Access.DICT_KEY,
     ),
@@ -811,7 +790,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.MODULES,
-        FreezePoint.B1,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -820,7 +798,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.NULLABLE,),
         Phase.CROSS_MODULE,
-        FreezePoint.B1,
         store_ops=("record_nullable_without_default", "apply_literal_default"),
         access=Access.DICT_KEY,
     ),
@@ -830,7 +807,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.DEFAULTS,),
         Phase.CROSS_MODULE,
-        FreezePoint.B1,
         store_ops=("record_raw_schema_default",),
         access=Access.DICT_KEY,
     ),
@@ -840,7 +816,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.METADATA,),
         Phase.MODULES,
-        FreezePoint.B1,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -849,7 +824,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.FIELD_ALIASES,),
         Phase.MODULES,
-        FreezePoint.B1,
         store_ops=("record_alias_resolution_scope",),
         access=Access.DICT_KEY,
     ),
@@ -859,7 +833,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.MODULE_IMPORTS,),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -868,7 +841,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.HINT_BODY_TYPES,),
         Phase.RENDER_PREPARATION,
-        FreezePoint.B2,
         store_ops=("record_hint_body_types",),
         access=Access.DICT_KEY,
     ),
@@ -878,7 +850,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.FORCED_ASSIGNMENT,),
         Phase.MODULES,
-        FreezePoint.B2,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -887,7 +858,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.UNBOUND_FIELDS,),
         Phase.MODULES,
-        FreezePoint.RENDER,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -896,7 +866,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.BOOKKEEPING,
         (),
         Phase.MODULES,
-        None,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -905,7 +874,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.BOOKKEEPING,
         (),
         Phase.MODULES,
-        None,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -914,7 +882,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.BOOKKEEPING,
         (),
         Phase.MODULES,
-        None,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -923,7 +890,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.BOOKKEEPING,
         (),
         Phase.MODULES,
-        None,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -932,11 +898,10 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.BOOKKEEPING,
         (),
         Phase.MODULES,
-        None,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
-        "DataModelFieldBase", "FIELD_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
+        "DataModelFieldBase", "FIELD_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, access=Access.DICT_KEY
     ),
     AttributeFact(
         "DataModelFieldBase",
@@ -944,7 +909,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.BOOKKEEPING,
         (),
         Phase.PARSE,
-        None,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -953,32 +917,24 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.BOOKKEEPING,
         (),
         Phase.MODULES,
-        None,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
-        "ConstraintsBase", "has_constraints", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY
+        "ConstraintsBase", "has_constraints", FactKind.CACHE, (), Phase.RENDER, access=Access.CACHED_PROPERTY
     ),
     AttributeFact(
-        "ConstraintsBase", "_exclude_unset_dump", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY
+        "ConstraintsBase", "_exclude_unset_dump", FactKind.CACHE, (), Phase.RENDER, access=Access.CACHED_PROPERTY
     ),
-    AttributeFact(
-        "_RenderedDataModelField", "_field", FactKind.BOOKKEEPING, (), Phase.RENDER, None, access=Access.DICT_KEY
-    ),
-    AttributeFact(
-        "_RenderedDataModelField", "docstring", FactKind.CACHE, (), Phase.RENDER, None, access=Access.DICT_KEY
-    ),
-    AttributeFact("_RenderedDataModelField", "field", FactKind.CACHE, (), Phase.RENDER, None, access=Access.DICT_KEY),
-    AttributeFact(
-        "_RenderedDataModelField", "annotated", FactKind.CACHE, (), Phase.RENDER, None, access=Access.DICT_KEY
-    ),
+    AttributeFact("_RenderedDataModelField", "_field", FactKind.BOOKKEEPING, (), Phase.RENDER, access=Access.DICT_KEY),
+    AttributeFact("_RenderedDataModelField", "docstring", FactKind.CACHE, (), Phase.RENDER, access=Access.DICT_KEY),
+    AttributeFact("_RenderedDataModelField", "field", FactKind.CACHE, (), Phase.RENDER, access=Access.DICT_KEY),
+    AttributeFact("_RenderedDataModelField", "annotated", FactKind.CACHE, (), Phase.RENDER, access=Access.DICT_KEY),
     AttributeFact(
         "DataModel",
         "fields",
         FactKind.FACT,
         (Fact.FIELD_SET, RenderFact.FIELD_ORDER),
         Phase.RENDER_PREPARATION,
-        FreezePoint.B2,
         store_ops=(
             "append_field",
             "insert_field",
@@ -993,33 +949,26 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.FACT,
         (Fact.BASES,),
         Phase.CROSS_MODULE,
-        FreezePoint.B1,
         store_ops=("reset_base_classes", "set_base_classes"),
         access=Access.CONTAINER,
     ),
-    AttributeFact("DataModel", "reference", FactKind.BOOKKEEPING, (), Phase.MODULES, None),
+    AttributeFact("DataModel", "reference", FactKind.BOOKKEEPING, (), Phase.MODULES),
     AttributeFact(
         "DataModel",
         "class_name",
         FactKind.PRESENTATION,
         (RenderFact.CLASS_NAMES,),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("rename_model",),
     ),
-    AttributeFact(
-        "DataModel", "keyword_only", FactKind.PRESENTATION, (RenderFact.KEYWORD_ONLY,), Phase.PARSE, FreezePoint.B2
-    ),
-    AttributeFact(
-        "DataModel", "frozen", FactKind.PRESENTATION, (RenderFact.BACKEND_CONFIG,), Phase.PARSE, FreezePoint.B2
-    ),
+    AttributeFact("DataModel", "keyword_only", FactKind.PRESENTATION, (RenderFact.KEYWORD_ONLY,), Phase.PARSE),
+    AttributeFact("DataModel", "frozen", FactKind.PRESENTATION, (RenderFact.BACKEND_CONFIG,), Phase.PARSE),
     AttributeFact(
         "DataModel",
         "dataclass_arguments",
         FactKind.PRESENTATION,
         (RenderFact.BACKEND_CONFIG, RenderFact.KEYWORD_ONLY),
         Phase.PARSE,
-        FreezePoint.B2,
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -1028,7 +977,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.MODULE_CODE,),
         Phase.PARSE,
-        FreezePoint.RENDER,
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -1037,18 +985,16 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.MODULE_IMPORTS,),
         Phase.RENDER,
-        FreezePoint.RENDER,
         store_ops=("add_model_import",),
         access=Access.CONTAINER,
     ),
-    AttributeFact("DataModel", "custom_base_class", FactKind.FACT, (Fact.BASES,), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataModel", "custom_base_class", FactKind.FACT, (Fact.BASES,), Phase.PARSE),
     AttributeFact(
         "DataModel",
         "file_path",
         FactKind.PRESENTATION,
         (RenderFact.MODULE_MEMBERSHIP,),
         Phase.CROSS_MODULE,
-        FreezePoint.RENDER,
         store_ops=("rename_model", "update_model_reference"),
     ),
     AttributeFact(
@@ -1057,7 +1003,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.BACKEND_CONFIG,),
         Phase.RENDER,
-        FreezePoint.B2,
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -1066,7 +1011,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH),
         Phase.RENDER,
-        FreezePoint.RENDER,
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -1075,22 +1019,20 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.MODULE_CODE,),
         Phase.PARSE,
-        FreezePoint.RENDER,
         access=Access.CONTAINER,
     ),
-    AttributeFact("DataModel", "description", FactKind.FACT, (Fact.METADATA,), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataModel", "default", FactKind.FACT, (Fact.DEFAULTS,), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataModel", "_nullable", FactKind.FACT, (Fact.NULLABLE,), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataModel", "_custom_template_dir", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataModel", "_treat_dot_as_module", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataModel", "target_python_version", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataModel", "description", FactKind.FACT, (Fact.METADATA,), Phase.PARSE),
+    AttributeFact("DataModel", "default", FactKind.FACT, (Fact.DEFAULTS,), Phase.PARSE),
+    AttributeFact("DataModel", "_nullable", FactKind.FACT, (Fact.NULLABLE,), Phase.PARSE),
+    AttributeFact("DataModel", "_custom_template_dir", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataModel", "_treat_dot_as_module", FactKind.PRESENTATION, (), Phase.PARSE),
+    AttributeFact("DataModel", "target_python_version", FactKind.PRESENTATION, (), Phase.PARSE),
     AttributeFact(
         "DataModel",
         "_field_name_bindings",
         FactKind.PRESENTATION,
         (RenderFact.UNBOUND_FIELDS,),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
     ),
     AttributeFact(
         "DataModel",
@@ -1098,19 +1040,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.IMPORT_ALIASES,),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("bind_builtin_names",),
     ),
-    AttributeFact(
-        "DataModel", "discriminator_tag", FactKind.FACT, (Fact.DISCRIMINATOR_TAGS,), Phase.CROSS_MODULE, FreezePoint.B1
-    ),
+    AttributeFact("DataModel", "discriminator_tag", FactKind.FACT, (Fact.DISCRIMINATOR_TAGS,), Phase.CROSS_MODULE),
     AttributeFact(
         "DataModel",
         "serialized_as_any",
         FactKind.FACT,
         (Fact.FIELD_TYPES,),
         Phase.DECIDE,
-        FreezePoint.B1,
         store_ops=("mark_serialized_as_any",),
     ),
     AttributeFact(
@@ -1119,17 +1057,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.QUOTING,),
         Phase.MODULES,
-        FreezePoint.RENDER,
         store_ops=("mark_forward_references",),
     ),
-    AttributeFact("DataModel", "reused_reference", FactKind.FACT, (Fact.MODELS_EXIST,), Phase.MODULES, FreezePoint.B1),
+    AttributeFact("DataModel", "reused_reference", FactKind.FACT, (Fact.MODELS_EXIST,), Phase.MODULES),
     AttributeFact(
         "DataModel",
         "_PATH_PARTNER_KEY",
         FactKind.BOOKKEEPING,
         (),
         Phase.MODULES,
-        None,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -1138,7 +1074,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.DEFAULT_EXPRESSION,),
         Phase.IMPORTS,
-        FreezePoint.B2,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -1147,7 +1082,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.DEFAULT_EXPRESSION,),
         Phase.IMPORTS,
-        FreezePoint.B2,
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -1156,57 +1090,48 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.CACHE,
         (RenderFact.MODULE_CODE,),
         Phase.RENDER,
-        None,
         access=Access.DICT_KEY,
     ),
-    AttributeFact("DataModel", "path", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY),
+    AttributeFact("DataModel", "path", FactKind.CACHE, (), Phase.RENDER, access=Access.CACHED_PROPERTY),
     AttributeFact(
-        "DataModel", "_uses_custom_root_template", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY
+        "DataModel", "_uses_custom_root_template", FactKind.CACHE, (), Phase.RENDER, access=Access.CACHED_PROPERTY
     ),
     AttributeFact(
-        "TemplateBase", "template_file_path", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY
+        "TemplateBase", "template_file_path", FactKind.CACHE, (), Phase.RENDER, access=Access.CACHED_PROPERTY
     ),
-    AttributeFact("TemplateBase", "template", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY),
-    AttributeFact("DataClass", "_lookaround_regex_engine_checked", FactKind.CACHE, (), Phase.RENDER, None),
+    AttributeFact("TemplateBase", "template", FactKind.CACHE, (), Phase.RENDER, access=Access.CACHED_PROPERTY),
+    AttributeFact("DataClass", "_lookaround_regex_engine_checked", FactKind.CACHE, (), Phase.RENDER),
     AttributeFact(
         "RootModel",
         "_requires_literal_validation",
         FactKind.PRESENTATION,
         (RenderFact.MODULE_CODE,),
         Phase.PARSE,
-        FreezePoint.RENDER,
     ),
-    AttributeFact("RootModel", "_literal_values", FactKind.FACT, (Fact.CONSTRAINTS,), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("RootModel", "_literal_values", FactKind.FACT, (Fact.CONSTRAINTS,), Phase.PARSE),
     AttributeFact(
         "BaseModel",
         "_validator_bindings",
         FactKind.PRESENTATION,
         (RenderFact.MODULE_CODE,),
         Phase.PARSE,
-        FreezePoint.RENDER,
     ),
-    AttributeFact(
-        "TypedDict", "use_total_false_for_typed_dict", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1
-    ),
+    AttributeFact("TypedDict", "use_total_false_for_typed_dict", FactKind.PRESENTATION, (), Phase.PARSE),
     AttributeFact(
         "Reference",
         "path",
         FactKind.PRESENTATION,
         (RenderFact.MODULE_MEMBERSHIP,),
         Phase.CROSS_MODULE,
-        FreezePoint.RENDER,
         store_ops=("rename_model", "update_model_reference"),
     ),
-    AttributeFact(
-        "Reference", "original_name", FactKind.PRESENTATION, (RenderFact.CLASS_NAMES,), Phase.PARSE, FreezePoint.RENDER
-    ),
+    AttributeFact("Reference", "original_name", FactKind.PRESENTATION, (RenderFact.CLASS_NAMES,), Phase.PARSE),
     AttributeFact(
         "Reference",
         "name",
         FactKind.PRESENTATION,
         (RenderFact.CLASS_NAMES,),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("rename_model",),
     ),
     AttributeFact(
@@ -1215,56 +1140,41 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.CLASS_NAMES,),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("rename_model",),
     ),
-    AttributeFact("Reference", "loaded", FactKind.BOOKKEEPING, (), Phase.PARSE, None),
-    AttributeFact("Reference", "source", FactKind.BOOKKEEPING, (), Phase.MODULES, None),
-    AttributeFact("Reference", "children", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.CONTAINER),
+    AttributeFact("Reference", "loaded", FactKind.BOOKKEEPING, (), Phase.PARSE),
+    AttributeFact("Reference", "source", FactKind.BOOKKEEPING, (), Phase.MODULES),
+    AttributeFact("Reference", "children", FactKind.BOOKKEEPING, (), Phase.MODULES, access=Access.CONTAINER),
+    AttributeFact("Reference", "SCHEMA_LOCATION_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
     AttributeFact(
-        "Reference", "SCHEMA_LOCATION_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
+        "Reference", "SCHEMA_LOCATION_CONFLICT_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY
     ),
-    AttributeFact(
-        "Reference", "SCHEMA_LOCATION_CONFLICT_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
-    ),
-    AttributeFact(
-        "Reference", "_DERIVED_FROM_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
-    ),
-    AttributeFact("Reference", "NAME_REQUEST_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
-    AttributeFact(
-        "Reference", "FIELDLESS_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
-    ),
-    AttributeFact(
-        "Reference", "REF_BRANCH_SCHEMA_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
-    ),
-    AttributeFact(
-        "Reference", "ITEM_COUNTS_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
-    ),
-    AttributeFact(
-        "Reference", "SCHEMA_PATH_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
-    ),
-    AttributeFact("Reference", "BUILD_RECORD_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
+    AttributeFact("Reference", "_DERIVED_FROM_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
+    AttributeFact("Reference", "NAME_REQUEST_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
+    AttributeFact("Reference", "FIELDLESS_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
+    AttributeFact("Reference", "REF_BRANCH_SCHEMA_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
+    AttributeFact("Reference", "ITEM_COUNTS_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
+    AttributeFact("Reference", "SCHEMA_PATH_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, access=Access.DICT_KEY),
+    AttributeFact("Reference", "BUILD_RECORD_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, access=Access.DICT_KEY),
     AttributeFact(
         "Parser",
         "results",
         FactKind.FACT,
         (Fact.MODELS_EXIST, RenderFact.MODEL_ORDER),
         Phase.SETTLE,
-        FreezePoint.B2,
         store_ops=("register_model",),
         access=Access.CONTAINER,
     ),
-    AttributeFact("Parser", "_tag_plan", FactKind.FACT, (RenderFact.PLANS,), Phase.CROSS_MODULE, FreezePoint.B1),
-    AttributeFact("Parser", "_recursion_facts", FactKind.FACT, (RenderFact.PLANS,), Phase.MODULES, FreezePoint.B1),
-    AttributeFact("Parser", "_reuse_groups", FactKind.FACT, (RenderFact.PLANS,), Phase.SETTLE, FreezePoint.B1),
-    AttributeFact("Parser", "_naming_plan", FactKind.FACT, (RenderFact.PLANS,), Phase.SETTLE, FreezePoint.B1),
+    AttributeFact("Parser", "_tag_plan", FactKind.FACT, (RenderFact.PLANS,), Phase.CROSS_MODULE),
+    AttributeFact("Parser", "_recursion_facts", FactKind.FACT, (RenderFact.PLANS,), Phase.MODULES),
+    AttributeFact("Parser", "_reuse_groups", FactKind.FACT, (RenderFact.PLANS,), Phase.SETTLE),
+    AttributeFact("Parser", "_naming_plan", FactKind.FACT, (RenderFact.PLANS,), Phase.SETTLE),
     AttributeFact(
         "ModuleContext",
         "models",
         FactKind.PRESENTATION,
         (RenderFact.MODEL_ORDER, RenderFact.MODULE_MEMBERSHIP),
         Phase.IMPORTS,
-        FreezePoint.RENDER,
         store_ops=("set_module_models",),
         access=Access.CONTAINER,
     ),
@@ -1274,7 +1184,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (RenderFact.MODULE_IMPORTS,),
         Phase.RENDER,
-        FreezePoint.RENDER,
         access=Access.CONTAINER,
     ),
 )

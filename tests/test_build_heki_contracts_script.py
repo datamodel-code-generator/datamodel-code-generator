@@ -31,7 +31,6 @@ from scripts.fact_tables import (
     DecisionAccessor,
     Fact,
     FactKind,
-    FreezePoint,
     LedgerWriter,
     MemberUse,
     Phase,
@@ -445,8 +444,7 @@ def _layer_import_reports(tmp_path: Path, stubs: tuple[str, ...], places: dict[s
 def _key_row(owner: str, attribute: str, kind: FactKind, access: Access = Access.DICT_KEY) -> AttributeFact:
     """Return a row of `SEEDED_KEY_ROWS`: a fact or presentation row with its facts, else one with none."""
     facts = {FactKind.FACT: (Fact.FIELD_TYPES,), FactKind.PRESENTATION: (RenderFact.IMPORT_ALIASES,)}.get(kind, ())
-    frozen = {FactKind.FACT: FreezePoint.B1, FactKind.PRESENTATION: FreezePoint.RENDER}.get(kind)
-    return AttributeFact(owner, attribute, kind, facts, Phase.MODULES, frozen, access=access)
+    return AttributeFact(owner, attribute, kind, facts, Phase.MODULES, access=access)
 
 
 SEEDED_KEY_ROWS = [

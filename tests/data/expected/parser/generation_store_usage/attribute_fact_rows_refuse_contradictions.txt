@@ -1,0 +1,13 @@
+bookkeeping-facts: row DataType.parent: bookkeeping rows name no facts and no store operations
+bookkeeping-store-ops: row DataType.parent: bookkeeping rows name no facts and no store operations
+fact-without-fact: row DataType.type: fact rows name a Fact; only plan rows name RenderFact.PLANS alone
+fact-without-facts: row DataType.type: fact rows name a Fact; only plan rows name RenderFact.PLANS alone
+presentation-with-fact: row DataType.alias: presentation rows name RenderFacts; only rendered nullability names Fact.NULLABLE
+cache-with-fact: row DataType._MEMO: cache rows name no Fact
+item-without-key: row DataType.type: write a dict entry as name["key"] with access=Access.ITEM
+key-without-item: row DataType.extras["k"]: write a dict entry as name["key"] with access=Access.ITEM
+plan-row: built
+rendered-nullability-fact: built
+rendered-nullability-presentation: built
+cache-of-render-facts: built
+item: built

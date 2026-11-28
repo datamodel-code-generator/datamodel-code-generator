@@ -9,7 +9,9 @@ boundaries (``scripts/build_heki_contracts.py``) check the writes of the calls h
 presentation rows are declared from the code; ``after`` edges order the passes whose facts conflict
 (``scripts/check_pass_pipeline.py:check_order``). ``PASS_DECLS`` lists every declaration in execution order and is the
 source of the generated pass table in ``docs/architecture.md``; ``DECISION_DECLS`` declares the decisions of the
-decision registries (``parser/_phases.py``) by name.
+decision registries (``parser/_phases.py``) by name. Building a declaration refuses a repair without ``removed_by`` and
+a setup, check or bookkeeping pass that writes facts (a check may write ``STDERR``, the warnings it emits); building
+``PASS_DECLS`` refuses a name declared twice and a phase that goes back in execution order.
 
 The tables carry no label that only the checks read: ``BOUNDARY_BEFORE`` names the segments that enter a boundary and
 ``HOOK_BODIES`` the table that the default implementation of each hook runs.
@@ -57,6 +59,7 @@ __all__ = [
     "PassDecl",
     "PassKind",
     "Scope",
+    "in_execution_order",
 ]
 
 
@@ -93,6 +96,11 @@ class After(NamedTuple):
     reason: str
 
 
+_NO_WRITE_KINDS: Final = frozenset({PassKind.SETUP, PassKind.CHECK, PassKind.BOOKKEEPING})
+_CHECK_WRITES: Final = frozenset({RenderFact.STDERR})
+"""What a check pass may write: the warnings it emits."""
+
+
 @final
 @record
 class PassDecl:
@@ -117,6 +125,33 @@ class PassDecl:
     """The methods of the decision writer (``parser/_phases.py:_DecisionWriter``) a decision writes through, which no
     other module calls (heki's contracts, ``scripts/build_heki_contracts.py``, which every decision's ``module`` and
     writes are required for; a public method no decision names is the decision phase's)."""
+
+    def __post_init__(self) -> None:
+        """Refuse a repair without its removal, and a setup, check or bookkeeping pass that writes facts."""
+        if self.kind is PassKind.REPAIR and not self.removed_by:
+            msg = f"repair pass {self.name} must name the change that removes it"
+            raise ValueError(msg)
+        allowed = _CHECK_WRITES if self.kind is PassKind.CHECK else frozenset()
+        if self.kind in _NO_WRITE_KINDS and self.writes - allowed:
+            msg = f"{self.kind.value} pass {self.name} must not write facts"
+            raise ValueError(msg)
+
+
+def in_execution_order(*declarations: PassDecl) -> tuple[PassDecl, ...]:
+    """Return the declarations, refusing a name declared twice and a phase that goes back in execution order."""
+    problems: list[str] = []
+    seen: set[str] = set()
+    previous = None
+    for decl in declarations:
+        if decl.name in seen:
+            problems.append(f"{decl.name} is declared twice")
+        seen.add(decl.name)
+        if previous is not None and decl.phase.value < previous.phase.value:
+            problems.append(f"{decl.name} runs in {decl.phase.name}, before {previous.name} in {previous.phase.name}")
+        previous = decl
+    if problems:
+        raise ValueError("\n".join(problems))
+    return declarations
 
 
 def _facts(*members: Fact | RenderFact) -> frozenset[Fact | RenderFact]:
@@ -1997,7 +2032,7 @@ RENDER_MODULES = PassDecl(
     ),
 )
 
-PASS_DECLS: tuple[PassDecl, ...] = (
+PASS_DECLS: tuple[PassDecl, ...] = in_execution_order(
     REFRESH_CUSTOM_TEMPLATE_PATHS,
     SET_TYPED_EXTRA_ANNOTATION_MODE,
     PARSE_RAW,

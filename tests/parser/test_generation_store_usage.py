@@ -8,19 +8,33 @@ from __future__ import annotations
 import importlib.util
 import sys
 from collections import Counter
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
 from inline_snapshot import snapshot
 
+from scripts.fact_tables import (
+    ATTRIBUTE_FACTS,
+    RENDER_FACT_FREEZE_POINTS,
+    Access,
+    AttributeFact,
+    Fact,
+    FactKind,
+    FreezePoint,
+    Phase,
+    RenderFact,
+    require_freeze_points,
+)
 from tests.conftest import assert_output
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
     from types import ModuleType
 
 FACTS_TEMPLATE = """
+from dataclasses import field
 from enum import Enum
 
 
@@ -62,17 +76,14 @@ class AttributeFact:
     kind: FactKind
     facts: tuple
     final_after: Phase
-    frozen_at: FreezePoint | None
+    frozen_at: FreezePoint | None = field(init=False)
     store_ops: tuple = ()
     access: Access = Access.ATTRIBUTE
 
 
-RENDER_FACT_FREEZE_POINTS = {freeze}
-
 {table}
 """
-VALID_FREEZE = "{RenderFact.QUOTING: FreezePoint.B2, RenderFact.PLANS: FreezePoint.B1}"
-VALID_ROW = 'AttributeFact("DataType", "type", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1)'
+VALID_ROW = 'AttributeFact("DataType", "type", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE)'
 
 
 def _load_checker() -> ModuleType:
@@ -101,7 +112,7 @@ def test_generation_sources_match_the_table() -> None:
 def test_cli_reports_table_problems(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     """A row naming an attribute no class declares fails the command line run, which prints each problem."""
     checker = _load_checker()
-    row = checker.FactRow("DataModel", "never_declared", "CACHE", (), "PARSE", None, (), "ATTRIBUTE")
+    row = checker.FactRow("DataModel", "never_declared", (), "ATTRIBUTE")
     monkeypatch.setattr(checker, "ATTRIBUTE_FACTS", (*checker.ATTRIBUTE_FACTS, row))
 
     failing = checker.main([])
@@ -270,9 +281,12 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "Access": ("ATTRIBUTE", "CONTAINER", "ITEM", "DICT_KEY", "CACHED_PROPERTY"),
         "MemberUse": ("CALL", "READ", "WRITE"),
     })
-    assert Counter(row.kind for row in checker.ATTRIBUTE_FACTS) == snapshot(
+    assert Counter(row.kind.name for row in ATTRIBUTE_FACTS) == snapshot(
         Counter({"FACT": 76, "PRESENTATION": 61, "BOOKKEEPING": 35, "CACHE": 11})
     )
+    assert [(row.owner, row.attribute, row.store_ops, row.access.name) for row in ATTRIBUTE_FACTS] == [
+        (row.owner, row.attribute, row.store_ops, row.access) for row in checker.ATTRIBUTE_FACTS
+    ]
     assert sorted({row.owner for row in checker.ATTRIBUTE_FACTS}) == snapshot([
         "AnnotatedConstraintDataType",
         "BaseModel",
@@ -300,82 +314,39 @@ def test_fact_vocabulary_and_table_shape() -> None:
         pytest.param(f"ATTRIBUTE_FACTS = ({VALID_ROW},)", id="assigned"),
         pytest.param(
             "ATTRIBUTE_FACTS: tuple = (AttributeFact('Reference', 'name', FactKind.PRESENTATION, "
-            "(RenderFact.QUOTING,), Phase.PARSE, FreezePoint.B2, store_ops=('rename_model',)),)",
+            "(RenderFact.QUOTING,), Phase.PARSE, store_ops=('rename_model',)),)",
             id="annotated",
         ),
         pytest.param(
             "ATTRIBUTE_FACTS = ("
-            "AttributeFact('Parser', '_plans', FactKind.FACT, (RenderFact.PLANS,), Phase.PARSE, FreezePoint.B1), "
-            "AttributeFact('DataType', 'is_optional', FactKind.FACT, (Fact.NULLABLE,), Phase.RENDER, FreezePoint.B2), "
-            "AttributeFact('DataType', '_NULL', FactKind.PRESENTATION, (Fact.NULLABLE,), Phase.RENDER, "
-            "FreezePoint.B2), "
-            "AttributeFact('DataModel', '_PLAN', FactKind.CACHE, (RenderFact.QUOTING,), Phase.PARSE, None), "
-            "AttributeFact('DataType', 'flag', FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1))",
-            id="kind-exceptions",
+            "AttributeFact('DataModelFieldBase', 'extras[\"k\"]', FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, "
+            "access=Access.ITEM), "
+            "AttributeFact('DataType', 'flag', FactKind.PRESENTATION, (), Phase.PARSE, access=Access.ATTRIBUTE))",
+            id="access",
         ),
         pytest.param(f"ATTRIBUTE_FACTS = [{VALID_ROW}]", id="list"),
         pytest.param("OTHER = ()", id="missing"),
         pytest.param('ATTRIBUTE_FACTS = ("DataType",)', id="not-a-call"),
         pytest.param('ATTRIBUTE_FACTS = (AttributeFact("DataType", "type"),)', id="missing-fields"),
         pytest.param(
-            'ATTRIBUTE_FACTS = (AttributeFact("DataType", NAME, FactKind.FACT, (), Phase.PARSE, None),)',
+            'ATTRIBUTE_FACTS = (AttributeFact("DataType", NAME, FactKind.FACT, (), Phase.PARSE),)',
             id="not-literal",
         ),
         pytest.param(
-            'ATTRIBUTE_FACTS = (AttributeFact("DataType", "type", Phase.PARSE, (), Phase.PARSE, None),)',
+            'ATTRIBUTE_FACTS = (AttributeFact("DataType", "type", FactKind.FACT, (), Phase.PARSE, access=Phase.X),)',
             id="wrong-enum",
         ),
         pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact(None, 'type', FactKind.FACT, (), Phase.PARSE, None),)",
+            "ATTRIBUTE_FACTS = (AttributeFact(None, 'type', FactKind.FACT, (), Phase.PARSE),)",
             id="owner-none",
         ),
         pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'type', FactKind.FACT, 'facts', Phase.PARSE, None),)",
-            id="facts-string",
-        ),
-        pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'parent', FactKind.BOOKKEEPING, (Fact.FIELD_TYPES,), "
-            "Phase.PARSE, None),)",
-            id="bookkeeping-facts",
-        ),
-        pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'parent', FactKind.BOOKKEEPING, (), Phase.PARSE, None, "
-            "store_ops=('set_fields',)),)",
-            id="bookkeeping-store-ops",
-        ),
-        pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'type', FactKind.FACT, (RenderFact.QUOTING,), Phase.PARSE, "
-            "FreezePoint.B2),)",
-            id="fact-without-fact",
-        ),
-        pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'alias', FactKind.PRESENTATION, (Fact.FIELD_TYPES,), "
-            "Phase.PARSE, FreezePoint.B1),)",
-            id="presentation-with-fact",
-        ),
-        pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataType', '_MEMO', FactKind.CACHE, (Fact.FIELD_TYPES,), Phase.PARSE, "
-            "None),)",
-            id="cache-with-fact",
-        ),
-        pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'alias', FactKind.PRESENTATION, (RenderFact.QUOTING,), "
-            "Phase.PARSE, FreezePoint.B1),)",
-            id="frozen-too-early",
-        ),
-        pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataModelFieldBase', 'extras', FactKind.FACT, (Fact.FIELD_TYPES,), "
-            "Phase.PARSE, FreezePoint.B1, access=Access.ITEM),)",
-            id="item-without-key",
-        ),
-        pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataModelFieldBase', 'extras[\"k\"]', FactKind.FACT, "
-            "(Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1),)",
-            id="key-without-item",
+            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'type', FactKind.FACT, (), Phase.PARSE, store_ops='set'),)",
+            id="store-ops-string",
         ),
         pytest.param(
             "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'type', FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, "
-            "FreezePoint.B1, store_ops=('write_directly',)),)",
+            "store_ops=('write_directly',)),)",
             id="unknown-store-op",
         ),
         pytest.param(f"ATTRIBUTE_FACTS = ({VALID_ROW}, {VALID_ROW})", id="duplicate"),
@@ -385,7 +356,7 @@ def test_attribute_facts_rows_are_validated(tmp_path: Path, table: str) -> None:
     """The checker reads only literal rows and rejects contradictory ones."""
     checker = _load_checker()
     facts_module = tmp_path / "_facts.py"
-    facts_module.write_text(FACTS_TEMPLATE.format(table=table, freeze=VALID_FREEZE))
+    facts_module.write_text(FACTS_TEMPLATE.format(table=table))
 
     try:
         outcome = repr(checker.load_attribute_facts(facts_module))
@@ -395,34 +366,91 @@ def test_attribute_facts_rows_are_validated(tmp_path: Path, table: str) -> None:
     assert_output(f"{outcome}\n")
 
 
-@pytest.mark.parametrize(
-    "freeze",
-    [
-        pytest.param("[]", id="not-a-dict"),
-        pytest.param("{RenderFact.QUOTING: FreezePoint.B2}", id="missing-entry"),
-        pytest.param("{Fact.FIELD_TYPES: FreezePoint.B1, RenderFact.PLANS: FreezePoint.B1}", id="fact-key"),
-        pytest.param("{RenderFact.QUOTING: None, RenderFact.PLANS: FreezePoint.B1}", id="no-freeze-point"),
-        pytest.param("{**OTHER, RenderFact.PLANS: FreezePoint.B1}", id="unpacked"),
-    ],
-)
-def test_render_fact_freeze_points_are_validated(tmp_path: Path, freeze: str, request: pytest.FixtureRequest) -> None:
-    """Every render fact needs a literal freeze point, from which the rows' ``frozen_at`` follows."""
-    checker = _load_checker()
-    facts_module = tmp_path / "_facts.py"
-    facts_module.write_text(FACTS_TEMPLATE.format(table=f"ATTRIBUTE_FACTS = ({VALID_ROW},)", freeze=freeze))
+def _refusal(build: Callable[[], object]) -> str:
+    """Return the message of the error a build raises, or say it built."""
+    try:
+        build()
+    except ValueError as error:
+        return str(error)
+    return "built"
 
-    with pytest.raises((TypeError, ValueError)) as error:
-        checker.load_attribute_facts(facts_module)
 
-    assert (
-        f"{type(error.value).__name__}: {error.value}"
-        == snapshot({
-            "not-a-dict": "TypeError: RENDER_FACT_FREEZE_POINTS must be a literal dict",
-            "missing-entry": "ValueError: RENDER_FACT_FREEZE_POINTS misses PLANS",
-            "fact-key": "TypeError: RENDER_FACT_FREEZE_POINTS maps RenderFact members to FreezePoint members",
-            "no-freeze-point": "TypeError: RENDER_FACT_FREEZE_POINTS maps RenderFact members to FreezePoint members",
-            "unpacked": "TypeError: RENDER_FACT_FREEZE_POINTS maps RenderFact members to FreezePoint members",
-        })[request.node.callspec.id]
+def test_attribute_fact_rows_refuse_contradictions() -> None:
+    """A row its kind, facts or access contradict is refused when it is built."""
+    row = partial(AttributeFact, "DataType", "type", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE)
+    builds = {
+        "bookkeeping-facts": partial(
+            AttributeFact, "DataType", "parent", FactKind.BOOKKEEPING, (Fact.FIELD_TYPES,), Phase.PARSE
+        ),
+        "bookkeeping-store-ops": partial(
+            AttributeFact, "DataType", "parent", FactKind.BOOKKEEPING, (), Phase.PARSE, store_ops=("set_fields",)
+        ),
+        "fact-without-fact": partial(
+            AttributeFact, "DataType", "type", FactKind.FACT, (RenderFact.QUOTING,), Phase.PARSE
+        ),
+        "fact-without-facts": partial(AttributeFact, "DataType", "type", FactKind.FACT, (), Phase.PARSE),
+        "presentation-with-fact": partial(
+            AttributeFact, "DataType", "alias", FactKind.PRESENTATION, (Fact.FIELD_TYPES,), Phase.PARSE
+        ),
+        "cache-with-fact": partial(
+            AttributeFact, "DataType", "_MEMO", FactKind.CACHE, (Fact.FIELD_TYPES,), Phase.PARSE
+        ),
+        "item-without-key": partial(row, access=Access.ITEM),
+        "key-without-item": partial(
+            AttributeFact, "DataType", 'extras["k"]', FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE
+        ),
+        "plan-row": partial(AttributeFact, "Parser", "_plans", FactKind.FACT, (RenderFact.PLANS,), Phase.PARSE),
+        "rendered-nullability-fact": partial(
+            AttributeFact, "DataType", "is_optional", FactKind.FACT, (Fact.NULLABLE,), Phase.RENDER
+        ),
+        "rendered-nullability-presentation": partial(
+            AttributeFact, "DataType", "_NULL", FactKind.PRESENTATION, (Fact.NULLABLE,), Phase.RENDER
+        ),
+        "cache-of-render-facts": partial(
+            AttributeFact, "DataModel", "_PLAN", FactKind.CACHE, (RenderFact.QUOTING,), Phase.PARSE
+        ),
+        "item": partial(
+            AttributeFact,
+            "DataType",
+            'extras["k"]',
+            FactKind.FACT,
+            (Fact.FIELD_TYPES,),
+            Phase.PARSE,
+            access=Access.ITEM,
+        ),
+    }
+
+    assert_output("".join(f"{name}: {_refusal(build)}\n" for name, build in builds.items()))
+
+
+def test_attribute_fact_derives_its_freeze_point() -> None:
+    """A row freezes at the latest freeze point among its facts; caches and bookkeeping never freeze."""
+    cases = {
+        "fact": (FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE),
+        "no-facts": (FactKind.PRESENTATION, (), Phase.PARSE),
+        "mixed": (FactKind.FACT, (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES), Phase.IMPORTS),
+        "render": (FactKind.PRESENTATION, (RenderFact.KEYWORD_ONLY, RenderFact.CLASS_NAMES), Phase.PARSE),
+        "plans": (FactKind.FACT, (RenderFact.PLANS,), Phase.SETTLE),
+        "nullability-early": (FactKind.FACT, (Fact.NULLABLE,), Phase.PARSE),
+        "nullability-b2": (FactKind.FACT, (Fact.NULLABLE,), Phase.RENDER_PREPARATION),
+        "nullability-render": (FactKind.PRESENTATION, (Fact.NULLABLE,), Phase.RENDER),
+        "cache": (FactKind.CACHE, (), Phase.RENDER),
+        "bookkeeping": (FactKind.BOOKKEEPING, (), Phase.PARSE),
+    }
+
+    assert_output(
+        "".join(
+            f"{name}: {AttributeFact('Owner', 'attribute', kind, facts, final_after).frozen_at}\n"
+            for name, (kind, facts, final_after) in cases.items()
+        )
+    )
+
+
+def test_every_render_fact_needs_a_freeze_point() -> None:
+    """A table without a freeze point for each render fact is refused; the real table has all."""
+    assert_output(
+        f"{_refusal(lambda: require_freeze_points({RenderFact.QUOTING: FreezePoint.B2}))}\n"
+        f"{_refusal(lambda: require_freeze_points(RENDER_FACT_FREEZE_POINTS))}\n"
     )
 
 
@@ -496,7 +524,7 @@ class Derived(Base):
     )
 
     def row(owner: str, attribute: str, access: str = "ATTRIBUTE") -> object:
-        return checker.FactRow(owner, attribute, "FACT", (), "PARSE", None, (), access)
+        return checker.FactRow(owner, attribute, (), access)
 
     rows = (
         row("DataModel", "covered"),

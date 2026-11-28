@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -19,7 +20,7 @@ from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model import get_data_model_types
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.types import DataType
-from scripts import check_fact_finality, check_pass_pipeline
+from scripts import check_fact_finality, check_pass_pipeline, pass_decls
 from tests.checks.areas import CheckFailure
 from tests.conftest import (
     CHECK_FACT_FINALITY_ENV,
@@ -292,22 +293,34 @@ def test_fact_finality_reports_known_violations_without_raising(
 
 @pytest.mark.allow_direct_assert("a soundness gate fails on its own, never through a stored output a fix run accepts")
 def test_known_violations_are_made_by_their_witnesses(capsys: pytest.CaptureFixture[str]) -> None:
-    """The declarations are sound and every known violation is still made by its witness, so the list only shrinks."""
+    """Every known violation is still made by its witness, so the list only shrinks."""
     assert check_fact_finality.main([]) == 0, capsys.readouterr().err
-    assert check_fact_finality.main(["--witnesses"]) == 0, capsys.readouterr().err
 
 
-def test_declaration_problems_report_unsound_declarations() -> None:
-    """A repeated name, a phase that goes back, a repair without its removal and a check that writes are reported."""
-    first, *_, last = check_fact_finality.PASS_DECLS
-    problems = check_fact_finality.declaration_problems([
-        last,
-        first,
-        replace(first, kind=check_fact_finality.PassKind.REPAIR),
-        replace(last, name="checking", kind=check_fact_finality.PassKind.CHECK),
-    ])
+def test_pass_declarations_refuse_contradictions() -> None:
+    """A repeated name, a phase that goes back, a repair without removal and a quiet pass that writes are refused."""
+    first, *_, last = pass_decls.PASS_DECLS
+    kinds = pass_decls.PassKind
+    builds: list[Callable[[], object]] = [
+        partial(pass_decls.in_execution_order, last, first, first),
+        partial(replace, first, kind=kinds.REPAIR),
+        partial(replace, last, name="setting_up", kind=kinds.SETUP),
+        partial(replace, last, name="checking", kind=kinds.CHECK),
+        partial(replace, last, name="keeping", kind=kinds.BOOKKEEPING),
+        partial(replace, last, name="warning", kind=kinds.CHECK, writes=frozenset({pass_decls.RenderFact.STDERR})),
+        partial(replace, first, kind=kinds.REPAIR, removed_by="a change"),
+    ]
 
-    assert_output("".join(f"{problem}\n" for problem in problems))
+    assert_output("".join(f"{_refusal(build)}\n" for build in builds))
+
+
+def _refusal(build: Callable[[], object]) -> str:
+    """Return the message of the error a build raises, or say it built."""
+    try:
+        build()
+    except ValueError as error:
+        return str(error)
+    return "built"
 
 
 def test_witness_problems_report_stale_entries_and_broken_witnesses() -> None:

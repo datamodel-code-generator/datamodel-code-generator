@@ -426,7 +426,7 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         _ORDER_PLAN,
     ),
 )
-"""The violations of today's pipeline; ``scripts/check_fact_finality.py --witnesses`` runs their witnesses.
+"""The violations of today's pipeline; ``scripts/check_fact_finality.py`` runs their witnesses.
 
 A module pass writes models of other modules: the discriminator pass writes the tags of variants (the tag plan step
 plans them first), reuse redirects the users of removed duplicates (the step that keeps moved nulls changes its

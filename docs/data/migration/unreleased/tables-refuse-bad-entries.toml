@@ -1,0 +1,22 @@
+[[change]]
+id = "tables-refuse-bad-entries"
+category = "harness"
+title = "Refuse bad pass and fact table entries when the tables are built"
+summary = "The pass and fact tables refuse contradictory entries at construction; the generated output and the public API are unchanged."
+covers = [
+    "parser/fact_finality/declaration_problems_report_unsound_declarations.txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[annotated].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[assigned].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[bookkeeping-facts].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[bookkeeping-store-ops].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[cache-with-fact].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[fact-without-fact].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[facts-string].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[frozen-too-early].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[item-without-key].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[key-without-item].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[kind-exceptions].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[missing-fields].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[presentation-with-fact].txt",
+    "parser/generation_store_usage/attribute_facts_rows_are_validated[wrong-enum].txt",
+]

@@ -833,11 +833,11 @@ runs of `main`, the schedule and manual runs keep every area on in every shard. 
 measure performance outside pytest with the variables unset as well.
 
 `FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `tests/checks/finality.py` does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
-`datamodel-codegen` arguments of one run that makes it. `python scripts/check_fact_finality.py --witnesses` (and the
+`datamodel-codegen` arguments of one run that makes it. `python scripts/check_fact_finality.py` (and the
 test suite) run the witnesses and fail for an entry whose witness no longer makes its violation: remove the entry. The
 list only shrinks. A new pass is declared in `scripts/pass_decls.py` and gets an entry, by name, in the pipeline
-tables of `Parser`; the check runs it inside the scope of that declaration (`tests/checks/parse.py:run_pass`), the same
-script checks the declarations, `scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
+tables of `Parser`; the check runs it inside the scope of that declaration (`tests/checks/parse.py:run_pass`), building
+the declarations refuses a contradiction in them, `scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
 made a write its pass does not declare. heki checks the same declarations statically, only for the calls it resolves:
 the `pass:<name>` boundaries of `scripts/heki.toml`, which `scripts/build_heki_contracts.py` builds from the
 declarations and the fact tables, report a write of a row whose facts the pass does not declare, or after they are

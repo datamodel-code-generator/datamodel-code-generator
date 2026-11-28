@@ -1,0 +1,1 @@
+(FactRow(owner='DataModelFieldBase', attribute='extras["k"]', store_ops=(), access='ITEM'), FactRow(owner='DataType', attribute='flag', store_ops=(), access='ATTRIBUTE'))
