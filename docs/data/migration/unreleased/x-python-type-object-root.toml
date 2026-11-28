@@ -101,6 +101,13 @@ input = [
     "tests/data/jsonschema/x_python_type_object_root_external",
     "tests/data/jsonschema/x_python_type_object_root_external/main.json",
     "tests/data/jsonschema/x_python_type_object_root_external/other.json",
+]
+backends = "*"
+options = "*"
+aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "type"]
+
+[[change.cells]]
+input = [
     "tests/data/jsonschema/x_python_type_object_root_two_directory",
     "tests/data/jsonschema/x_python_type_object_root_two_directory/a.json",
     "tests/data/jsonschema/x_python_type_object_root_two_directory/b.json",
