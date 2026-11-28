@@ -4,9 +4,11 @@ The checker reads Python through ``scripts/_source_model.py``, so it never impor
 the store mutation API
 (``GENERATION_STORE_MUTATION_METHODS``, the names of ``SITE_EFFECTS`` and ``NO_SITE_EFFECT`` in
 ``parser/generation.py``) and the attribute-to-fact table (``ATTRIBUTE_FACTS`` in ``scripts/fact_tables.py``, whose rows
-name the ``Phase`` members of ``parser/_facts.py``). It reports a row whose kind, facts, freeze point or store
-operations contradict each other, an attribute a model-graph class declares without a row, and an attribute or cached
-property row that names nothing the classes declare: heki can judge a write only of an attribute some row names.
+name the ``Phase`` members of ``parser/_facts.py``). It reports a row that names a store operation the store does not
+have, an attribute a model-graph class declares without a row, and an attribute or cached property row that names
+nothing the classes declare: heki can judge a write only of an attribute some row names. A row whose kind, facts or
+access contradict each other is refused when ``scripts/fact_tables.py`` builds it, and its freeze point is derived
+there.
 
 heki checks the writes themselves: ``scripts/build_heki_contracts.py`` turns the rows into the ``write-owners``
 contracts of ``scripts/heki.toml``, and ``scripts/heki_baseline.toml`` records the writes outside store operations that
@@ -55,17 +57,7 @@ PARSER_STATE_OWNERS = frozenset({"ModuleContext", "Parser"})
 GRAPH_ROOT_CLASSES = frozenset({"DataModel", "DataModelFieldBase", "DataType", "Reference"})
 PACKAGE = "datamodel_code_generator"
 
-ROW_ENUMS = {
-    "kind": frozenset({"FactKind"}),
-    "facts": frozenset({"Fact", "RenderFact"}),
-    "final_after": frozenset({"Phase"}),
-    "frozen_at": frozenset({"FreezePoint"}),
-    "access": frozenset({"Access"}),
-}
-WRITE_KINDS = frozenset({"FACT", "PRESENTATION"})
-FREEZE_ORDER = ("B1", "B2", "RENDER")
-PLAN_FACTS = ("RenderFact.PLANS",)
-RENDERED_NULLABILITY = ("Fact.NULLABLE",)
+ROW_ENUMS = {"access": frozenset({"Access"})}
 ITEM_ATTRIBUTE = re.compile(r'(\w+)\["([^"]+)"\]')
 
 
@@ -146,14 +138,13 @@ def _ensure_generation_store_api(method_name: str) -> str:
 
 @dataclass(frozen=True)
 class FactRow:
-    """One ``ATTRIBUTE_FACTS`` row; enum values keep their member names."""
+    """What the checker reads of one ``ATTRIBUTE_FACTS`` row; an enum value keeps its member name.
+
+    The row refuses its own contradictions when ``scripts/fact_tables.py`` builds it.
+    """
 
     owner: str
     attribute: str
-    kind: str
-    facts: tuple[str, ...]
-    final_after: str
-    frozen_at: str | None
     store_ops: tuple[str, ...]
     access: str
 
@@ -182,11 +173,21 @@ def _enum_members(model: SourceModule) -> dict[str, tuple[str, ...]]:
     }
 
 
+def _not_an_argument(value: ast.expr | None) -> bool:
+    """Return whether a field's default is ``field(init=False)``: the row derives it, a call does not pass it."""
+    return isinstance(value, ast.Call) and any(
+        keyword.arg == "init" and isinstance(keyword.value, ast.Constant) and keyword.value.value is False
+        for keyword in value.keywords
+    )
+
+
 def _row_fields(model: SourceModule) -> tuple[list[str], dict[str, ast.expr]]:
     for scope in _module_classes(model):
         if scope.code_name == "AttributeFact":
             fields = [
-                binding for binding in model.bindings(scope=scope) if binding.kind in {"annassign", "annotation-only"}
+                binding
+                for binding in model.bindings(scope=scope)
+                if binding.kind in {"annassign", "annotation-only"} and not _not_an_argument(binding.value)
             ]
             return [binding.name for binding in fields], {
                 binding.name: binding.value for binding in fields if binding.value is not None
@@ -227,68 +228,13 @@ def _member(value: str) -> str:
     return value.partition(".")[2]
 
 
-def _load_freeze_points(model: SourceModule, enums: dict[str, tuple[str, ...]]) -> dict[str, str]:
-    if not isinstance(table := _module_value(model, "RENDER_FACT_FREEZE_POINTS"), ast.Dict):
-        msg = "RENDER_FACT_FREEZE_POINTS must be a literal dict"
-        raise TypeError(msg)
-    points: dict[str, str] = {}
-    for key, value in zip(table.keys, table.values, strict=True):
-        fact = _row_value(model, key, "facts", enums) if key is not None else None
-        point = _row_value(model, value, "frozen_at", enums) if isinstance(fact, str) else None
-        if not (isinstance(fact, str) and fact.startswith("RenderFact.") and isinstance(point, str)):
-            msg = "RENDER_FACT_FREEZE_POINTS maps RenderFact members to FreezePoint members"
-            raise TypeError(msg)
-        points[_member(fact)] = _member(point)
-    if missing := sorted(set(enums.get("RenderFact", ())) - points.keys()):
-        msg = f"RENDER_FACT_FREEZE_POINTS misses {', '.join(missing)}"
-        raise ValueError(msg)
-    return points
-
-
-def _expected_frozen_at(row: FactRow, freeze_points: dict[str, str]) -> str | None:
-    """Return the latest freeze point among the row's facts; rendered nullability is written at B2."""
-    if row.kind not in WRITE_KINDS:
-        return None
-    points = [freeze_points[_member(fact)] if fact.startswith("RenderFact.") else "B1" for fact in row.facts] or ["B1"]
-    if row.facts == RENDERED_NULLABILITY and row.final_after in {"RENDER_PREPARATION", "RENDER"}:
-        points.append("B2")
-    return max(points, key=FREEZE_ORDER.index)
-
-
-def _row_problem(row: FactRow, freeze_points: dict[str, str]) -> str | None:
-    enums = {fact.partition(".")[0] for fact in row.facts}
-    problem = None
-    if row.kind == "BOOKKEEPING" and (row.facts or row.store_ops):
-        problem = "bookkeeping rows name no facts and no store operations"
-    elif row.kind == "FACT" and "Fact" not in enums and row.facts != PLAN_FACTS:
-        problem = "fact rows name a Fact; only plan rows name RenderFact.PLANS alone"
-    elif row.kind == "PRESENTATION" and "Fact" in enums and row.facts != RENDERED_NULLABILITY:
-        problem = "presentation rows name RenderFacts; only rendered nullability names Fact.NULLABLE"
-    elif row.kind == "CACHE" and "Fact" in enums:
-        problem = "cache rows name no Fact"
-    elif row.frozen_at != (expected := _expected_frozen_at(row, freeze_points)):
-        problem = f"frozen_at must be {expected}, the latest freeze point among its facts"
-    return problem
-
-
-def _make_row(values: dict[str, object], freeze_points: dict[str, str]) -> FactRow:
-    frozen_at = values["frozen_at"]
+def _make_row(values: dict[str, object]) -> FactRow:
     row = FactRow(
         owner=_string(values["owner"], "owner"),
         attribute=_string(values["attribute"], "attribute"),
-        kind=_member(_string(values["kind"], "kind")),
-        facts=_strings(values["facts"], "facts"),
-        final_after=_member(_string(values["final_after"], "final_after")),
-        frozen_at=None if frozen_at is None else _member(_string(frozen_at, "frozen_at")),
         store_ops=_strings(values["store_ops"], "store_ops"),
         access=_member(_string(values["access"], "access")),
     )
-    if problem := _row_problem(row, freeze_points):
-        msg = f"row {row.owner}.{row.attribute}: {problem}"
-        raise ValueError(msg)
-    if (row.access == "ITEM") != (row.item is not None):
-        msg = f'row {row.owner}.{row.attribute}: write a dict entry as name["key"] with access=Access.ITEM'
-        raise ValueError(msg)
     for store_op in row.store_ops:
         _ensure_generation_store_api(store_op)
     return row
@@ -309,7 +255,6 @@ def load_attribute_facts(path: Path | None = None) -> tuple[FactRow, ...]:
     model = read_model(path or ROOT / FACTS_MODULE)
     enums = _vocabulary(model)
     names, defaults = _row_fields(model)
-    freeze_points = _load_freeze_points(model, enums)
     if not isinstance(table := _module_value(model, "ATTRIBUTE_FACTS"), ast.Tuple):
         msg = "ATTRIBUTE_FACTS must be a literal tuple"
         raise TypeError(msg)
@@ -326,10 +271,10 @@ def load_attribute_facts(path: Path | None = None) -> tuple[FactRow, ...]:
         if missing := [name for name in names if name not in arguments and name not in defaults]:
             msg = f"ATTRIBUTE_FACTS row {ast.unparse(entry)} misses {', '.join(missing)}"
             raise TypeError(msg)
-        row = _make_row(
-            {name: _row_value(model, arguments.get(name) or defaults[name], name, enums) for name in names},
-            freeze_points,
-        )
+        row = _make_row({
+            name: _row_value(model, arguments.get(name) or defaults[name], name, enums)
+            for name in ("owner", "attribute", "store_ops", "access")
+        })
         if (row.owner, row.attribute) in seen:
             msg = f"ATTRIBUTE_FACTS has two rows for {row.owner}.{row.attribute}"
             raise ValueError(msg)

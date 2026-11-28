@@ -1,0 +1,1 @@
+TypeError: ATTRIBUTE_FACTS field 'store_ops' must be a tuple

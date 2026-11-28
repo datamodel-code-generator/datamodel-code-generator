@@ -1,1 +1,0 @@
-TypeError: ATTRIBUTE_FACTS field 'facts' must be a tuple

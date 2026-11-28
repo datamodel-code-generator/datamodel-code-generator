@@ -1,0 +1,10 @@
+fact: FreezePoint.B1
+no-facts: FreezePoint.B1
+mixed: FreezePoint.RENDER
+render: FreezePoint.RENDER
+plans: FreezePoint.B1
+nullability-early: FreezePoint.B1
+nullability-b2: FreezePoint.B2
+nullability-render: FreezePoint.B2
+cache: None
+bookkeeping: None

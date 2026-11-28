@@ -750,9 +750,10 @@ once per output module over that module's models), kind (`transform`, `plan`, `r
 `bookkeeping`), the `Fact` and `RenderFact` members of `scripts/fact_tables.py` it reads and writes, explicit order
 edges (`after`), the change that removes a repair (`removed_by`) and the phase it moves to (`target`). The package
 holds no declaration: only the checks read them, and they join a declaration to its pass by name.
-`scripts/check_fact_finality.py` (run by the test suite) checks that names are unique, phases never go back in
-execution order, a repair names what removes it, and setup, check and bookkeeping passes write no fact (a check pass
-may write the pseudo-fact `STDERR`, the warnings it emits, so that two passes that warn are ordered).
+`scripts/pass_decls.py` refuses a contradiction when it builds the declarations: a name declared twice, a phase that
+goes back in execution order, a repair without what removes it, and a setup, check or bookkeeping pass that writes a
+fact (a check pass may write the pseudo-fact `STDERR`, the warnings it emits, so that two passes that warn are
+ordered).
 
 `Parser.parse()` runs the passes from the tables of `parser/_passes/_tables.py` (`PIPELINE`, with the bodies
 `STRUCTURE_BODY`, `MODULE_BODY` and `FINALIZE_SEGMENTS` of the overridable hooks `_build_module_structure`,
@@ -1179,7 +1180,7 @@ fields at B2 (`ordering-input`): render preparation of a later module must not c
 ordering read. `KNOWN_WRITES` in
 `tests/checks/finality.py` lists the violations of today's pipeline, each with the roadmap item that removes it and a
 witness, the `datamodel-codegen` arguments of one run that makes it; they are reported with `report:<path>` and never
-raise. `python scripts/check_fact_finality.py --witnesses` (and the test suite) run the witnesses and report the entries
+raise. `python scripts/check_fact_finality.py` (and the test suite) run the witnesses and report the entries
 whose witness no longer makes them, so the list only shrinks. Presentation rows, parser state, module imports and
 computed rows (a property of the model class) are not fingerprinted, and only type aliases hold `TYPE_ALIAS_BODY` in
 their rows. A row is judged by the freeze points of the facts the pass declares, so a pass that declares only
