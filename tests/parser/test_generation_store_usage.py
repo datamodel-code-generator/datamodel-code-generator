@@ -194,6 +194,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "replace_field_type",
             "replace_model",
             "replace_nested_data_type",
+            "replace_parsed_model",
             "require_field",
             "reset_base_classes",
             "restore_required_inherited_field",

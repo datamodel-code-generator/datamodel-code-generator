@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "$defs": {"Thing": {"x-python-import": {"module": "logging", "name": "Logger"}}, "Crate": {"type": "object", "x-python-type": "Thing"}, "Other": {"type": "object", "properties": {"box": {"$ref": "a.json#/$defs/Box"}, "crate": {"$ref": "#/$defs/Crate"}}}}}

@@ -1549,9 +1549,12 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             "`_bases_keep_instance_field` (the instance fields the document names like the tag property, which under "
             "an inheritance cycle include the struct's own, where `_inherited_tag_fields` leaves them out); and a "
             "parser method through which the client and server targets ask the tags of a variant after the last pass "
-            "(`tags_of_variant` with the reading of the finished `TagPlan`), which waits for its first caller"
+            "(`tags_of_variant` with the reading of the finished `TagPlan`), which waits for its first caller; and "
+            "`parser/jsonschema.py:JsonSchemaParser._settle_python_type_roots`, which reads the union sites of the "
+            "finished parse through `iter_union_sites` to leave the variants a union names as classes"
         ),
         sites=(
+            Home("parser/jsonschema.py", "JsonSchemaParser._settle_python_type_roots"),
             Home("parser/_passes/structure.py", "snapshot_union_tags"),
             Home("parser/_passes/plans.py", "reset_per_run_state"),
             Home("parser/_passes/plans.py", "flatten_conflicting_base_layouts"),
@@ -1916,6 +1919,28 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
             Home("parser/avro.py"),
             Home("parser/graphql.py"),
             Home("parser/_rw_split.py"),
+        ),
+    ),
+    DecisionHome(
+        decision=(
+            "whether a model keeps the keys it does not declare (`extra='allow'`), forbids or ignores them: read from "
+            "the template data of the model (`DataModel.extra_template_data`, where the parser stored what the "
+            "schema's `additionalProperties` and `unevaluatedProperties` say), where `extra_fields` and "
+            "`allow_extra_fields` come before the schema's keywords"
+        ),
+        homes=(
+            Home("model/_decisions/extra_keys.py", "get_config_extra"),
+            Home("model/_decisions/extra_keys.py", "keeps_extra_keys"),
+        ),
+        core="`model/_decisions/extra_keys.py`: `get_config_extra`, `keeps_extra_keys`",
+        adapters=(
+            "`model/pydantic_v2/_config.py:build_base_config_parameters` (the `extra` of the config, from the data of "
+            "the model); `parser/jsonschema.py:JsonSchemaParser._settle_python_type_roots` (the same data, to leave a "
+            "model that keeps keys as the model it is)"
+        ),
+        sites=(
+            Home("model/pydantic_v2/_config.py", "build_base_config_parameters"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._settle_python_type_roots"),
         ),
     ),
     DecisionHome(
@@ -7872,7 +7897,8 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         adapters=(
             "`x-python-type` that the schema type does not take "
             "(`parser/jsonschema.py:JsonSchemaParser._get_python_type_override`, a union of any spelling under "
-            "`--use-x-python-type-as-written`), an `x-python-import` that names a runtime symbol "
+            "`--use-x-python-type-as-written`; `JsonSchemaParser._settle_python_type_roots` builds it as the root of a "
+            "definition that holds nothing else), an `x-python-import` that names a runtime symbol "
             "(`JsonSchemaParser.get_ref_data_type`) and a `--type-overrides` annotation (brackets, a union, or a bare "
             "builtin or registry name), which every parser applies (`parser/_type_overrides.py:override_annotation`, "
             "optional where the field it replaces is); not this rule: the import aliases a bound type takes later "
@@ -7881,6 +7907,7 @@ DECISION_HOMES: Final[tuple[DecisionHome, ...]] = (
         ),
         sites=(
             Home("parser/jsonschema.py", "JsonSchemaParser._get_python_type_override"),
+            Home("parser/jsonschema.py", "JsonSchemaParser._settle_python_type_roots"),
             Home("parser/jsonschema.py", "JsonSchemaParser.get_ref_data_type"),
             Home("parser/_type_overrides.py", "override_annotation"),
             Home("parser/_passes/_import_aliases.py", "_alias_data_type_structured_imports"),

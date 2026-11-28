@@ -10,6 +10,7 @@ import importlib.util
 import inspect
 import itertools
 import json
+import logging
 import operator
 import os
 import re
@@ -29008,6 +29009,221 @@ def test_x_python_type_no_schema_type(output_file: Path) -> None:
         input_file_type=None,
         extra_args=["--output-model-type", "typing.TypedDict"],
     )
+
+
+_HELD_BASE = "tests.data.python.input_model.structured_annotations.Base"
+_BUILTIN_FORMATTERS = ["--formatters", "builtin"]  # isort places a ``tests`` import by its environment
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+        pytest.param(["--preset", "standard-py314-20261125"], id="preset"),
+        pytest.param(["--preset", "standard-py314-20261127"], id="preset-20261127"),
+        pytest.param(["--use-root-model-type-alias"], id="root-model-type-alias"),
+        pytest.param(["--use-type-alias"], id="type-alias"),
+        pytest.param(["--use-x-python-type-as-written"], id="as-written"),
+        pytest.param(["--reuse-model"], id="reuse-model"),
+        pytest.param(["--generate-schema-validators"], id="schema-validators"),
+        pytest.param(["--extra-fields", "allow"], id="extra-fields-allow"),
+        pytest.param(["--extra-fields", "forbid"], id="extra-fields-forbid"),
+        pytest.param(["--extra-fields", "ignore"], id="extra-fields-ignore"),
+        pytest.param(["--allow-extra-fields"], id="allow-extra-fields"),
+        pytest.param(["--base-class", _HELD_BASE, *_BUILTIN_FORMATTERS], id="base-class"),
+        pytest.param(["--base-class", "pydantic.BaseModel"], id="base-class-default"),
+        pytest.param(
+            ["--base-class-map", json.dumps({"Plain": _HELD_BASE}), *_BUILTIN_FORMATTERS], id="base-class-map"
+        ),
+        pytest.param(
+            ["--base-class-map", json.dumps({"Holder": _HELD_BASE}), *_BUILTIN_FORMATTERS], id="base-class-map-holder"
+        ),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="pydantic-dataclass"),
+        pytest.param(["--output-model-type", "dataclasses.dataclass"], id="dataclass"),
+        pytest.param(["--output-model-type", "typing.TypedDict"], id="typed-dict"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+        pytest.param(["--use-schema-description"], id="schema-description"),
+        pytest.param(
+            ["--use-schema-description", "--output-model-type", "typing.TypedDict"], id="schema-description-typed-dict"
+        ),
+    ],
+)
+def test_x_python_type_object_root(extra_args: list[str], output_file: Path) -> None:
+    """Write an object that holds nothing and names an x-python-type as a root of that type (#7581).
+
+    A definition of type object without properties, a dict root or kept keys was an empty model. It is the root of its
+    class now, as a field of the same schema takes the class (owner exception to the default rule, 2026-11-27), and
+    keeps the docstring of the class (``--use-schema-description``). An object with properties, size keywords, typed
+    values, a type that fits ``object``, a type list, no type, kept keys (``additionalProperties: true``,
+    ``--extra-fields allow``, ``--allow-extra-fields``) or a configured base other than the default (``--base-class``,
+    ``--base-class-map``) is written as before, and a reference to a changed definition stays a reference.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root.json",
+        output_path=output_file,
+        input_file_type=None,
+        extra_args=extra_args,
+    )
+
+
+@pytest.mark.allow_direct_assert("the generated model's values are the payload facts under test")
+def test_x_python_type_object_root_holds_its_value(output_file: Path) -> None:
+    """Hold an instance of the class in the root of a fieldless object, which an empty model dropped (#7581)."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root.json",
+        output_path=output_file,
+        input_file_type=None,
+    )
+    logger = logging.getLogger("x_python_type_object_root")
+    with _generated_model(output_file, "_generated_x_python_type_object_root", "Holder") as holder:
+        parsed = holder.model_validate({"plain": logger, "alias": logger, "plainList": [logger]})
+        assert parsed.model_dump(exclude_none=True) == {"plain": logger, "alias": logger, "plainList": [logger]}
+        with pytest.raises(ValidationError):
+            holder.model_validate({"plain": {}})
+
+
+@pytest.mark.parametrize(
+    "template_data",
+    [
+        pytest.param({"Plain": {"extra_fields": "allow"}}, id="name-key-allow"),
+        pytest.param({"#/$defs/Plain": {"extra_fields": "allow"}}, id="path-key-allow"),
+        pytest.param({"#all#": {"extra_fields": "allow"}}, id="all-models-allow"),
+        pytest.param({"Plain": {"extra_fields": "forbid"}}, id="name-key-forbid"),
+    ],
+)
+def test_x_python_type_object_root_template_data(
+    template_data: dict[str, dict[str, str]], output_file: Path, tmp_path: Path
+) -> None:
+    """Keep the keys of an empty object where --extra-template-data allows them, however it names it (#7581).
+
+    The decision reads the template data of the built model, which the entries of its schema path, its name and
+    ``#all#`` make, so an entry allowing extra keys keeps ``Plain`` an empty model that allows them; the same entry
+    forbidding them leaves the root.
+    """
+    extra_template_data = tmp_path / "extra-template-data.json"
+    extra_template_data.write_text(json.dumps(template_data), encoding="utf-8")
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root.json",
+        output_path=output_file,
+        input_file_type=None,
+        extra_args=["--extra-template-data", str(extra_template_data)],
+    )
+
+
+@pytest.mark.parametrize(
+    ("schema", "extra_args"),
+    [
+        pytest.param("x_python_type_object_root_allof_wrapper.json", [], id="allof_wrapper_of_held_class"),
+        pytest.param(
+            "x_python_type_object_root_allof_wrapper.json",
+            ["--output-model-type", "msgspec.Struct"],
+            id="allof_wrapper_of_held_class-msgspec",
+        ),
+        pytest.param(
+            "x_python_type_object_root_allof_wrapper.json",
+            ["--output-model-type", "dataclasses.dataclass"],
+            id="allof_wrapper_of_held_class-dataclass",
+        ),
+        pytest.param("x_python_type_object_root_external/main.json", [], id="allof_wrapper_of_class_in_other_file"),
+        pytest.param("x_python_type_object_root_equal.json", [], id="two-equal-classes"),
+        pytest.param("x_python_type_object_root_equal.json", ["--reuse-model"], id="two-equal-classes-reuse"),
+        pytest.param(
+            "x_python_type_object_root_equal.json",
+            ["--reuse-model", "--output-model-type", "dataclasses.dataclass"],
+            id="two-equal-classes-reuse-dataclass",
+        ),
+        pytest.param("x_python_type_object_root_custom_base.json", _BUILTIN_FORMATTERS, id="custom-base-path"),
+    ],
+)
+def test_x_python_type_object_root_shapes(schema: str, extra_args: list[str], output_file: Path) -> None:
+    """Keep a fieldless python-type class that a model derives from, and write the others as roots (#7581).
+
+    A class some allOf extends or wraps (``Child``, ``Wrapped``, ``Both``, in this file or another) stays the class
+    main writes, and so does one an allOf builds (``AllOfInline``) or one with a custom base (``customBasePath``).
+    Two equal classes are both roots, and ``--reuse-model`` makes the second a reuse of the first.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / schema,
+        output_path=output_file,
+        input_file_type=None,
+        extra_args=extra_args,
+    )
+
+
+@pytest.mark.allow_direct_assert("the generated modules' classes and values are the payload facts under test")
+def test_x_python_type_object_root_directory(output_dir: Path) -> None:
+    """Keep a root in the module of its class when the file with the class is not the file parsed last (#7581).
+
+    ``a.json`` holds ``Lone`` (a root of ``logging.Handler``) and ``Plain`` (the base of ``Child``, so a class);
+    ``z.json`` is parsed after it and refers to both. Only ``Lone`` changes from main's output: it stays in ``a.py``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root_directory",
+        output_path=output_dir,
+        input_file_type=None,
+    )
+    handler = logging.Handler()
+    with _generated_package_module(output_dir, "a") as a_module, _generated_package_module(output_dir, "z") as z_module:
+        assert not hasattr(z_module, "Lone")
+        assert a_module.Lone(handler).root is handler
+        assert not hasattr(a_module.Plain, "root")
+        parsed = z_module.Z.model_validate({"l": handler, "u": handler, "c": {"x": 1}})
+        assert (parsed.l.root, parsed.u.root, parsed.c.x) == (handler, handler, 1)
+        assert z_module.Z.model_validate({"u": 3}).u == 3
+        with pytest.raises(ValidationError):
+            z_module.Z.model_validate({"l": {}})
+
+
+@pytest.mark.allow_direct_assert("the generated modules' classes and values are the payload facts under test")
+def test_x_python_type_object_root_same_name_directory(output_dir: Path) -> None:
+    """Keep two roots of the same name in the modules of their own files (#7581).
+
+    ``a.json`` and ``b.json`` each define ``Lone`` as a root of a different class, and ``z.json`` refers to both.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root_two_directory",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+    )
+    handler, logger = logging.Handler(), logging.getLogger("x_python_type_object_root_two")
+    with (
+        _generated_package_module(output_dir, "a") as a_module,
+        _generated_package_module(output_dir, "b") as b_module,
+        _generated_package_module(output_dir, "z") as z_module,
+    ):
+        assert not hasattr(z_module, "Lone")
+        assert a_module.Lone(handler).root is handler
+        assert b_module.Lone(logger).root is logger
+        parsed = z_module.Z.model_validate({"a": handler, "b": logger})
+        assert (parsed.a.root, parsed.b.root) == (handler, logger)
+        with pytest.raises(ValidationError):
+            z_module.Z.model_validate({"a": logger, "b": handler})
+
+
+@pytest.mark.allow_direct_assert("the generated modules' classes and values are the payload facts under test")
+def test_x_python_type_object_root_import_directory(output_dir: Path) -> None:
+    """Bind the x-python-type of a root in the file of its class, which is not the file parsed last (#7581).
+
+    ``a.json`` and ``b.json`` each define ``Thing`` by an ``x-python-import`` of another class, and each holds a root
+    of ``Thing``: ``Box`` in ``a.json`` takes the ``Thing`` of ``a.json``, ``Crate`` in ``b.json`` the one of
+    ``b.json``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_object_root_import_directory",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+    )
+    handler, logger = logging.Handler(), logging.getLogger("x_python_type_object_root_import")
+    with _generated_package_module(output_dir, "a") as a_module, _generated_package_module(output_dir, "b") as b_module:
+        assert a_module.Box(handler).root is handler
+        assert b_module.Crate(logger).root is logger
+        parsed = b_module.Other.model_validate({"box": handler, "crate": logger})
+        assert (parsed.box.root, parsed.crate.root) == (handler, logger)
+        with pytest.raises(ValidationError):
+            a_module.Box(logger)
+        with pytest.raises(ValidationError):
+            b_module.Other.model_validate({"box": logger})
 
 
 def test_x_python_type_custom_fqpath(output_file: Path) -> None:

@@ -3701,6 +3701,8 @@ class GenerationStore
     def register_model(self, model: DataModel) -> None
     def retire_model(self, model: DataModel) -> None
     def replace_model(self, model: DataModel, replacement: DataModel) -> None
+    @contextmanager
+    def replace_parsed_model(self, model: DataModel) -> Generator[list[DataModel], None, None]
     @staticmethod
     def set_module_models(models: list[DataModel], members: Iterable[DataModel]) -> None
     def model_key(self, reference: Reference) -> ModelKey
@@ -3869,6 +3871,7 @@ class GraphBuilder
     def name_additional_properties_classes(self, model: DataModel, data_type: DataType, reference_classes: set[str]) -> None
     def replace_field_type(self, field_: DataModelFieldBase, new_data_type: DataType, *, refresh: Refresh='now') -> None
     def replace_model(self, model: DataModel, replacement: DataModel) -> None
+    def replace_parsed_model(self, model: DataModel) -> AbstractContextManager[list[DataModel]]
     def replace_nested_data_type(self, parent_data_type: DataType, old_data_type: DataType, new_data_type: DataType) -> None
     def require_field(self, field_: DataModelFieldBase, *, use_default_with_required: bool) -> None
     def reset_base_classes(self, model: DataModel) -> None
@@ -3918,7 +3921,7 @@ class ModelRename
     new_class_name: str
     scheme: RenameScheme | None
     reference_name: str
-NO_SITE_EFFECT: frozenset[str] = frozenset(<set of 52>)
+NO_SITE_EFFECT: frozenset[str] = frozenset(<set of 53>)
 OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
     uses _OrderedSetItem = TypeVar('_OrderedSetItem')
 OwnerModels = typing.Any

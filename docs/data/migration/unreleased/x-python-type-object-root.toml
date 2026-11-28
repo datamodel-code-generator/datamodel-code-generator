@@ -1,0 +1,176 @@
+[[change]]
+id = "x-python-type-object-root"
+category = "default-fix"
+title = "A definition that only holds an x-python-type class is a root of that class"
+summary = "An object definition that declares no property, no map and no validator, keeps no unknown keys and names an x-python-type class that does not fit an object (--input-model writes this for a plain class, an InstanceOf class or a class that builds its own schema) was written as an empty model that held nothing and accepted any object. It is now the root of that class under the same name, as a field of the same schema already took the class: a Pydantic RootModel[Any] with root: <class> and arbitrary_types_allowed=True, or a type alias of the class in dataclass, TypedDict and msgspec output. Inline OpenAPI request and response bodies follow the same rule. A definition stays a model where a model extends it, a union names it as a variant or by a discriminator mapping, it keeps unknown keys (additionalProperties: true, unevaluatedProperties, --extra-fields allow, --allow-extra-fields or an --extra-template-data entry) or it has a custom base class. The empty model held no value, but some working output changes. Under --collapse-root-models and the dated presets the former empty class name is inlined into its holders like any root model. Under --strip-default-none together with --use-default-factory-for-optional-nested-models, a field that holds a converted definition is required, as a field that holds any root model already is on main, because the converted root has no default factory. The owner decided this exception to the default rule on 2026-11-27 (the empty model, and the working output that changes with it) and approved the required fields and the vanished numbered class names on 2026-11-28. A numbered name such as Plain2 that the former empty class held under the collapse presets is gone with it."
+refs = ["#7622", "#7581"]
+decision = ["#7622"]
+kind = "default-output"
+action = "review"
+source = "release-note"
+covers = [
+    "input_model/arbitrary_class_fields[root-class-root-alias].txt",
+    "input_model/arbitrary_class_fields[root-class].txt",
+    "input_model/arbitrary_class_fields[root-field-list].txt",
+    "input_model/arbitrary_class_fields[root-held-collapse].txt",
+    "input_model/arbitrary_class_fields[root-held-hooked].txt",
+    "input_model/arbitrary_class_fields[root-held-preset-20261127].txt",
+    "input_model/arbitrary_class_fields[root-held-preset].txt",
+    "input_model/arbitrary_class_fields[root-held-reuse-all].txt",
+    "input_model/arbitrary_class_fields[root-held-reuse-foreign].txt",
+    "input_model/arbitrary_class_fields[root-held-reuse-model].txt",
+    "input_model/arbitrary_class_fields[root-held-type-alias].txt",
+    "input_model/arbitrary_class_fields[root-held].txt",
+    "input_model/arbitrary_class_fields[root-hooked].txt",
+    "input_model/arbitrary_class_fields[root-instance-of].txt",
+    "input_model/arbitrary_class_fields[root-of-root].txt",
+    "input_model/arbitrary_class_fields_by_output_type[dataclasses.dataclass-HoldsRootThing].txt",
+    "input_model/arbitrary_class_fields_by_output_type[msgspec.Struct-HoldsRootThing].txt",
+    "input_model/arbitrary_class_fields_by_output_type[pydantic_v2.BaseModel-HoldsRootThing].txt",
+    "input_model/arbitrary_class_fields_by_output_type[pydantic_v2.dataclass-HoldsRootThing].txt",
+    "input_model/arbitrary_class_fields_by_output_type[typing.TypedDict-HoldsRootThing].txt",
+    "input_model/root_of_arbitrary_class_holds_its_value[HoldsRootThing].txt",
+    "input_model/root_of_arbitrary_class_holds_its_value[RootInstanceOf].txt",
+    "input_model/root_of_arbitrary_class_holds_its_value[RootThing].txt",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[allow-extra-fields].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[as-written].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[base-class-default].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[base-class-map-holder].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[base-class-map].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[base-class].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[collapse-root-models].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[dataclass].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[default].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[extra-fields-allow].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[extra-fields-forbid].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[extra-fields-ignore].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[msgspec].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[preset-20261127].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[preset].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[pydantic-dataclass].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[reuse-model].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[root-model-type-alias].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[schema-description-typed-dict].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[schema-description].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[schema-validators].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[type-alias].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root[typed-dict].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_directory/",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_holds_its_value.py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_import_directory/",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_same_name_directory/",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[allof_wrapper_of_class_in_other_file].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[allof_wrapper_of_held_class-dataclass].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[allof_wrapper_of_held_class-msgspec].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[allof_wrapper_of_held_class].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[custom-base-path].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[two-equal-classes-reuse-dataclass].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[two-equal-classes-reuse].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_shapes[two-equal-classes].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[all-models-allow].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[name-key-allow].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[name-key-forbid].py",
+    "main/jsonschema/main_jsonschema/x_python_type_object_root_template_data[path-key-allow].py",
+    "main/openapi/main_openapi/x_python_type_object_component[collapse-root-models].py",
+    "main/openapi/main_openapi/x_python_type_object_component[dataclass].py",
+    "main/openapi/main_openapi/x_python_type_object_component[default].py",
+    "main/openapi/main_openapi/x_python_type_object_component[definitions-first].py",
+    "main/openapi/main_openapi/x_python_type_object_component[extra-fields-allow].py",
+    "main/openapi/main_openapi/x_python_type_object_component[full-path].py",
+    "main/openapi/main_openapi/x_python_type_object_component[msgspec].py",
+    "main/openapi/main_openapi/x_python_type_object_component[parent-prefixed].py",
+    "main/openapi/main_openapi/x_python_type_object_component[preset].py",
+    "main/openapi/main_openapi/x_python_type_object_component[primary-first].py",
+    "main/openapi/main_openapi/x_python_type_object_component[request-response].py",
+    "main/openapi/main_openapi/x_python_type_object_component[strict-nullable-collapse].py",
+    "main/openapi/main_openapi/x_python_type_object_component[strict-nullable].py",
+    "main/openapi/main_openapi/x_python_type_object_component_discriminator_variant[dataclass].py",
+    "main/openapi/main_openapi/x_python_type_object_component_discriminator_variant[default].py",
+    "main/openapi/main_openapi/x_python_type_object_component_discriminator_variant[msgspec-tagged].py",
+    "main/openapi/main_openapi/x_python_type_object_component_holds_its_value.py",
+    "main/payload_validation/generated_pydantic_v2_model_accepts_schema_derived_payloads[openapi_x_python_typ~395f85be.errors.txt",
+    "main/payload_validation/generated_pydantic_v2_model_dumps_schema_valid_payloads[openapi_x_python_type_ob~6131e86a.errors.txt",
+    "yaml_fast_constructor/fast_constructor_matches_schema_fixtures[openapi_x_python_type_object_root_discriminator.yaml].txt",
+]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/x_python_type_object_root.json",
+    "tests/data/jsonschema/x_python_type_object_root_custom_base.json",
+    "tests/data/jsonschema/x_python_type_object_root_directory",
+    "tests/data/jsonschema/x_python_type_object_root_directory/a.json",
+    "tests/data/jsonschema/x_python_type_object_root_directory/z.json",
+    "tests/data/jsonschema/x_python_type_object_root_equal.json",
+    "tests/data/jsonschema/x_python_type_object_root_external",
+    "tests/data/jsonschema/x_python_type_object_root_external/main.json",
+    "tests/data/jsonschema/x_python_type_object_root_external/other.json",
+]
+backends = "*"
+options = "*"
+aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "type"]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/x_python_type_object_root_two_directory",
+    "tests/data/jsonschema/x_python_type_object_root_two_directory/a.json",
+    "tests/data/jsonschema/x_python_type_object_root_two_directory/b.json",
+    "tests/data/jsonschema/x_python_type_object_root_two_directory/z.json",
+    "tests/data/openapi/x_python_type_object_root.json",
+]
+backends = "*"
+options = "*"
+aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "type"]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/x_python_type_object_root_import_directory",
+    "tests/data/jsonschema/x_python_type_object_root_import_directory/a.json",
+    "tests/data/jsonschema/x_python_type_object_root_import_directory/b.json",
+]
+backends = "*"
+options = "*"
+aspects = ["bases", "config", "default", "kind", "name-removed", "probe", "type"]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/x_python_type_object_root_import_directory",
+    "tests/data/jsonschema/x_python_type_object_root_import_directory/b.json",
+]
+backends = "*"
+options = [["--strip-default-none", "--use-default-factory-for-optional-nested-models"]]
+aspects = ["constructor-order", "required"]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/x_python_type_object_root.json",
+    "tests/data/jsonschema/x_python_type_object_root_directory",
+    "tests/data/jsonschema/x_python_type_object_root_directory/z.json",
+    "tests/data/jsonschema/x_python_type_object_root_equal.json",
+    "tests/data/jsonschema/x_python_type_object_root_external",
+    "tests/data/jsonschema/x_python_type_object_root_external/main.json",
+    "tests/data/jsonschema/x_python_type_object_root_two_directory",
+    "tests/data/jsonschema/x_python_type_object_root_two_directory/z.json",
+    "tests/data/openapi/x_python_type_object_root.json",
+]
+backends = "*"
+options = [["--strip-default-none", "--use-default-factory-for-optional-nested-models"]]
+aspects = ["constructor-order", "required"]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/x_python_type_object_root_directory",
+    "tests/data/jsonschema/x_python_type_object_root_external",
+    "tests/data/jsonschema/x_python_type_object_root_import_directory",
+    "tests/data/jsonschema/x_python_type_object_root_two_directory",
+]
+backends = "*"
+options = "*"
+input_file_type = "jsonschema"
+aspects = ["import-path-removed"]
+
+[[change.cells]]
+input = ["tests/data/jsonschema/x_python_type_object_root_equal.json"]
+backends = "*"
+options = "*"
+input_file_type = "jsonschema"
+aspects = ["numbered-name-removed"]

@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Z", "type": "object", "properties": {"a": {"$ref": "a.json#/$defs/Lone"}, "b": {"$ref": "b.json#/$defs/Lone"}}}

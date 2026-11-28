@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "allOfInline": {"$ref": "#/$defs/AllOfInline"},
+    "plain": {"$ref": "#/$defs/Plain"},
+    "plain2": {"$ref": "#/$defs/Plain2"},
+    "field": {"allOf": [{"$ref": "#/$defs/Plain"}], "description": "An allOf at a field."}
+  },
+  "$defs": {
+    "AllOfInline": {"allOf": [{"type": "object", "x-python-type": "logging.Logger"}]},
+    "Plain": {"type": "object", "x-python-type": "logging.Logger"},
+    "Plain2": {"type": "object", "x-python-type": "logging.Logger"}
+  }
+}

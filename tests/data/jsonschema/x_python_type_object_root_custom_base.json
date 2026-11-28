@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "based": {"$ref": "#/$defs/Based"},
+    "plain": {"$ref": "#/$defs/Plain"}
+  },
+  "$defs": {
+    "Based": {"type": "object", "x-python-type": "logging.Logger", "customBasePath": "tests.data.python.input_model.structured_annotations.Base"},
+    "Plain": {"type": "object", "x-python-type": "logging.Logger"}
+  }
+}

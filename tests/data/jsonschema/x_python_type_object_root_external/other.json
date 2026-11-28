@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Plain": {"type": "object", "x-python-type": "logging.Logger"},
+    "Other": {"type": "object", "x-python-type": "logging.Handler"}
+  }
+}

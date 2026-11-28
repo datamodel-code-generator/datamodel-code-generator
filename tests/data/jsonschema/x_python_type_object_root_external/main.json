@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Main",
+  "type": "object",
+  "properties": {
+    "wrapped": {"$ref": "#/$defs/Wrapped"},
+    "other": {"$ref": "other.json#/$defs/Other"}
+  },
+  "$defs": {
+    "Wrapped": {
+      "allOf": [{"$ref": "other.json#/$defs/Plain"}],
+      "description": "A definition over a class that another file describes by nothing."
+    }
+  }
+}
