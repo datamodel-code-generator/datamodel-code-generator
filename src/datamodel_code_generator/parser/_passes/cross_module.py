@@ -68,6 +68,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.parser._imports_plan import ImportPass
     from datamodel_code_generator.parser._passes._import_edges import ImportCycleSeeds
+    from datamodel_code_generator.parser._passes._shared import RootModelForm
     from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath, _ConstNarrowing
     from datamodel_code_generator.parser.generation import ModelRename
     from datamodel_code_generator.types import DataType
@@ -130,8 +131,8 @@ class CrossModuleHost(ReimportHost, GenerationStoreHost, Protocol):
     def use_generic_base_class(self) -> bool:
         """Whether the models share a generated base class."""
 
-    def _is_root_model_in_any_form(self, model: DataModel) -> bool:
-        """Return whether a model is a root model, in the configured representation or as a root model class."""
+    def _root_model_form(self, model: DataModel) -> RootModelForm | None:
+        """Return how a model is a root model, in the configured representation or as a root model class, if it is."""
 
     def _new_model(self, factory: Callable[..., DataModel | None], /, **kwargs: Any) -> DataModel | None:
         """Build a model with ``factory``, a model class or a model factory, for the run's target Python."""
@@ -539,7 +540,7 @@ def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> No
     module_keys: list[ModulePath] = []
     for ctx in run.contexts:
         if target_models := [
-            m for m in ctx.models if m.SUPPORTS_GENERIC_BASE_CLASS and not parser._is_root_model_in_any_form(m)
+            m for m in ctx.models if m.SUPPORTS_GENERIC_BASE_CLASS and parser._root_model_form(m) is None
         ]:
             modules_with_targets.append((ctx.module, ctx.models, target_models, ctx.imports, ctx.is_init))
             module_keys.append(ctx.module_key)

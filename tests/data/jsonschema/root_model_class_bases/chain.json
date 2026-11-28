@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {"mid": {"$ref": "#/$defs/Mid"}, "leaf": {"$ref": "#/$defs/Leaf"}, "tagged": {"$ref": "#/$defs/Tagged"}},
+  "$defs": {
+    "Labels": {"type": "object", "additionalProperties": {"type": "string"}, "propertyNames": {"maxLength": 63}, "maxProperties": 2},
+    "Mid": {"description": "Labels of a pod.", "allOf": [{"$ref": "#/$defs/Labels"}]},
+    "Leaf": {"type": "object", "properties": {"x": {"type": "string"}}, "allOf": [{"$ref": "#/$defs/Mid"}]},
+    "Tagged": {"description": "Labels of a tagged pod.", "allOf": [{"$ref": "#/$defs/Mid"}]}
+  }
+}

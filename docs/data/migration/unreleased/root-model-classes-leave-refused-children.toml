@@ -2,16 +2,20 @@
 id = "root-model-classes-leave-refused-children"
 category = "crash-fix"
 title = "A root model class leaves the bases Pydantic refuses for it, so the module imports"
-summary = "Under --use-root-model-type-alias a constrained root is a RootModel class. A model with its own properties and an allOf of it (class Wrapper(KeyPatternCount) with a field), or an allOf of it and another model (class Mixed(Labels, Owner)), subclassed it and failed at import (Unexpected field ...; only 'root' is allowed), and under --use-generic-base-class the class took the generated base (class Tags(BaseModel[list[str]])) and failed with a TypeError. Such a model now takes its default base, as without --use-root-model-type-alias and as 0.79.0 wrote it, and the root class keeps RootModel. A child that adds nothing (class PodLabels(Labels)) keeps the root class as its base. Only modules that failed at import change; class names, field names, field order and the values of valid payloads are those of the output without --use-root-model-type-alias."
-refs = ["#1"]
+summary = "Under --use-root-model-type-alias a constrained root is a RootModel class. A model with its own properties and an allOf of it (class Wrapper(KeyPatternCount) with a field), or an allOf of it and another model (class Mixed(Labels, Owner)), subclassed it and failed at import (Unexpected field ...; only 'root' is allowed), and under --use-generic-base-class the class took the generated base (class Tags(BaseModel[list[str]])) and failed with a TypeError. Such a model now takes its default base, as without --use-root-model-type-alias and as 0.79.0 wrote it, and the root class keeps RootModel. A child that adds nothing (class PodLabels(Labels)) keeps the root class as its base and is a root model class itself: it takes no generated base beside it, and a model with its own properties over it takes its default base (class Leaf(Mid) failed at import). Only modules that failed at import change; class names, field names, field order and the values of valid payloads are those of the output without --use-root-model-type-alias."
+refs = ["#7633", "#7619", "#7626"]
 kind = "default-output"
 action = "none"
 source = "release-note"
 covers = [
+    "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[chain-alias].model.py",
+    "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[chain-alias].outcomes.txt",
     "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[generic_base-alias].model.py",
     "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[generic_base-alias].outcomes.txt",
     "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[mixed-alias].model.py",
     "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[mixed-alias].outcomes.txt",
+    "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[pod_labels-alias-generic_base].model.py",
+    "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[pod_labels-alias-generic_base].outcomes.txt",
     "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[pod_labels-alias].model.py",
     "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[pod_labels-alias].outcomes.txt",
     "main/jsonschema/root_model_type_alias_map_roots/root_model_classes_as_bases[pod_labels-class].model.py",
@@ -41,13 +45,39 @@ covers = [
 [[change.cells]]
 input = ["tests/data/jsonschema/root_model_class_bases", "tests/data/jsonschema/root_model_class_bases/**"]
 backends = "*"
+options = [["--use-root-model-type-alias", "--formatters", "builtin", "--disable-timestamp"]]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/root_model_class_bases/chain.json",
+    "tests/data/jsonschema/root_model_class_bases/generic_base.json",
+    "tests/data/jsonschema/root_model_class_bases/mixed.json",
+    "tests/data/jsonschema/root_model_class_bases/wrapper.json",
+]
+backends = "*"
 options = [
-    ["--use-root-model-type-alias", "--formatters", "builtin", "--disable-timestamp"],
     [
         "--use-root-model-type-alias",
         "--use-generic-base-class",
         "--extra-fields",
         "forbid",
+        "--formatters",
+        "builtin",
+        "--disable-timestamp",
+    ],
+]
+
+[[change.cells]]
+input = [
+    "tests/data/jsonschema/root_model_class_bases/chain.json",
+    "tests/data/jsonschema/root_model_class_bases/pod_labels.json",
+]
+backends = "*"
+options = [
+    [
+        "--use-root-model-type-alias",
+        "--use-generic-base-class",
+        "--allow-population-by-field-name",
         "--formatters",
         "builtin",
         "--disable-timestamp",

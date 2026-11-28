@@ -3,7 +3,7 @@ id = "keep-constrained-map-roots-as-classes"
 category = "new-surface"
 title = "Write constrained map roots as classes under an option"
 summary = "--keep-constrained-map-roots-as-classes makes a Pydantic v2 root model of an object map that --use-root-model-type-alias cannot write as an alias (property counts, a value pattern for the python-re engine, schema validator rules) a RootModel class, as every other constrained root is, instead of an alias that drops those rules. Without it the map root stays an alias, so the default output is unchanged."
-refs = ["#1"]
+refs = ["#7633"]
 surface = ["--keep-constrained-map-roots-as-classes"]
 covers = [
     "main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-map-roots-as-classes].default.py",

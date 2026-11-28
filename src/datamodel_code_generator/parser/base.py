@@ -2862,15 +2862,27 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Return whether model uses the configured root model representation."""
         return isinstance(model, self.data_model_root_type)
 
-    def _is_root_model_in_any_form(self, model: DataModel) -> bool:
-        """Return whether model is a root model, in the configured representation or as a root model class.
+    def _root_model_form(self, model: DataModel) -> _shared.RootModelForm | None:
+        """Return how model is a root model: in the configured representation, as a root model class, or not at all.
 
         A root the configured representation cannot write, such as a constrained root under
         ``--use-root-model-type-alias``, is written as a root model class instead (``_concrete_root_model_type``,
-        ``write_rule_aliases_as_classes``); the readers that keep a root model out of a role only an object model takes,
-        a base of a model Pydantic refuses as its subclass or the user of a generated base class, read this fact.
+        ``write_rule_aliases_as_classes``). A model that keeps a root model class as its base and adds nothing to it
+        (``keeps_root_model_base``) is one to Pydantic too, so a chain of such models is read through its bases. The
+        readers that keep a root model out of a role only an object model takes, a base of a model Pydantic refuses as
+        its subclass or the user of a generated base class, read both forms.
         """
-        return self._is_root_model(model) or model.IS_ROOT_MODEL
+        if self._is_root_model(model):
+            return "configured"
+        if model.IS_ROOT_MODEL or any(
+            _shared.keeps_root_model_base(model, reference)
+            and isinstance(base_model := reference.source, DataModel)
+            and self._root_model_form(base_model) == "class"
+            for base in model.base_classes
+            if (reference := base.reference) is not None
+        ):
+            return "class"
+        return None
 
     def _reset_local_source_cache(self) -> None:
         self._cache_local_sources = False

@@ -400,14 +400,27 @@ class RootModelTypeHost(Protocol):
         """The root model type whose class body evaluates its root type, if the output has one."""
 
 
+RootModelForm: TypeAlias = Literal["configured", "class"]
+"""How a model is a root model: in the configured root model representation, or as a root model class."""
+
+
+def keeps_root_model_base(child: DataModel, root: Reference) -> bool:
+    """Return whether ``child`` adds nothing to the root model ``root`` names: no field of its own and no other base.
+
+    Pydantic takes such a child as a subclass of a root model class, which makes it a root model class too; it refuses
+    a subclass of one that declares its own fields or takes another base.
+    """
+    return not child.fields and all(base.reference is root for base in child.base_classes)
+
+
 class RootModelHost(Protocol):
     """The hooks that tell whether a model uses the configured root model representation, or is a root model at all."""
 
     def _is_root_model(self, model: DataModel) -> bool:
         """Return whether a model uses the configured root model representation."""
 
-    def _is_root_model_in_any_form(self, model: DataModel) -> bool:
-        """Return whether a model is a root model, in the configured representation or as a root model class."""
+    def _root_model_form(self, model: DataModel) -> RootModelForm | None:
+        """Return how a model is a root model, in the configured representation or as a root model class, if it is."""
 
 
 def site_display_name(host: RootModelHost, model: DataModel, field: DataModelFieldBase) -> str:

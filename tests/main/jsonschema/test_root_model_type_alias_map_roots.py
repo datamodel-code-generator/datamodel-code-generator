@@ -274,6 +274,12 @@ ROOT_MODEL_CLASS_BASES_PAYLOADS: dict[str, dict[str, object]] = {
         "invalid three items": {"t": ["a", "b", "c"]},
     },
     "pod_labels": {"valid one key": {"labels": {"a": "x"}}, "invalid three keys": {"labels": THREE_LABELS}},
+    "chain": {
+        "valid maps and property": {"mid": {"a": "x"}, "leaf": {"x": "s"}, "tagged": {"a": "x"}},
+        "invalid three keys": {"mid": THREE_LABELS},
+        "invalid three keys two levels down": {"tagged": THREE_LABELS},
+        "invalid int property": {"leaf": {"x": 1}},
+    },
 }
 """The payloads ``Model`` of each input parses: the label says whether the schema accepts it."""
 
@@ -290,6 +296,12 @@ ROOT_MODEL_CLASS_BASES_PAYLOADS: dict[str, dict[str, object]] = {
         ),
         pytest.param("pod_labels", [USE_ROOT_MODEL_TYPE_ALIAS], id="pod_labels-alias"),
         pytest.param("pod_labels", [], id="pod_labels-class"),
+        pytest.param(
+            "pod_labels",
+            [USE_ROOT_MODEL_TYPE_ALIAS, "--use-generic-base-class", "--allow-population-by-field-name"],
+            id="pod_labels-alias-generic_base",
+        ),
+        pytest.param("chain", [USE_ROOT_MODEL_TYPE_ALIAS], id="chain-alias"),
     ],
 )
 def test_root_model_classes_as_bases(tmp_path: Path, input_name: str, extra_args: list[str]) -> None:
@@ -302,7 +314,10 @@ def test_root_model_classes_as_bases(tmp_path: Path, input_name: str, extra_args
     base, as without ``--use-root-model-type-alias``, and the valid payloads parse. ``PodLabels``, an ``allOf`` of the
     map with only a description, stays ``class PodLabels(Labels)`` and keeps the map's values and count; without the
     option row ``legacy-configured-root-model-leaves-every-child`` makes it an empty ``class PodLabels(BaseModel)``,
-    as in 0.104.0, which parses every map to ``{}``.
+    as in 0.104.0, which parses every map to ``{}``. Such a child is a root model class itself: under
+    ``--use-generic-base-class`` it takes no generated base class beside ``Labels``, and in ``chain`` the model ``Leaf``
+    with its own field takes its default base instead of ``Mid``, while ``Tagged`` stays a subclass of ``Mid`` two
+    levels down; from 0.80.0 to 0.104.0 ``class Leaf(Mid)`` failed at import.
     """
     output_path = tmp_path / "model.py"
     run_main_and_assert(
