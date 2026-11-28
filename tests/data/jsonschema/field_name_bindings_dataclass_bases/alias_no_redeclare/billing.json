@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Invoice",
+  "allOf": [
+    {
+      "$ref": "user.json#/$defs/Account"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "postal_address": {
+          "$ref": "user.json#/$defs/Address"
+        }
+      }
+    }
+  ]
+}

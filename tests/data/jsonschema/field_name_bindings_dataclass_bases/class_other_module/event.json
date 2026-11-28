@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Event",
+  "type": "object",
+  "properties": {
+    "Place": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string"
+    }
+  }
+}

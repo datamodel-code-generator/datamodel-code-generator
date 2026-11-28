@@ -1906,6 +1906,7 @@ class DataModel(TemplateBase, Nullable, ABC)
     def fields_evaluated_at_definition(self) -> Sequence[DataModelFieldBase]
     def class_attribute_hides_named_type(self, field: DataModelFieldBase, *, assigned: bool, resolved_late: bool, as_string: bool) -> bool
     def annotation_namespaces(self) -> dict[str, list[DataModel]]
+    def inherited_namespace_bindings(self) -> dict[str, Literal['none', 'object']]
     def assigns_forward_reference_field(self, field: DataModelFieldBase, positions: Mapping[str, int], index: int) -> bool
     def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool
     @deprecated('DataModel.imports is computed at each read; there is no imports cache to clear.', category=None)
@@ -2698,6 +2699,8 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model)
     def keeps_assignment_with_required_fields(self, field: DataModelFieldBase) -> bool
     @override
     def class_attribute_hides_named_type(self, field: DataModelFieldBase, *, assigned: bool, resolved_late: bool, as_string: bool) -> bool
+    @override
+    def inherited_namespace_bindings(self) -> dict[str, Literal['none', 'object']]
     @override
     def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool
     @property
@@ -3548,7 +3551,7 @@ class PydanticFloors
     def of(self, parser: object) -> PydanticFloor | None
     def refused_bytes_patterns_of(self, parser: object) -> tuple[str, ...]
 REQUIREMENTS: Final[Mapping[Construct, Requirement]] = MappingProxyType({row.construct: row for row in _ROWS})
-    uses _ROWS: Final[tuple[Requirement, ...]] = <tuple of 45>
+    uses _ROWS: Final[tuple[Requirement, ...]] = <tuple of 46>
 ReferenceMapSet = dict[str, set[str]]
 class Result(BaseModel)
     model_config = ConfigDict(defer_build=True)

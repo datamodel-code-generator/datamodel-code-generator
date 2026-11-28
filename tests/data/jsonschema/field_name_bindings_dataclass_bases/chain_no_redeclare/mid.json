@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Member",
+  "allOf": [
+    {
+      "$ref": "user.json#/$defs/Account"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "integer"
+        },
+        "home": {
+          "$ref": "user.json#/$defs/Address"
+        }
+      }
+    }
+  ]
+}

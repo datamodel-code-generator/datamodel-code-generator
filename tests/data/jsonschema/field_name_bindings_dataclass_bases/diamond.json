@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Event": {
+      "type": "object",
+      "properties": {
+        "str": {
+          "type": "integer"
+        }
+      }
+    },
+    "Gig": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Event"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "gig": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "Show": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Event"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "show": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "Concert": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Gig"
+        },
+        {
+          "$ref": "#/$defs/Show"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$ref": "#/$defs/Concert"
+}

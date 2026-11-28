@@ -1,0 +1,14 @@
+[[change]]
+id = "dataclass-inherited-namespace-bindings-hook"
+category = "api"
+title = "Model hook that names the inherited field names a pydantic dataclass's class body hides"
+summary = "DataModel.inherited_namespace_bindings returns, by field name, the inherited defaults the model library binds on a class before it evaluates the class's annotations ('none' for None, 'object' for any other value), so the generated module can alias an import, builtin or class such a name hides. It is empty for every model class except pydantic_v2.dataclass.DataClass, and there for targets of Pydantic 2.1 or later. Nothing is removed or changed."
+refs = ["#7631"]
+decision = ["#7631"]
+source = "release-note"
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.model.base.DataModel", "datamodel_code_generator.model.pydantic_v2.dataclass.DataClass"] }
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]
