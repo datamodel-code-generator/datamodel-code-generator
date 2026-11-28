@@ -2334,10 +2334,9 @@ def get_inherited_constructor_info(
     place in the constructor (``AssignmentFacts.place_assigned``): a ``None`` that ``--strip-default-none`` strips but
     the base still writes, which the redeclared field inherits, as in 0.86.0.
     """
-    if not model.SUPPORTS_KW_ONLY:
-        return None
     bases: ConstructorBases = "parsed" if early else "stand-ins"
-    if not (inherited_models := constructor_base_models(host, model, bases=bases)):
+    inherited_models = constructor_base_models(host, model, bases=bases) if model.SUPPORTS_KW_ONLY else []
+    if not inherited_models:
         return None
 
     supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
