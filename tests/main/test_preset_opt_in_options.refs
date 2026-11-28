@@ -16,6 +16,8 @@ intersect-merged-allof-members-command-line	main/preset_opt_in_options/preset_op
 intersect-merged-allof-members-pyproject	main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[intersect-merged-allof-members-command-line].model.py
 keep-bases-beside-generic-base-class-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-bases-beside-generic-base-class-command-line].model.py
 keep-bases-beside-generic-base-class-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-bases-beside-generic-base-class-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-bases-beside-generic-base-class-command-line].model.py
+keep-constrained-map-roots-as-classes-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-constrained-map-roots-as-classes-command-line].model.py
+keep-constrained-map-roots-as-classes-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-constrained-map-roots-as-classes-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-constrained-map-roots-as-classes-command-line].model.py
 keep-null-of-nullable-items-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
 keep-null-of-nullable-items-pyproject	main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-pyproject].model.py	= main/preset_opt_in_options/preset_option_turned_off[keep-null-of-nullable-items-command-line].model.py
 keep-string-keywords-beside-formats-command-line	main/preset_opt_in_options/preset_option_turned_off[keep-string-keywords-beside-formats-command-line].model.py
@@ -103,6 +105,8 @@ keep-bases-beside-generic-base-class-practical	main/preset_opt_in_options/preset
 keep-bases-beside-generic-base-class-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-beside-generic-base-class-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-beside-generic-base-class-practical].model.py
 keep-bases-of-typed-dicts-listed-before-their-parents-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-of-typed-dicts-listed-before-their-parents-practical].tree/
 keep-bases-of-typed-dicts-listed-before-their-parents-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-bases-of-typed-dicts-listed-before-their-parents-standard].tree/
+keep-constrained-map-roots-as-classes-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-map-roots-as-classes-practical].model.py
+keep-constrained-map-roots-as-classes-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-map-roots-as-classes-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-map-roots-as-classes-practical].model.py
 keep-constrained-root-models-in-every-container-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].model.py
 keep-constrained-root-models-in-every-container-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-standard].model.py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].model.py
 keep-content-parameter-refs-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-content-parameter-refs-practical].model.py

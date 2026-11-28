@@ -69,6 +69,12 @@ holder-type-alias	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots
 mapping-default	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-default].default.py
 mapping-default	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-default].option.py
 mapping-default	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-default].outcomes.txt
+mapping-map-roots-as-classes	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-map-roots-as-classes].default.py
+mapping-map-roots-as-classes	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-map-roots-as-classes].option.py
+mapping-map-roots-as-classes	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-map-roots-as-classes].outcomes.txt	= main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-default].outcomes.txt
+mapping-root-alias	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-root-alias].default.py	= main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-map-roots-as-classes].default.py
+mapping-root-alias	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-root-alias].option.py
+mapping-root-alias	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[mapping-root-alias].outcomes.txt
 root-annotated	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[root-annotated].default.py
 root-annotated	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[root-annotated].option.py
 root-annotated	main/jsonschema/pydantic_accepted_forms/custom_type_path_roots_import_under_an_option[root-annotated].outcomes.txt

@@ -433,6 +433,16 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         wins, another member's `enum` is dropped, the map
                         becomes a model without fields and the keyword is
                         checked on the decoded value, as in 0.100.0
+  --keep-constrained-map-roots-as-classes, --no-keep-constrained-map-roots-as-classes
+                        Under --use-root-model-type-alias, write a root model
+                        of an object map that the alias form cannot write,
+                        such as one with minProperties or maxProperties, a
+                        value pattern that needs the python-re regex engine or
+                        the rules of --generate-schema-validators, as a
+                        RootModel class, as every other constrained root is;
+                        without it the map root stays an alias (`Labels =
+                        RootModel[dict[str, str]]`) that drops them, as in
+                        0.104.0 (Pydantic v2 only)
   --keep-enum-member-values, --no-keep-enum-member-values
                         Write an enum as a plain Enum where the value base of
                         --use-specialized-enum or --use-subclass-enum would
@@ -1586,7 +1596,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         the class on root, so a module whose class Pydantic
                         cannot build imports. Without it the root is
                         RootModel[<class>], as in 0.104.0, and a module naming
-                        such a class fails at import
+                        such a class fails at import. Under --use-root-model-
+                        type-alias a map root of such a class stays an alias
+                        unless --keep-constrained-map-roots-as-classes is set
+                        too
   --use-root-model-sequence-interface
                         Make non-null sequence-like Pydantic v2 RootModel
                         classes implement collections.abc.Sequence by adding

@@ -17,6 +17,7 @@
 | [`--intersect-allof-keywords`](#intersect-allof-keywords) | Combine the keywords of every part of an `allOf`, a `$ref` w... |
 | [`--intersect-combined-schema-keywords`](#intersect-combined-schema-keywords) | Combine the keywords beside an `anyOf` or `oneOf` with each ... |
 | [`--intersect-merged-allof-members`](#intersect-merged-allof-members) | Read the allOf members that are merged into one schema keywo... |
+| [`--keep-constrained-map-roots-as-classes`](#keep-constrained-map-roots-as-classes) | Keep the root model of a constrained object map a class unde... |
 | [`--keep-enum-member-values`](#keep-enum-member-values) | Give an enum class a value base only when it keeps every mem... |
 | [`--no-use-closed-typed-dict`](#no-use-closed-typed-dict) | Disable PEP 728 TypedDict closed/extra_items generation. |
 | [`--no-use-specialized-enum`](#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code gener... |
@@ -3822,6 +3823,262 @@ output checks base64 constraints on the text.
             kind: Any | None = None
             note: Any | None = None
             legacy: str | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--keep-constrained-map-roots-as-classes` {#keep-constrained-map-roots-as-classes}
+
+Keep the root model of a constrained object map a class under `--use-root-model-type-alias`.
+
+`--use-root-model-type-alias` writes a root model as an alias, `Tags = RootModel[list[str]]`, and keeps a class where
+the alias cannot write what the root holds: field constraints, a pattern that needs the `python-re` regex engine, or the
+rules of `--generate-schema-validators`. The root model of an object map, an object without properties whose
+`additionalProperties` is a schema or that sets only `minProperties`, `maxProperties` or `propertyNames`, stays an
+alias anyway, as in 0.104.0, so `Labels = RootModel[dict[str, str]]` drops `maxProperties: 1` and accepts any number
+of keys, while an `allOf` of the same map is a class that keeps it. With this option such a map root is a class as
+every other constrained root is: `class Labels(RootModel[dict[str, str]])` with `root: dict[str, str] = Field(...,
+max_length=1)`. A map whose root holds no such constraint stays an alias. Pydantic v2 only.
+
+**Related:** [`--generate-schema-validators`](template-customization.md#generate-schema-validators), [`--use-root-model-type-alias`](#use-root-model-type-alias)
+
+**Option relationships:**
+
+- **Requires:** [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias) enabled - `--keep-constrained-map-roots-as-classes` acts only with `--use-root-model-type-alias`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input maps.json --use-root-model-type-alias --keep-constrained-map-roots-as-classes # (1)!
+    ```
+
+    1. :material-arrow-left: `--keep-constrained-map-roots-as-classes` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "labels": {"$ref": "#/$defs/Labels", "default": {"a": "x"}},
+        "tags": {"$ref": "#/$defs/Tags", "default": ["x"]}
+      },
+      "$defs": {
+        "Labels": {"type": "object", "additionalProperties": {"type": "string"}, "maxProperties": 1},
+        "Tags": {"type": "array", "items": {"type": "string"}, "maxItems": 1},
+        "MinLabels": {"type": "object", "additionalProperties": {"type": "string"}, "minProperties": 1},
+        "Item": {"type": "object", "properties": {"name": {"type": "string"}}},
+        "ItemMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Item"}, "maxProperties": 2},
+        "CountOnly": {"type": "object", "maxProperties": 1},
+        "AnyValues": {"type": "object", "additionalProperties": true, "maxProperties": 1},
+        "LookaroundValues": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^(?!x)"}},
+        "LookaroundItems": {"type": "array", "items": {"type": "string", "pattern": "^(?!x)"}},
+        "RefLabels": {"allOf": [{"$ref": "#/$defs/Labels"}]},
+        "LabelsList": {"type": "array", "items": {"$ref": "#/$defs/Labels"}},
+        "PlainMap": {"type": "object", "additionalProperties": {"type": "string"}},
+        "ShortValues": {"type": "object", "additionalProperties": {"type": "string", "maxLength": 2}},
+        "KeyPattern": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "propertyNames": {"pattern": "^[a-z]+$"}
+        },
+        "KeyPatternCount": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "propertyNames": {"maxLength": 3},
+          "maxProperties": 2
+        },
+        "PatternKeys": {"type": "object", "patternProperties": {"^x": {"type": "string"}}, "maxProperties": 2},
+        "PatternKeysBeside": {
+          "type": "object",
+          "patternProperties": {"^x": {"type": "string"}},
+          "additionalProperties": {"type": "integer"},
+          "maxProperties": 2
+        },
+        "NullableMap": {"type": ["object", "null"], "additionalProperties": {"type": "string"}, "maxProperties": 1}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  maps.json
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+
+
+        class Labels(RootModel[dict[str, str]]):
+            root: dict[str, str] = Field(..., max_length=1)
+
+
+        class Tags(RootModel[list[str]]):
+            root: list[str] = Field(..., max_length=1)
+
+
+        class MinLabels(RootModel[dict[str, str]]):
+            root: dict[str, str] = Field(..., min_length=1)
+
+
+        class Item(BaseModel):
+            name: str | None = None
+
+
+        class ItemMap(RootModel[dict[str, Item]]):
+            root: dict[str, Item] = Field(..., max_length=2)
+
+
+        class CountOnly(RootModel[dict[str, Any]]):
+            root: dict[str, Any] = Field(..., max_length=1)
+
+
+        class AnyValues(RootModel[dict[str, Any]]):
+            root: dict[str, Any] = Field(..., max_length=1)
+
+
+        class LookaroundValues(RootModel[dict[str, str]]):
+            model_config = ConfigDict(
+                regex_engine="python-re",
+            )
+            root: dict[str, constr(pattern=r'^(?!x)')]
+
+
+        class LookaroundItems(RootModel[list[str]]):
+            model_config = ConfigDict(
+                regex_engine="python-re",
+            )
+            root: list[constr(pattern=r'^(?!x)')]
+
+
+        class RefLabels(RootModel[dict[str, str]]):
+            root: dict[str, str] = Field(..., max_length=1)
+
+
+        LabelsList = RootModel[list[Labels]]
+
+
+        PlainMap = RootModel[dict[str, str]]
+
+
+        ShortValues = RootModel[dict[str, constr(max_length=2)]]
+
+
+        KeyPattern = RootModel[dict[constr(pattern=r'^[a-z]+$'), str]]
+
+
+        class KeyPatternCount(RootModel[dict[constr(max_length=3), str]]):
+            root: dict[constr(max_length=3), str] = Field(..., max_length=2)
+
+
+        PatternKeys = RootModel[dict[constr(pattern=r'^x'), str]]
+
+
+        PatternKeysBeside = RootModel[dict[constr(pattern=r'^x'), str]]
+
+
+        NullableMap = RootModel[dict[str, Any] | None]
+
+
+        class Model(BaseModel):
+            labels: Labels | None = Field({'a': 'x'}, validate_default=True)
+            tags: Tags | None = Field(['x'], validate_default=True)
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  maps.json
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+
+        Labels = RootModel[dict[str, str]]
+
+
+        class Tags(RootModel[list[str]]):
+            root: list[str] = Field(..., max_length=1)
+
+
+        MinLabels = RootModel[dict[str, str]]
+
+
+        class Item(BaseModel):
+            name: str | None = None
+
+
+        ItemMap = RootModel[dict[str, Item]]
+
+
+        CountOnly = RootModel[dict[str, Any]]
+
+
+        AnyValues = RootModel[dict[str, Any]]
+
+
+        LookaroundValues = RootModel[dict[str, str]]
+
+
+        class LookaroundItems(RootModel[list[str]]):
+            model_config = ConfigDict(
+                regex_engine="python-re",
+            )
+            root: list[constr(pattern=r'^(?!x)')]
+
+
+        class RefLabels(RootModel[dict[str, str]]):
+            root: dict[str, str] = Field(..., max_length=1)
+
+
+        LabelsList = RootModel[list[Labels]]
+
+
+        PlainMap = RootModel[dict[str, str]]
+
+
+        ShortValues = RootModel[dict[str, constr(max_length=2)]]
+
+
+        KeyPattern = RootModel[dict[constr(pattern=r'^[a-z]+$'), str]]
+
+
+        class KeyPatternCount(RootModel[dict[constr(max_length=3), str]]):
+            root: dict[constr(max_length=3), str] = Field(..., max_length=2)
+
+
+        PatternKeys = RootModel[dict[constr(pattern=r'^x'), str]]
+
+
+        PatternKeysBeside = RootModel[dict[constr(pattern=r'^x'), str]]
+
+
+        NullableMap = RootModel[dict[str, Any] | None]
+
+
+        class Model(BaseModel):
+            labels: Labels | None = {'a': 'x'}
+            tags: Tags | None = Field(['x'], validate_default=True)
         ```
 
         <!-- fmt: on -->

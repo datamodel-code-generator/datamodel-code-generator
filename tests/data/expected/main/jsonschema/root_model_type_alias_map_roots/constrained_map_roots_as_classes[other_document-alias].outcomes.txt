@@ -1,0 +1,10 @@
+default
+Labels valid one key: accepted {'a': 'x'} as alias
+Labels invalid two keys: accepted {'a': 'x', 'b': 'y'} as alias
+MinLabels valid one key: accepted {'a': 'x'} as alias
+MinLabels invalid no key: accepted {} as alias
+option
+Labels valid one key: accepted {'a': 'x'} as Labels
+Labels invalid two keys: rejected: too_long
+MinLabels valid one key: accepted {'a': 'x'} as MinLabels
+MinLabels invalid no key: rejected: too_short

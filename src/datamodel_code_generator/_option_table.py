@@ -690,7 +690,8 @@ OPTIONS: Final[tuple[Option, ...]] = (
         help="pydantic_v2.BaseModel output: write a RootModel whose root holds a class named by customTypePath as "
         "RootModel[Any] with arbitrary_types_allowed=True and the class on root, so a module whose class Pydantic "
         "cannot build imports. Without it the root is RootModel[<class>], as in 0.104.0, and a module naming such a "
-        "class fails at import",
+        "class fails at import. Under --use-root-model-type-alias a map root of such a class stays an alias unless "
+        "--keep-constrained-map-roots-as-classes is set too",
         preset=PresetJoin(
             "20261128",
             {"use_root_model_any_for_custom_type_path": True},
@@ -1776,6 +1777,26 @@ OPTIONS: Final[tuple[Option, ...]] = (
         "an alias (`Tags = RootModel[list[str]]`) with validate_default=True, as for a root model class, so Pydantic "
         "validates it into the root model; without it the default stays the raw value, such as a list instead of a "
         "`Tags`, as in 0.97.0 (Pydantic v2 only)",
+    ),
+    toggle(
+        (Section.TYPING, _G.TYPE_ALIAS),
+        "--keep-constrained-map-roots-as-classes",
+        help="Under --use-root-model-type-alias, write a root model of an object map that the alias form cannot "
+        "write, such as one with minProperties or maxProperties, a value pattern that needs the python-re regex "
+        "engine or the rules of --generate-schema-validators, as a RootModel class, as every other constrained root "
+        "is; without it the map root stays an alias (`Labels = RootModel[dict[str, str]]`) that drops them, as in "
+        "0.104.0 (Pydantic v2 only)",
+        preset=PresetJoin(
+            "20261128",
+            {"keep_constrained_map_roots_as_classes": True},
+            title="Constrained map roots as classes",
+            description=(
+                "Under --use-root-model-type-alias, a root model of an object map with property counts, a value "
+                "pattern that needs the python-re engine or schema validator rules is a RootModel class, as every "
+                "other constrained root is, instead of an alias that drops them."
+            ),
+            output_model_types=frozenset({DataModelType.PydanticV2BaseModel}),
+        ),
     ),
     toggle(
         (Section.TYPING, _G.TYPE_ALIAS),

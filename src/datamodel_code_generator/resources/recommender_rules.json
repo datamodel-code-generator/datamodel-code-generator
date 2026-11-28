@@ -932,6 +932,10 @@
       "not_recommended": "command",
       "reason": "Selects a pyproject.toml job; the recommendation keeps it."
     },
+    "keep_constrained_map_roots_as_classes": {
+      "not_recommended": "preset",
+      "reason": "Under --use-root-model-type-alias with pydantic_v2.BaseModel output only: set by the 20261128 presets; the recommendation starts from a preset."
+    },
     "keep_constrained_root_models_in_every_container": {
       "not_recommended": "preset",
       "reason": "Under --collapse-root-models with --field-constraints only: set by the 20261104 presets; the recommendation starts from a preset."
@@ -982,7 +986,7 @@
     },
     "use_root_model_any_for_custom_type_path": {
       "not_recommended": "preset",
-      "reason": "pydantic_v2.BaseModel output only: set by the 20261128 presets; the recommendation starts from a preset."
+      "reason": "pydantic_v2.BaseModel output only: set by the 20261128 presets; the recommendation starts from a preset. Under --use-root-model-type-alias a map root of the class also needs keep_constrained_map_roots_as_classes."
     },
     "keep_content_parameter_refs": {
       "not_recommended": "preset",

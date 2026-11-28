@@ -1,0 +1,4 @@
+default
+Mapping: import fails with PydanticSchemaGenerationError
+option
+Mapping: import fails with PydanticSchemaGenerationError

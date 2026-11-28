@@ -1969,6 +1969,7 @@ def _custom_type_path_root_case(input_name: str, case_id: str, *extra_args: str)
 
 COLLAPSE_ROOT_MODELS = "--collapse-root-models"
 USE_ROOT_MODEL_TYPE_ALIAS = "--use-root-model-type-alias"
+KEEP_CONSTRAINED_MAP_ROOTS_AS_CLASSES = "--keep-constrained-map-roots-as-classes"
 PYDANTIC_DATACLASS = ("--output-model-type", "pydantic_v2.dataclass")
 RELEASED_PRESET = ("--preset", "standard-py311-20261127")
 
@@ -2010,6 +2011,10 @@ such as `datetime.date`, takes the same form and parses the same values. A model
         ),
         _custom_type_path_root_case("definitions", "dataclass", *PYDANTIC_DATACLASS),
         _custom_type_path_root_case("mapping", "default"),
+        _custom_type_path_root_case("mapping", "root-alias", USE_ROOT_MODEL_TYPE_ALIAS),
+        _custom_type_path_root_case(
+            "mapping", "map-roots-as-classes", USE_ROOT_MODEL_TYPE_ALIAS, KEEP_CONSTRAINED_MAP_ROOTS_AS_CLASSES
+        ),
         _custom_type_path_root_case("controls", "default"),
         _custom_type_path_root_case("controls", "root-alias", USE_ROOT_MODEL_TYPE_ALIAS),
         _custom_type_path_root_case("controls", "preset", *RELEASED_PRESET),
@@ -2037,7 +2042,9 @@ def test_custom_type_path_roots_import_under_an_option(tmp_path: Path, input_nam
     Pydantic builds anyway (``date``, ``Decimal``, a ``BaseModel``, a class with a core-schema hook): they import
     in both runs and parse the same values. Under ``--use-root-model-type-alias`` the option writes the roots as
     classes, and ``Renamed`` names the class ``Text``. The map root of ``mapping`` fails at import by default and
-    imports with the option; it is not run with ``--use-root-model-type-alias``, which keeps such a root an alias.
+    imports with the option. Under ``--use-root-model-type-alias`` it stays an alias, which fails at import with and
+    without the option; ``--keep-constrained-map-roots-as-classes`` writes the class that
+    ``--use-root-model-any-for-custom-type-path`` makes importable (``map-roots-as-classes``).
     A holder that builds the class itself, inlined by ``--collapse-root-models`` (and the released preset), through a
     type alias or as a pydantic dataclass, writes the key in both runs: ``Holder`` imported in none of them before,
     ``DateHolder`` imported before and parses the same values. Type aliases and pydantic dataclass roots write no

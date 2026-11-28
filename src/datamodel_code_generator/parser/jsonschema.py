@@ -6211,6 +6211,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     [],
                     include_property_count=data_model_type_class is self.data_model_type,
                 )
+            if should_parse_dict_root and "legacy-map-roots-keep-alias" not in self._legacy_object_maps:
+                data_model_type_class = self._concrete_root_model_type(data_model_type_class, fields, reference.path)
 
             model = _rw_split.register_object_model(
                 self, reference, obj, fields, None, model_type=data_model_type_class

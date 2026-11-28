@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "labels": {"$ref": "#/$defs/Labels", "default": {"a": "x"}},
+    "tags": {"$ref": "#/$defs/Tags", "default": ["x"]}
+  },
+  "$defs": {
+    "Labels": {"type": "object", "additionalProperties": {"type": "string"}, "maxProperties": 1},
+    "Tags": {"type": "array", "items": {"type": "string"}, "maxItems": 1},
+    "MinLabels": {"type": "object", "additionalProperties": {"type": "string"}, "minProperties": 1},
+    "Item": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "ItemMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Item"}, "maxProperties": 2},
+    "CountOnly": {"type": "object", "maxProperties": 1},
+    "AnyValues": {"type": "object", "additionalProperties": true, "maxProperties": 1},
+    "LookaroundValues": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^(?!x)"}},
+    "LookaroundItems": {"type": "array", "items": {"type": "string", "pattern": "^(?!x)"}},
+    "RefLabels": {"allOf": [{"$ref": "#/$defs/Labels"}]},
+    "LabelsList": {"type": "array", "items": {"$ref": "#/$defs/Labels"}},
+    "PlainMap": {"type": "object", "additionalProperties": {"type": "string"}},
+    "ShortValues": {"type": "object", "additionalProperties": {"type": "string", "maxLength": 2}},
+    "KeyPattern": {
+      "type": "object",
+      "additionalProperties": {"type": "string"},
+      "propertyNames": {"pattern": "^[a-z]+$"}
+    },
+    "KeyPatternCount": {
+      "type": "object",
+      "additionalProperties": {"type": "string"},
+      "propertyNames": {"maxLength": 3},
+      "maxProperties": 2
+    },
+    "PatternKeys": {"type": "object", "patternProperties": {"^x": {"type": "string"}}, "maxProperties": 2},
+    "PatternKeysBeside": {
+      "type": "object",
+      "patternProperties": {"^x": {"type": "string"}},
+      "additionalProperties": {"type": "integer"},
+      "maxProperties": 2
+    },
+    "NullableMap": {"type": ["object", "null"], "additionalProperties": {"type": "string"}, "maxProperties": 1}
+  }
+}

@@ -1,0 +1,6 @@
+default
+Labels valid one key: accepted {'a': 'x'} as alias
+Labels invalid two keys: accepted {'a': 'x', 'b': 'y'} as alias
+option
+Labels valid one key: accepted {'a': 'x'} as Labels
+Labels invalid two keys: rejected: too_long

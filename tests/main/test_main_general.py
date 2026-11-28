@@ -1982,6 +1982,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_tuple_for_closed_arrays",
         "use_closed_typed_dict",
         "use_validate_default_for_root_model_type_aliases",
+        "keep_constrained_map_roots_as_classes",
         "use_plain_alias_for_recursive_models",
         "read_format_as_annotation",
         "read_uuid6_uuid7_uuid8_formats",

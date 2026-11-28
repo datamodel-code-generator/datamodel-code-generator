@@ -1,0 +1,10 @@
+default
+Tree valid two levels: accepted {'a': {'tree': {'b': {'tree': None}}}} as alias
+Tree invalid four branches: accepted {'a': {'tree': None}, 'b': {'tree': None}, 'c': {'tree': None}, 'd': {'tree': None}} as alias
+Forest valid nested tree: accepted {'trees': None, 'branch': {'tree': {'a': {'tree': None}}}} as Forest
+Forest invalid nested tree: accepted {'trees': None, 'branch': {'tree': {'a': {'tree': None}, 'b': {'tree': None}, 'c': {'tree': None}, 'd': {'tree': None}}}} as Forest
+option
+Tree valid two levels: accepted {'a': {'tree': {'b': {'tree': None}}}} as Tree
+Tree invalid four branches: rejected: too_long
+Forest valid nested tree: accepted {'trees': None, 'branch': {'tree': {'a': {'tree': None}}}} as Forest
+Forest invalid nested tree: rejected: too_long

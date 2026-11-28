@@ -1445,6 +1445,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_typed_nullable_map_values = config.use_typed_nullable_map_values
         self.use_typed_map_values_beside_other_types = config.use_typed_map_values_beside_other_types
         self.use_single_dict_for_object_maps = config.use_single_dict_for_object_maps
+        self.keep_constrained_map_roots_as_classes = config.keep_constrained_map_roots_as_classes
         self.read_unevaluated_properties = config.read_unevaluated_properties
         self.read_kubernetes_extensions = config.read_kubernetes_extensions
         self.read_yaml_1_1_numbers_as_text = config.read_yaml_1_1_numbers_as_text

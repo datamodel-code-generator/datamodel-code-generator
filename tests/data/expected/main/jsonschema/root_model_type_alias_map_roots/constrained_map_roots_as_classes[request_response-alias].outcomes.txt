@@ -1,0 +1,14 @@
+default
+ItemMapRequest valid two items: accepted {'a': {'name': 'n'}, 'b': {'name': 'm'}} as alias
+ItemMapRequest invalid three items: accepted {'a': {'name': 'n'}, 'b': {'name': 'm'}, 'c': {'name': 'o'}} as alias
+ItemMapResponse valid two items: accepted {'a': {'name': 'n', 'id': None}, 'b': {'name': 'm', 'id': None}} as alias
+ItemMapResponse invalid three items: accepted {'a': {'name': 'n', 'id': None}, 'b': {'name': 'm', 'id': None}, 'c': {'name': 'o', 'id': None}} as alias
+PatternItemsRequest valid two items: accepted {'x1': {'name': 'n'}, 'x2': {'name': 'm'}} as alias
+PatternItemsRequest invalid three items: accepted {'x1': {'name': 'n'}, 'x2': {'name': 'm'}, 'x3': {'name': 'o'}} as alias
+option
+ItemMapRequest valid two items: accepted {'a': {'name': 'n'}, 'b': {'name': 'm'}} as ItemMapRequest
+ItemMapRequest invalid three items: rejected: too_long
+ItemMapResponse valid two items: accepted {'a': {'name': 'n', 'id': None}, 'b': {'name': 'm', 'id': None}} as ItemMapResponse
+ItemMapResponse invalid three items: rejected: too_long
+PatternItemsRequest valid two items: accepted {'x1': {'name': 'n'}, 'x2': {'name': 'm'}} as alias
+PatternItemsRequest invalid three items: accepted {'x1': {'name': 'n'}, 'x2': {'name': 'm'}, 'x3': {'name': 'o'}} as alias

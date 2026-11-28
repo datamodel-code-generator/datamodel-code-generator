@@ -1135,6 +1135,30 @@ LEGACY_ROWS: Final[tuple[LegacyRow, ...]] = (
         option="--check-pattern-maps-strictly",
     ),
     LegacyRow(
+        "legacy-map-roots-keep-alias",
+        (
+            "without `--keep-constrained-map-roots-as-classes`, the root model of an object map keeps the model type "
+            "it is given, so under `--use-root-model-type-alias` it stays an alias that drops its `minProperties` "
+            "and `maxProperties`, a value pattern that needs the `python-re` regex engine and the rules of "
+            "`--generate-schema-validators`, while every other constrained root is a class "
+            "(`parser/jsonschema.py:JsonSchemaParser.parse_object`)"
+        ),
+        fix=KEEP,
+        witness=(
+            "--input",
+            "tests/data/jsonschema/root_model_type_alias_map_roots/root.json",
+            "--input-file-type",
+            "jsonschema",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--use-root-model-type-alias",
+        ),
+        option="--keep-constrained-map-roots-as-classes",
+    ),
+    LegacyRow(
         "legacy-nullable-as-type-list",
         (
             "OpenAPI `nullable` is read as a type list only after the first `_get_data_type` of a schema (a list item "

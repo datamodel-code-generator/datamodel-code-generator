@@ -1,0 +1,48 @@
+default
+Labels valid one key: accepted {'a': 'x'} as Labels
+Labels invalid two keys: rejected: too_long
+MinLabels valid one key: accepted {'a': 'x'} as MinLabels
+MinLabels invalid no key: rejected: too_short
+ItemMap valid two items: accepted {'a': {'name': 'n'}, 'b': {'name': 'm'}} as ItemMap
+ItemMap invalid three items: rejected: too_long
+CountOnly valid one key: accepted {'a': 1} as CountOnly
+CountOnly invalid two keys: rejected: too_long
+AnyValues valid one key: accepted {'a': [1]} as AnyValues
+AnyValues invalid two keys: rejected: too_long
+LookaroundValues valid y value: accepted {'a': 'y'} as LookaroundValues
+LookaroundValues invalid x value: rejected: string_pattern_mismatch
+RefLabels valid one key: accepted {'a': 'x'} as RefLabels
+RefLabels invalid two keys: rejected: too_long
+PlainMap valid two keys: accepted {'a': 'x', 'b': 'y'} as PlainMap
+KeyPatternCount valid two keys: accepted {'a': 'x', 'b': 'y'} as KeyPatternCount
+KeyPatternCount invalid three keys: rejected: too_long
+PatternKeys valid two keys: accepted {'x1': 'a', 'x2': 'b'} as PatternKeys
+PatternKeys invalid three keys: rejected: too_long
+PatternKeys invalid other key: accepted {'y': 'a'} as PatternKeys
+NullableMap valid null: accepted None as NullableMap
+NullableMap invalid two keys: accepted {'a': 'x', 'b': 'y'} as NullableMap
+Model() field types: ['Labels', 'Tags']
+option
+Labels valid one key: accepted {'a': 'x'} as Labels
+Labels invalid two keys: rejected: too_long
+MinLabels valid one key: accepted {'a': 'x'} as MinLabels
+MinLabels invalid no key: rejected: too_short
+ItemMap valid two items: accepted {'a': {'name': 'n'}, 'b': {'name': 'm'}} as ItemMap
+ItemMap invalid three items: rejected: too_long
+CountOnly valid one key: accepted {'a': 1} as CountOnly
+CountOnly invalid two keys: rejected: too_long
+AnyValues valid one key: accepted {'a': [1]} as AnyValues
+AnyValues invalid two keys: rejected: too_long
+LookaroundValues valid y value: accepted {'a': 'y'} as LookaroundValues
+LookaroundValues invalid x value: rejected: string_pattern_mismatch
+RefLabels valid one key: accepted {'a': 'x'} as RefLabels
+RefLabels invalid two keys: rejected: too_long
+PlainMap valid two keys: accepted {'a': 'x', 'b': 'y'} as PlainMap
+KeyPatternCount valid two keys: accepted {'a': 'x', 'b': 'y'} as KeyPatternCount
+KeyPatternCount invalid three keys: rejected: too_long
+PatternKeys valid two keys: accepted {'x1': 'a', 'x2': 'b'} as PatternKeys
+PatternKeys invalid three keys: rejected: too_long
+PatternKeys invalid other key: accepted {'y': 'a'} as PatternKeys
+NullableMap valid null: accepted None as NullableMap
+NullableMap invalid two keys: accepted {'a': 'x', 'b': 'y'} as NullableMap
+Model() field types: ['Labels', 'Tags']

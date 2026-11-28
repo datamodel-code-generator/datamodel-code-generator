@@ -163,6 +163,11 @@ OPTION_RELATIONS: Final[tuple[OptionRelation, ...]] = (
         value=True,
     ),
     OptionRelation(
+        ("--keep-constrained-map-roots-as-classes", "requires", "--use-root-model-type-alias"),
+        "`--keep-constrained-map-roots-as-classes` acts only with `--use-root-model-type-alias`.",
+        value=True,
+    ),
+    OptionRelation(
         ("--all-exports-collision-strategy", "requires", "--all-exports-scope"),
         "`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`.",
         AllExportsScope.Recursive.value,

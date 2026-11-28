@@ -1,0 +1,14 @@
+[[change]]
+id = "keep-constrained-map-roots-as-classes-api"
+category = "api"
+title = "Config field for --keep-constrained-map-roots-as-classes"
+summary = "The option adds its config field keep_constrained_map_roots_as_classes (default False) to the generate and parser configs, the config TypedDicts and the Parser attribute of the same name. Nothing is removed or changed."
+refs = ["#1"]
+decision = ["#1"]
+source = "release-note"
+kind = "python-api"
+action = "review"
+affects = { python_api = ["datamodel_code_generator.config.GenerateConfig"] }
+covers = [
+    "main/public_api_signature_baseline/public_api_record_matches_stored_output.txt",
+]
